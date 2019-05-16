@@ -103,5 +103,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# windows extensions
+# custom extensions
 *.ini
+*.cfg
+*.json

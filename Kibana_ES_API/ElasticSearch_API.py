@@ -1,11 +1,23 @@
 import requests, json, os
+import configparser
 from elasticsearch import Elasticsearch
+def read_conf(configFilename):
+    """
+    Dado un nombre de fichero (tipo incluido), carga la configuración y se devuelve mapeada
+    """
+    config = configparser.ConfigParser()
+    config.read(configFilename)
+    return config
+
 def main():
-    # Inicializacion de server y directorio
-    directory = 'C:\\Users\\r.gomez.bermejo\\Desktop\\pruebaDir'
-    res = requests.get('http://localhost:9200')
-    print (res.content)
-    es = Elasticsearch([{'host': 'localhost', 'port': '9200'}])
+    """
+    Función de arranque del script
+    """
+    # Inicializacion de configuracion
+    configMap = read_conf("configuration.cfg")
+    directory = configMap['PATHS']['directoryLogs']
+    res = requests.get(configMap['URLS']['request_endpoint'])
+    es = Elasticsearch([{'host': configMap['URLS']['request_endpoint.host'], 'port': configMap['URLS']['request_endpoint.port']}])
     i = 0
     for filename in os.listdir(directory):
         if filename.endswith(".log"):
@@ -14,7 +26,6 @@ def main():
                 dictToEncode = {}
                 text = myFile.read()
                 delimiter = "}"
-                comma = ","
                 eventList =  [event+delimiter for event in text.split(delimiter) if event]
 
                 for event in eventList:
@@ -22,8 +33,7 @@ def main():
                     if "id" in dictEvent:
                         key_id = dictEvent["id"]
                         del dictEvent["id"]
-                        es.index(index='event', ignore=400, doc_type='docket', 
+                        es.index(index='kafka_event', ignore=400, doc_type='kafka_log', 
                         id=key_id, body=json.dumps(dictEvent))
-                i = i + 1
 if __name__ == '__main__':
   main()
