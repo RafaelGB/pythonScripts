@@ -9,6 +9,13 @@ def read_conf(configFilename):
     config.read(configFilename)
     return config
 
+def parseLogFileToJson(logFileText):
+    """
+    Serializa un fichero log con trazas agrupadas
+    """
+    jsonText = ""
+    return jsonText
+
 def main():
     """
     Función de arranque del script
@@ -17,23 +24,26 @@ def main():
     configMap = read_conf("configuration.cfg")
     directory = configMap['PATHS']['directoryLogs']
     res = requests.get(configMap['URLS']['request_endpoint'])
-    es = Elasticsearch([{'host': configMap['URLS']['request_endpoint.host'], 'port': configMap['URLS']['request_endpoint.port']}])
+    es = Elasticsearch([
+      {
+        'host': configMap['URLS']['request_endpoint.host'],
+        'port': configMap['URLS']['request_endpoint.port'],
+        'http_auth': (configMap['SECURITY']['user'], configMap['SECURITY']['password'])
+      }
+      ])
     i = 0
     for filename in os.listdir(directory):
         if filename.endswith(".log"):
-            with open(directory+"\\"+filename) as myFile:
-                key = "event"+str(i)
+            with open(directory+"/"+filename) as myFile:
                 dictToEncode = {}
                 text = myFile.read()
-                delimiter = "}"
-                eventList =  [event+delimiter for event in text.split(delimiter) if event]
-
-                for event in eventList:
-                    dictEvent = json.loads(event)
-                    if "id" in dictEvent:
-                        key_id = dictEvent["id"]
-                        del dictEvent["id"]
-                        es.index(index='kafka_event', ignore=400, doc_type='kafka_log', 
-                        id=key_id, body=json.dumps(dictEvent))
+                jsonList = text.split('\n')
+                for index,jsonFile in enumerate(jsonList,start=1):
+                  datastore = json.loads(jsonFile)
+                  index
+                  es.index(index='my_index', ignore=400, 
+                  body=json.dumps(datastore))
+                  print("se ha insertado el json formateado numero "+str(index))
+                
 if __name__ == '__main__':
   main()
