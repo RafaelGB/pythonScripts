@@ -107,3 +107,6 @@ venv.bak/
 *.ini
 *.cfg
 *.json
+
+# custom folders
+resources/
