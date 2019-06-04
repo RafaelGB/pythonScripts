@@ -37,11 +37,15 @@ def main():
             with open(directory+"/"+filename) as myFile:
                 dictToEncode = {}
                 text = myFile.read()
+                text = text.replace("}{","}\n{")
                 jsonList = text.split('\n')
                 for index,jsonFile in enumerate(jsonList,start=1):
                   datastore = json.loads(jsonFile)
-                  index
-                  es.index(index='my_index', ignore=400, 
+                  if datastore['headers']['MensajeSalida'] is not None:
+                    datastore['headers']['MensajeSalida']=json.loads(datastore['headers']['MensajeSalida'])
+                  if datastore['headers']['MensajeEntrada'] is not None:
+                    datastore['headers']['MensajeEntrada']=json.loads(datastore['headers']['MensajeEntrada'])
+                  es.index(index=configMap['INDEX']['index.id'], ignore=400,
                   body=json.dumps(datastore))
                   print("se ha insertado el json formateado numero "+str(index))
                 
