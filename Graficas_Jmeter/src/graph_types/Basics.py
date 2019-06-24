@@ -1,6 +1,10 @@
 import pandas as pd
 import plotly.offline as py
 import plotly.graph_objs as go
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+
 from re import sub
 colors = {
   "red":'r'
@@ -9,9 +13,15 @@ colors = {
 file_extention_tuple = ('.csv','.CSV')
 
 """
+*************
 PARTE PÚBLICA
+*************
 """
 def latencyGraph(**kwargs):
+    """
+    Gráfica orientada a tiempos de respuesta
+    devuelve un fichero html para una consulta interactiva de la información
+    """
     # Inicialización de variables a uso local
     global colors
     global file_extention_tuple
@@ -33,8 +43,27 @@ def latencyGraph(**kwargs):
         filename = sub(endRegex+'$', '.html', filename)
     py.plot(fig, filename=filename)
 
+def box_plotGraph(**kwargs):
+    """
+    Dibujo con la información de agregación relevante de la gráfica
+    Devuelve una imagen en el formato configurado
+    """
+    # Inicialización de variables a uso local
+    df = kwargs["df"]
+    confMap = kwargs["configMap"]
+    myFig = plt.figure()
+    bp = sns.boxplot(x='sentBytes', y='Latency', data=df)
+    bp = sns.stripplot(x='sentBytes', y='Latency', data=df, color="orange", jitter=0.1, size=1.5)
+    # Maquetado de la gráfica para interpretación legible de los resultados
+    plt.title("Muestreo", loc="left")
+    plt.xlabel("Bytes enviados")
+    plt.ylabel("Latencia (milisegundos)")
+    myFig.savefig(confMap["FILENAMES"]["boxplot_image_name"]+"."+confMap["FILE_FORMATS"]["boxplot_format"],
+                  format=confMap["FILE_FORMATS"]["boxplot_format"])
 """
+*************
 PARTE PRIVADA
+*************
 """
 def customTrace(Xaxis,Yaxis,**kwargs):
   """

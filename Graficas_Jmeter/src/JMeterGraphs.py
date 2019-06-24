@@ -5,7 +5,7 @@ import sys
 
 from functools import partial
 from datetime import datetime
-from graph_types.Basics import latencyGraph
+from graph_types.Basics import latencyGraph,box_plotGraph
 
 file_extention_tuple = ('.csv','.CSV')
 
@@ -38,7 +38,8 @@ def start():
 
 def select_option(option,**kwargs):
   switcher = {
-        "latencia": partial(latencyGraph,**kwargs)
+        "latencia": partial(latencyGraph,**kwargs),
+        "agregaciones_box": partial(box_plotGraph,**kwargs)
   }
   func = switcher.get(option, lambda: "Función no definida")
   return func()
