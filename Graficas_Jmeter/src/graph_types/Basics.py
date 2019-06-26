@@ -1,11 +1,14 @@
 import pandas as pd
-import plotly.offline as py
 import plotly.graph_objs as go
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import cufflinks as cf
 
+from plotly import __version__ 
 from re import sub
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+
 colors = {
   "red":'r'
 }
@@ -41,9 +44,36 @@ def latencyGraph(**kwargs):
     fig = go.Figure(data=[traceLatency], layout=layout)
     for endRegex in file_extention_tuple:
         filename = sub(endRegex+'$', '.html', filename)
-    py.plot(fig, filename=filename)
+    plot(fig, filename=filename)
 
-def box_plotGraph(**kwargs):
+def boxplot_plotly(**kwargs):
+    """
+    Boxplot orientado a tiempos de respuesta
+    devuelve un fichero html para una consulta interactiva de la información
+    """
+    # Inicialización de variables a uso local
+    global colors
+    global file_extention_tuple
+    cf.set_config_file(offline=True, world_readable=True, theme='ggplot')
+    df = kwargs["df"]
+    confMap = kwargs["configMap"]
+    filename = kwargs["filename"]
+    # Inicio de la lógica de la función
+    df['date'] = pd.to_datetime(df['timeStamp'], unit='ms')
+    df['date'] = pd.to_datetime(df['date'], format='%d/%b/%Y:%H:%M:%S', utc=True)
+
+    layout = go.Layout(title="Boxplot",font=dict(family='Courier New, monospace', size=18, color='rgb(0,0,0)'))
+    # Define el boxplot
+    latencia = customBoxplot(df['sentBytes'],df['Latency'],showlegend=True,name='Latencia de respuesta')
+    # Define el nombre del fichero
+    for endRegex in file_extention_tuple:
+        filename = sub(endRegex+'$', '.html', filename)
+    plot({
+          "data": [latencia], 
+          "layout": layout
+          },filename=filename,image='jpeg')
+
+def boxplot_seaborn(**kwargs):
     """
     Dibujo con la información de agregación relevante de la gráfica
     Devuelve una imagen en el formato configurado
@@ -65,6 +95,19 @@ def box_plotGraph(**kwargs):
 PARTE PRIVADA
 *************
 """
+def customBoxplot(Xaxis,Yaxis,**kwargs):
+  """
+  Calculo del boxplot con la información más relevante en funcion de los siguientes 
+  parametros de entrada
+  Xaxis : eje de la x
+  Yaxis : eje de la y
+  """
+  boxplot = go.Box(x=Xaxis,y=Yaxis,
+                  showlegend=(True,kwargs["showlegend"])["showlegend" in kwargs],
+                  name=('Boxplot',kwargs["name"])["name" in kwargs]
+                  )
+  return boxplot
+
 def customTrace(Xaxis,Yaxis,**kwargs):
   """
   Calculo de traza en el esquema estadistico en funcion de los siguientes parametros de entrada

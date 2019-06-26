@@ -111,3 +111,6 @@ jmeter_env/
 
 # custom folders
 resources/
+*.html
+*.csv
+*.CSV
