@@ -1,14 +1,11 @@
-import numpy as np
-import pandas as pd
 import configparser
 import sys
 
 from functools import partial
 from datetime import datetime
-from graph_types.Basics import latencyGraph, boxplot_seaborn, boxplot_plotly
+from graph_types.Basics import Template_graphs
 
 file_extention_tuple = ('.csv','.CSV')
-
 def read_conf(configFilename):
   """
   Dado un nombre de fichero (tipo incluido), carga la configuración y se devuelve mapeada
@@ -32,15 +29,15 @@ def start():
   filename = sys.argv[2]
   # Inicializacion de configuracion
   configMap = read_conf("conf.cfg")
-  df = pd.read_csv(filename)
   # Seleccionamos la función a lanzar
-  select_option(option,df=df,configMap=configMap,filename=filename)
+  select_option(option,filename,configMap)
 
-def select_option(option,**kwargs):
+def select_option(option,filename,configMap,**kwargs):
+  graphsClass = Template_graphs(filename,configMap)
   switcher = {
-        "latencia": partial(latencyGraph,**kwargs),
-        "boxplot_seaborn": partial(boxplot_seaborn,**kwargs),
-        "boxplot_plotly": partial(boxplot_plotly,**kwargs)
+        "latencia": partial(graphsClass.latencyGraph,**kwargs),
+        "boxplot_seaborn": partial(graphsClass.boxplot_seaborn,**kwargs),
+        "boxplot_plotly": partial(graphsClass.boxplot_plotly,**kwargs)
   }
   func = switcher.get(option, lambda: "Función no definida")
   return func()
