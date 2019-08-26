@@ -29,6 +29,27 @@ class Template_graphs():
   PARTE PÚBLICA
   *************
   """
+  def obtainUniqueValuesFromColumn(self,**kwargs):
+    """
+    Dado el nombre d euna columna pasada por consola, obtiene todos 
+    los valores únicos y el número de veces que aparecen
+    """
+    column = kwargs["input"][3]
+    if column is None:
+      print("Error: El valor de la columna no se ha introducido")
+      print("Método de uso: JMeterGraphs.py tipoGrafica fichero.csv nombreColumna")
+      return None
+
+    if column not in self.df:
+      print("Error: La columna no existe en el dataframe")
+      return None
+
+    filename = self.properties["FILENAMES"]["unique_value_counts"]+"_"+column+".txt"
+    f= open(filename,"w+")
+    table = self.df[column].value_counts()
+    f.write(str(table))
+    f.close()
+
   def latencyGraph(self,**kwargs):
       """
       Gráfica orientada a tiempos de respuesta
@@ -36,7 +57,7 @@ class Template_graphs():
       """
       traceLatency = self.__customTrace(self.df['date'],
                                         self.df['Latency'],
-                                        mode = 'lines',
+                                        mode = self.properties['LATENCY']['scatter_mode'],
                                         name=self.properties['FILENAMES']['trace_latency_name'],
                                         color=self.colors["red"])
       layout = go.Layout(
@@ -53,11 +74,21 @@ class Template_graphs():
       Boxplot orientado a tiempos de respuesta
       devuelve un fichero html para una consulta interactiva de la información
       """
+      y = str(kwargs["--column"].not_files[0])
+      if y is None:
+        print("Error: El valor de la columna no se ha introducido")
+        print("Método de uso: JMeterGraphs.py tipoGrafica fichero.csv nombreColumna")
+        return None
+
+      if y not in self.df:
+        print("Error: La columna no existe en el dataframe")
+        return None
+      
       cf.set_config_file(offline=True, world_readable=True, theme='ggplot')
       # Inicio de la lógica de la función
       layout = go.Layout(title="Boxplot",font=dict(family='Courier New, monospace', size=18, color='rgb(0,0,0)'))
       # Define el boxplot
-      latencia = self.__customBoxplot(self.df['sentBytes'],self.df['Latency'],showlegend=True,name='Latencia de respuesta')
+      latencia = self.__customBoxplot(self.df[y],self.df['Latency'],showlegend=True,name=self.properties['BOXPLOT_PLOTLY']['trace_latency_name'])
       # Define el nombre del fichero
       filename = self.__formatFilename("boxplot_latencia_csv-",self.filename)
       plot({
@@ -80,8 +111,8 @@ class Template_graphs():
       plt.title("Muestreo", loc="left")
       plt.xlabel("Bytes enviados")
       plt.ylabel("Latencia (milisegundos)")
-      myFig.savefig(self.properties["FILENAMES"]["boxplot_image_name"]+"."+self.properties["FILE_FORMATS"]["boxplot_format"],
-                    format=self.properties["FILE_FORMATS"]["boxplot_seaborn_format"])
+      myFig.savefig(self.properties["BOXPLOT_SEABORN"]["image_name"]+"."+self.properties["BOXPLOT_SEABORN"]["image_format"],
+                    format=self.properties["BOXPLOT_SEABORN"]["image_format"])
   """
   *************
   PARTE PRIVADA
@@ -109,11 +140,23 @@ class Template_graphs():
     Xaxis : eje de la x
     Yaxis : eje de la y
     """
+    # Configuración según valores de entrada
+    custom_boxmean = None
+    if "boxmean" in kwargs:
+      custom_boxmean = kwargs["boxmean"]
+    custom_name = None
+    if "name" in kwargs:
+      custom_name = kwargs["name"]
+    custom_showlegend = None
+    if "showlegend" in kwargs:
+      custom_showlegend = kwargs["showlegend"]
+    # Creación del boxplot
     boxplot = go.Box(x=Xaxis,y=Yaxis,
-                    showlegend=(True,kwargs["showlegend"])["showlegend" in kwargs],
-                    name=('Boxplot',kwargs["name"])["name" in kwargs],
-                    boxpoints='all',
-                    jitter=0.3
+                    showlegend=(True,custom_showlegend)["showlegend" in kwargs],
+                    name=('Boxplot',custom_name)["name" in kwargs],
+                    boxpoints=False,
+                    jitter=0.3,
+                    boxmean=(True,custom_boxmean)["boxmean" in kwargs]
                     )
     return boxplot
 
