@@ -25,9 +25,7 @@ class Template_graphs():
     # Inicialización de variables globales
     self.filename = filename
     self.properties = configMap
-    self.source_chunk = pd.DataFrame()
-    # Lectura y tratamiento del datagrama
-    #self.df = self.__custom_read_csv_file()    
+    self.source_chunk = pd.DataFrame()  
     
   """
   *************
@@ -67,6 +65,10 @@ class Template_graphs():
     Dado el nombre d euna columna pasada por consola, obtiene todos 
     los valores únicos y el número de veces que aparecen
     """
+    print("dentro")
+    # Lectura y tratamiento del datagrama
+    self.df = self.__custom_read_csv_file()
+    # Inicio de la funcion
     column = str(kwargs["--column"].not_files[0])
     if column is None:
       print("Error: El valor de la columna no se ha introducido")
@@ -102,15 +104,15 @@ class Template_graphs():
       filename = self.__formatFilename("chunk"+self.source_num_chunk+"grafica_latencia_csv-",self.filename)
       plot(fig, filename=filename)
 
-  def timeResponseGraph(self,**kwargs):
+  def responseCodeGraph(self,**kwargs):
       """
       Gráfica orientada a exponer los tipos de respuesta devueltas
       por el servidor a lo largo del tiempo
       """
-      traceLatency = self.__customTrace(self.df['date'],
-                                        self.df['timeResponse'],
+      traceLatency = self.__customTrace(self.source_chunk['date'],
+                                        self.source_chunk['responseCode'],
                                         mode = self.properties['GRAPHICS']['scatter_mode'],
-                                        name=self.properties['FILENAMES']['trace_latency_name'],
+                                        name=self.properties['FILENAMES']['trace_server_response_name'],
                                         color=self.colors["red"])
       layout = go.Layout(
                       title='Gráfica',
@@ -118,7 +120,7 @@ class Template_graphs():
                       showlegend=True
                       )
       fig = go.Figure(data=[traceLatency], layout=layout)
-      filename = self.__formatFilename("grafica_timeResponse_csv-",self.filename)
+      filename = self.__formatFilename("chunk"+self.source_num_chunk+"grafica_responseCode_csv-",self.filename)
       plot(fig, filename=filename)
 
   def boxplot_plotly(self,**kwargs):
@@ -126,6 +128,9 @@ class Template_graphs():
       Boxplot orientado a tiempos de respuesta
       devuelve un fichero html para una consulta interactiva de la información
       """
+      # Lectura y tratamiento del datagrama
+      self.df = self.__custom_read_csv_file()
+      # Inicio del boxplot 
       y = str(kwargs["--column"].not_files[0])
       if y is None:
         print("Error: El valor de la columna no se ha introducido")
@@ -155,6 +160,8 @@ class Template_graphs():
       Dibujo con la información de agregación relevante de la gráfica
       Devuelve una imagen en el formato configurado
       """
+      # Lectura y tratamiento del datagrama
+      self.df = self.__custom_read_csv_file()
       # Inicialización de variables a uso local
       myFig = plt.figure()
       bp = sns.boxplot(x='sentBytes', y='Latency', data=self.df)
@@ -293,10 +300,12 @@ class Template_graphs():
     Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
     """
     # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
-    chunk['responseCode'] = chunk['responseCode'].map(lambda x: "Error de conexion: "+str(x) if not str(x).isdigit() or x is None else int(x))
+    chunk['responseCode'] = chunk['responseCode'].map(lambda x: None if not str(x).isdigit() or x is None else int(x))
+    chunk['responseCode'] = chunk['responseCode'].map(lambda x: None if x >600 or x < 100 else x)
+    chunk = chunk.dropna(subset=['responseCode'])
     # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
-    chunk["timeStamp"] = pd.to_datetime(chunk["timeStamp"], errors = 'coerce')
-    #chunk['timeStamp'] = chunk['timeStamp'].map(lambda x: None if len(str(x)) != 13 else x)
+    chunk['timeStamp'] = chunk['timeStamp'].map(lambda x: None if len(str(x)) != 13 or not str(x).isdigit()  else x)
+    chunk = chunk.dropna(subset=['timeStamp'])
     return chunk
   
   def __getNumberOfChunks(self,reader):
@@ -311,7 +320,7 @@ class Template_graphs():
   def __run_selected_func(self,func,**kwargs):
     switcher = {
           "latencia": partial(self.latencyGraph,**kwargs),
-          "time_response": partial(self.timeResponseGraph,**kwargs),
+          "response_code": partial(self.responseCodeGraph,**kwargs),
           "boxplot_seaborn": partial(self.boxplot_seaborn,**kwargs),
           "boxplot_plotly": partial(self.boxplot_plotly,**kwargs),
           "valores_unicos": partial(self.obtainUniqueValuesFromColumn,**kwargs),
