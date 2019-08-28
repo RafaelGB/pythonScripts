@@ -49,7 +49,7 @@ def start():
 def select_option(option,filename,configMap,**kwargs):
   graphsClass = Template_graphs(filename,configMap)
   switcher = {
-        "latencia": partial(graphsClass.latencyGraph,**kwargs),
+        "latencia": partial(graphsClass.run_by_parts("latencia"),**kwargs),
         "time_response": partial(graphsClass.timeResponseGraph,**kwargs),
         "boxplot_seaborn": partial(graphsClass.boxplot_seaborn,**kwargs),
         "boxplot_plotly": partial(graphsClass.boxplot_plotly,**kwargs),

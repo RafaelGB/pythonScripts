@@ -9,6 +9,9 @@ import cufflinks as cf
 from re import sub
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 
+from itertools import tee
+from functools import partial
+
 class Template_graphs():
    # Variables propias de la clase
   colors = {
@@ -22,17 +25,43 @@ class Template_graphs():
     # Inicialización de variables globales
     self.filename = filename
     self.properties = configMap
+    self.source_chunk = pd.DataFrame()
     # Lectura y tratamiento del datagrama
-    self.df = self.__custom_read_csv_file()
-    self.__parse_dataframe()
-    self.__dataTreatment()
-    
+    #self.df = self.__custom_read_csv_file()    
     
   """
   *************
   PARTE PÚBLICA
   *************
   """
+  def run_by_parts(self,func_to_exec,**kwargs):
+    """
+    Lectura y filtrado basico del fichero CSV
+    """
+    customChunkSize = int(self.properties["CSV_READER"]["chunk_size"])
+    result = pd.DataFrame()
+    # Se generan 2 iteradores , uno para la barra de carga y otro para elctura de datos
+    df,chunck_count = tee(pd.read_csv(self.filename,error_bad_lines=False,
+                                      warn_bad_lines=False, chunksize=customChunkSize,
+                                      low_memory=False))
+    count_of_chunks = self.__getNumberOfChunks(chunck_count)
+    del chunck_count
+    # Llamada inicial pintando 0% de progreso
+    print("Se inicia la lectura del fichero\n******************")
+    self.__printProgressBar(0,count_of_chunks)
+    for index,chunk in enumerate(df):
+        chunk = self.__parse_dataframe(chunk) # Parsea datos actuales
+        chunk = self.__dataTreatment(chunk) # Añade informacion al datagrama
+        #chunk.dropna(axis=0, inplace=True) # Borra las lineas con valores nulos
+        self.source_chunk = chunk
+        self.source_num_chunk = str(index)
+        
+        self.__run_selected_func(func_to_exec,**kwargs)
+        result = result.append(chunk)
+        # Actualiza la barra de carga
+        self.__printProgressBar(index + 1,count_of_chunks)
+    del df
+  
   def obtainUniqueValuesFromColumn(self,**kwargs):
     """
     Dado el nombre d euna columna pasada por consola, obtiene todos 
@@ -58,9 +87,9 @@ class Template_graphs():
       """
       Gráfica orientada a tiempos de respuesta
       devuelve un fichero html para una consulta interactiva de la información
-      """
-      traceLatency = self.__customTrace(self.df['date'],
-                                        self.df['Latency'],
+      """      
+      traceLatency = self.__customTrace(self.source_chunk['date'],
+                                        self.source_chunk['Latency'],
                                         mode = self.properties['GRAPHICS']['scatter_mode'],
                                         name=self.properties['FILENAMES']['trace_latency_name'],
                                         color=self.colors["red"])
@@ -70,7 +99,7 @@ class Template_graphs():
                       showlegend=True
                       )
       fig = go.Figure(data=[traceLatency], layout=layout)
-      filename = self.__formatFilename("grafica_latencia_csv-",self.filename)
+      filename = self.__formatFilename("chunk"+self.source_num_chunk+"grafica_latencia_csv-",self.filename)
       plot(fig, filename=filename)
 
   def timeResponseGraph(self,**kwargs):
@@ -140,14 +169,7 @@ class Template_graphs():
   *************
   PARTE PRIVADA
   *************
-  """
-  def __dataTreatment(self):
-    """
-    Se añaden los datos de valor necesarios sobre el dataframe propio de la clase
-    """
-    self.df['date'] = pd.to_datetime(self.df['timeStamp'], unit='ms')
-    self.df['date'] = pd.to_datetime(self.df['date'], format='%d/%b/%Y:%H:%M:%S', utc=True)
-  
+  """  
   def __formatFilename(self,label,filename):
     """
     Dada una etiqueta y un nombre de fichero, se forma el nombre final del html
@@ -212,37 +234,34 @@ class Template_graphs():
       agg_func.append(agg)
     return agg_func
 
-  def __parse_dataframe(self):
-    """
-    Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
-    """
-    # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
-    self.df['responseCode'] = self.df['responseCode'].map(lambda x: "Error de conexion: "+str(x) if not str(x).isdigit() or x is None else int(x))
-    # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
-    self.df["timeStamp"] = pd.to_datetime(self.df["timeStamp"], errors = 'coerce')
-    self.df['timeStamp'] = self.df['timeStamp'].map(lambda x: None if len(str(x)) != 13 else x)
-
   def __custom_read_csv_file(self):
     """
     Lectura y filtrado basico del fichero CSV
     """
+    customChunkSize = int(self.properties["CSV_READER"]["chunk_size"])
     result = pd.DataFrame()
-    df = pd.read_csv(self.filename,error_bad_lines=False, chunksize=1000)
-    count_of_chunks = len(df)
+    # Se generan 2 iteradores , uno para la barra de carga y otro para elctura de datos
+    df,chunck_count = tee(pd.read_csv(self.filename,error_bad_lines=False,
+                                      warn_bad_lines=False, chunksize=customChunkSize,
+                                      low_memory=False))
+    count_of_chunks = self.__getNumberOfChunks(chunck_count)
+    del chunck_count
     # Llamada inicial pintando 0% de progreso
-    __printProgressBar(0, count_of_chunks, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    print("Se inicia la lectura del fichero\n******************")
+    self.__printProgressBar(0,count_of_chunks)
     for index,chunk in enumerate(df):
-        chunk.dropna(axis=0, inplace=True) # Borra las lineas con valores nulos
-        #chunk[colToConvert] = chunk[colToConvert].astype(np.uint32)
+        chunk = self.__parse_dataframe(chunk) # Parsea datos actuales
+        chunk = self.__dataTreatment(chunk) # Añade informacion al datagrama
+        #chunk.dropna(axis=0, inplace=True) # Borra las lineas con valores nulos
         result = result.append(chunk)
-        # Update Progress Bar
-        __printProgressBar(index + 1, count_of_chunks, prefix = 'Progress:', suffix = 'Complete', length = 50)
-    del df, chunk
+        # Actualiza la barra de carga
+        self.__printProgressBar(index + 1,count_of_chunks)
+    del df
     return result
 
-  def __printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+  def __printProgressBar (self, iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
     """
-    Call in a loop to create terminal progress bar
+    Se llama en un loop para crear una barra de progreso por terminal
     @params:
         iteration   - Required  : current iteration (Int)
         total       - Required  : total iterations (Int)
@@ -252,10 +271,50 @@ class Template_graphs():
         length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
     """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    format_iteration = 0 if (iteration == 0) else (iteration / total)
+    percent = ("{0:." + str(decimals) + "f}").format(100 * format_iteration)
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
     # Print New Line on Complete
     if iteration == total: 
         print()
+  
+  def __dataTreatment(self,chunk):
+    """
+    Se añaden los datos de valor necesarios sobre el dataframe propio de la clase
+    """
+    chunk['date'] = pd.to_datetime(chunk['timeStamp'], unit='ms')
+    chunk['date'] = pd.to_datetime(chunk['date'], format='%d/%b/%Y:%H:%M:%S', utc=True)
+    return chunk
+  
+  def __parse_dataframe(self,chunk):
+    """
+    Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
+    """
+    # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
+    chunk['responseCode'] = chunk['responseCode'].map(lambda x: "Error de conexion: "+str(x) if not str(x).isdigit() or x is None else int(x))
+    # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
+    chunk["timeStamp"] = pd.to_datetime(chunk["timeStamp"], errors = 'coerce')
+    #chunk['timeStamp'] = chunk['timeStamp'].map(lambda x: None if len(str(x)) != 13 else x)
+    return chunk
+  
+  def __getNumberOfChunks(self,reader):
+    """
+    Dado un fileReader te devuelve el numero de apartados que tiene
+    """
+    number_of_chunks=0
+    for chunk in reader:
+      number_of_chunks=number_of_chunks+1
+    return number_of_chunks
+  
+  def __run_selected_func(self,func,**kwargs):
+    switcher = {
+          "latencia": partial(self.latencyGraph,**kwargs),
+          "time_response": partial(self.timeResponseGraph,**kwargs),
+          "boxplot_seaborn": partial(self.boxplot_seaborn,**kwargs),
+          "boxplot_plotly": partial(self.boxplot_plotly,**kwargs),
+          "valores_unicos": partial(self.obtainUniqueValuesFromColumn,**kwargs),
+    }
+    func = switcher.get(func, lambda: "Función no definida")
+    return func()
