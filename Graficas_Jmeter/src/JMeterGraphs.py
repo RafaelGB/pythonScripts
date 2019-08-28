@@ -50,6 +50,7 @@ def select_option(option,filename,configMap,**kwargs):
   graphsClass = Template_graphs(filename,configMap)
   switcher = {
         "latencia": partial(graphsClass.latencyGraph,**kwargs),
+        "time_response": partial(graphsClass.timeResponseGraph,**kwargs),
         "boxplot_seaborn": partial(graphsClass.boxplot_seaborn,**kwargs),
         "boxplot_plotly": partial(graphsClass.boxplot_plotly,**kwargs),
         "valores_unicos": partial(graphsClass.obtainUniqueValuesFromColumn,**kwargs),
@@ -58,7 +59,7 @@ def select_option(option,filename,configMap,**kwargs):
   return func()
 """
 *************
-SUBFUNCIONES
+ UTILIDADES
 *************
 """
 def checkArgs(groupedArgs):
@@ -76,7 +77,7 @@ def checkArgs(groupedArgs):
     print("Falta argumento -o necesario para indicar la/s opción/es de gráfica")
     isCorrect = False
   elif not bool(groupedArgs['-o'].not_files):
-    print("No se ha elegido ninguna opcion de grafica para el argumento -o")
+    print("No se ha elegido ninguna opcion para el argumento -o")
     isCorrect = False
 
   return isCorrect

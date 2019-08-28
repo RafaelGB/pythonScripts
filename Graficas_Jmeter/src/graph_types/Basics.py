@@ -19,10 +19,14 @@ class Template_graphs():
   FUNCIONES PROPIAS DE CLASE
   """
   def __init__(self,filename,configMap, *args, **kwargs):
+    # Inicialización de variables globales
     self.filename = filename
-    self.df = pd.read_csv(filename)
-    self.__dataTreatment()
     self.properties = configMap
+    # Lectura y tratamiento del datagrama
+    self.df = self.__custom_read_csv_file()
+    self.__parse_dataframe()
+    self.__dataTreatment()
+    
     
   """
   *************
@@ -34,7 +38,7 @@ class Template_graphs():
     Dado el nombre d euna columna pasada por consola, obtiene todos 
     los valores únicos y el número de veces que aparecen
     """
-    column = kwargs["input"][3]
+    column = str(kwargs["--column"].not_files[0])
     if column is None:
       print("Error: El valor de la columna no se ha introducido")
       print("Método de uso: JMeterGraphs.py tipoGrafica fichero.csv nombreColumna")
@@ -57,7 +61,7 @@ class Template_graphs():
       """
       traceLatency = self.__customTrace(self.df['date'],
                                         self.df['Latency'],
-                                        mode = self.properties['LATENCY']['scatter_mode'],
+                                        mode = self.properties['GRAPHICS']['scatter_mode'],
                                         name=self.properties['FILENAMES']['trace_latency_name'],
                                         color=self.colors["red"])
       layout = go.Layout(
@@ -67,6 +71,25 @@ class Template_graphs():
                       )
       fig = go.Figure(data=[traceLatency], layout=layout)
       filename = self.__formatFilename("grafica_latencia_csv-",self.filename)
+      plot(fig, filename=filename)
+
+  def timeResponseGraph(self,**kwargs):
+      """
+      Gráfica orientada a exponer los tipos de respuesta devueltas
+      por el servidor a lo largo del tiempo
+      """
+      traceLatency = self.__customTrace(self.df['date'],
+                                        self.df['timeResponse'],
+                                        mode = self.properties['GRAPHICS']['scatter_mode'],
+                                        name=self.properties['FILENAMES']['trace_latency_name'],
+                                        color=self.colors["red"])
+      layout = go.Layout(
+                      title='Gráfica',
+                      plot_bgcolor='rgb(230, 230,230)', 
+                      showlegend=True
+                      )
+      fig = go.Figure(data=[traceLatency], layout=layout)
+      filename = self.__formatFilename("grafica_timeResponse_csv-",self.filename)
       plot(fig, filename=filename)
 
   def boxplot_plotly(self,**kwargs):
@@ -188,3 +211,51 @@ class Template_graphs():
       )
       agg_func.append(agg)
     return agg_func
+
+  def __parse_dataframe(self):
+    """
+    Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
+    """
+    # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
+    self.df['responseCode'] = self.df['responseCode'].map(lambda x: "Error de conexion: "+str(x) if not str(x).isdigit() or x is None else int(x))
+    # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
+    self.df["timeStamp"] = pd.to_datetime(self.df["timeStamp"], errors = 'coerce')
+    self.df['timeStamp'] = self.df['timeStamp'].map(lambda x: None if len(str(x)) != 13 else x)
+
+  def __custom_read_csv_file(self):
+    """
+    Lectura y filtrado basico del fichero CSV
+    """
+    result = pd.DataFrame()
+    df = pd.read_csv(self.filename,error_bad_lines=False, chunksize=1000)
+    count_of_chunks = len(df)
+    # Llamada inicial pintando 0% de progreso
+    __printProgressBar(0, count_of_chunks, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    for index,chunk in enumerate(df):
+        chunk.dropna(axis=0, inplace=True) # Borra las lineas con valores nulos
+        #chunk[colToConvert] = chunk[colToConvert].astype(np.uint32)
+        result = result.append(chunk)
+        # Update Progress Bar
+        __printProgressBar(index + 1, count_of_chunks, prefix = 'Progress:', suffix = 'Complete', length = 50)
+    del df, chunk
+    return result
+
+  def __printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
