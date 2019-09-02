@@ -12,6 +12,7 @@ from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 from itertools import tee
 from functools import partial
 
+from graph_types.DataframeHelper import format_timestamp
 class Template_graphs():
    # Variables propias de la clase
   colors = {
@@ -19,23 +20,37 @@ class Template_graphs():
   }
   file_extention_tuple = ('.csv','.CSV')
   """
-  FUNCIONES PROPIAS DE CLASE
+  PREPROCESOS DE CLASE
   """
   def __init__(self,filename,configMap, *args, **kwargs):
     # Inicialización de variables globales
     self.filename = filename
-    self.properties = configMap
-    self.source_chunk = pd.DataFrame()  
+    self.properties = configMap 
     
   """
   *************
   PARTE PÚBLICA
   *************
   """
-  def run_by_parts(self,func_to_exec,**kwargs):
+  def run_full(self,func_to_exec,groupedArgs):
     """
-    Lectura y filtrado basico del fichero CSV
+    Lectura y ejecución COMPLETA del fichero CSV y el proceso seleccionado
     """
+    print("EJECUCIÓN COMPLETA - "+func_to_exec)
+    self.source_num_chunk = None
+    # Se genera el datagrama con el fichero
+    df = pd.read_csv(self.filename, error_bad_lines=False,
+                                      warn_bad_lines=False, low_memory=False)
+   
+    df = self.__parse_dataframe(df) # Parsea datos actuales
+    self.df = self.__dataTreatment(df) # Añade informacion al datagrama
+    self.__run_selected_func(func_to_exec,**dict(groupedArgs))
+
+  def run_by_parts(self,func_to_exec,groupedArgs):
+    """
+    Lectura y ejecución POR PARTES del fichero CSV y el proceso seleccionado
+    """
+    print("EJECUCIÓN POR PARTES - "+func_to_exec)
     customChunkSize = int(self.properties["CSV_READER"]["chunk_size"])
     result = pd.DataFrame()
     # Se generan 2 iteradores , uno para la barra de carga y otro para elctura de datos
@@ -50,29 +65,30 @@ class Template_graphs():
     for index,chunk in enumerate(df):
         chunk = self.__parse_dataframe(chunk) # Parsea datos actuales
         chunk = self.__dataTreatment(chunk) # Añade informacion al datagrama
-        #chunk.dropna(axis=0, inplace=True) # Borra las lineas con valores nulos
-        self.source_chunk = chunk
+
+        self.df = chunk
         self.source_num_chunk = str(index)
         
-        self.__run_selected_func(func_to_exec,**kwargs)
+        self.__run_selected_func(func_to_exec,**dict(groupedArgs))
         result = result.append(chunk)
         # Actualiza la barra de carga
         self.__printProgressBar(index + 1,count_of_chunks)
     del df
-  
-  def obtainUniqueValuesFromColumn(self,**kwargs):
+  """
+  *********************
+  FUNCIONES PRINCIPALES
+  *********************
+  """  
+  def __obtainUniqueValuesFromColumn(self,**kwargs):
     """
     Dado el nombre d euna columna pasada por consola, obtiene todos 
     los valores únicos y el número de veces que aparecen
     """
-    print("dentro")
-    # Lectura y tratamiento del datagrama
-    self.df = self.__custom_read_csv_file()
     # Inicio de la funcion
     column = str(kwargs["--column"].not_files[0])
     if column is None:
       print("Error: El valor de la columna no se ha introducido")
-      print("Método de uso: JMeterGraphs.py tipoGrafica fichero.csv nombreColumna")
+      print("*** --column columnName")
       return None
 
     if column not in self.df:
@@ -85,15 +101,15 @@ class Template_graphs():
     f.write(str(table))
     f.close()
 
-  def latencyGraph(self,**kwargs):
+  def __latencyGraph(self,**kwargs):
       """
       Gráfica orientada a tiempos de respuesta
       devuelve un fichero html para una consulta interactiva de la información
       """      
-      traceLatency = self.__customTrace(self.source_chunk['date'],
-                                        self.source_chunk['Latency'],
+      traceLatency = self.__customTrace(self.df['date'],
+                                        self.df['Latency'],
                                         mode = self.properties['GRAPHICS']['scatter_mode'],
-                                        name=self.properties['FILENAMES']['trace_latency_name'],
+                                        name=self.properties['GRAPHICS']['trace_latency_label'],
                                         color=self.colors["red"])
       layout = go.Layout(
                       title='Gráfica',
@@ -101,18 +117,18 @@ class Template_graphs():
                       showlegend=True
                       )
       fig = go.Figure(data=[traceLatency], layout=layout)
-      filename = self.__formatFilename("chunk"+self.source_num_chunk+"grafica_latencia_csv-",self.filename)
+      filename = self.__formatFilename(self.properties['FILENAMES']['latency_name'],self.filename)
       plot(fig, filename=filename)
 
-  def responseCodeGraph(self,**kwargs):
+  def __responseCodeGraph(self,**kwargs):
       """
       Gráfica orientada a exponer los tipos de respuesta devueltas
       por el servidor a lo largo del tiempo
       """
-      traceLatency = self.__customTrace(self.source_chunk['date'],
-                                        self.source_chunk['responseCode'],
+      traceLatency = self.__customTrace(self.df['date'],
+                                        self.df['responseCode'],
                                         mode = self.properties['GRAPHICS']['scatter_mode'],
-                                        name=self.properties['FILENAMES']['trace_server_response_name'],
+                                        name=self.properties['GRAPHICS']['trace_server_response_name'],
                                         color=self.colors["red"])
       layout = go.Layout(
                       title='Gráfica',
@@ -120,21 +136,19 @@ class Template_graphs():
                       showlegend=True
                       )
       fig = go.Figure(data=[traceLatency], layout=layout)
-      filename = self.__formatFilename("chunk"+self.source_num_chunk+"grafica_responseCode_csv-",self.filename)
+      filename = self.__formatFilename(self.properties['FILENAMES']['response_code_name'],self.filename)
       plot(fig, filename=filename)
 
-  def boxplot_plotly(self,**kwargs):
+  def __boxplot_plotly(self,**kwargs):
       """
       Boxplot orientado a tiempos de respuesta
       devuelve un fichero html para una consulta interactiva de la información
       """
-      # Lectura y tratamiento del datagrama
-      self.df = self.__custom_read_csv_file()
       # Inicio del boxplot 
       y = str(kwargs["--column"].not_files[0])
       if y is None:
         print("Error: El valor de la columna no se ha introducido")
-        print("Método de uso: JMeterGraphs.py tipoGrafica fichero.csv nombreColumna")
+        print("Método de uso: *** --column nombreColumna")
         return None
 
       if y not in self.df:
@@ -147,7 +161,7 @@ class Template_graphs():
       # Define el boxplot
       latencia = self.__customBoxplot(self.df[y],self.df['Latency'],showlegend=True,name=self.properties['BOXPLOT_PLOTLY']['trace_latency_name'])
       # Define el nombre del fichero
-      filename = self.__formatFilename("boxplot_latencia_csv-",self.filename)
+      filename = self.__formatFilename(self.properties['FILENAMES']['boxplot_plotly_name'],self.filename)
       plot({
             "data": [latencia], 
             "layout": layout
@@ -155,13 +169,11 @@ class Template_graphs():
             filename=filename
           )
 
-  def boxplot_seaborn(self,**kwargs):
+  def __boxplot_seaborn(self,**kwargs):
       """
       Dibujo con la información de agregación relevante de la gráfica
       Devuelve una imagen en el formato configurado
       """
-      # Lectura y tratamiento del datagrama
-      self.df = self.__custom_read_csv_file()
       # Inicialización de variables a uso local
       myFig = plt.figure()
       bp = sns.boxplot(x='sentBytes', y='Latency', data=self.df)
@@ -173,17 +185,21 @@ class Template_graphs():
       myFig.savefig(self.properties["BOXPLOT_SEABORN"]["image_name"]+"."+self.properties["BOXPLOT_SEABORN"]["image_format"],
                     format=self.properties["BOXPLOT_SEABORN"]["image_format"])
   """
-  *************
-  PARTE PRIVADA
-  *************
+  ******************
+  FUNCIONES DE APOYO
+  ******************
   """  
   def __formatFilename(self,label,filename):
     """
     Dada una etiqueta y un nombre de fichero, se forma el nombre final del html
     """
+    
+    firstDate = format_timestamp(self.df["timeStamp"].iloc[0])
+    lastDate = format_timestamp(self.df["timeStamp"].iloc[-1])
+    prefix = label+"___"+firstDate+"___"+lastDate+"___"
     for endRegex in self.file_extention_tuple:
           filename = sub(endRegex+'$', '.html', filename)
-    return label+filename
+    return prefix+filename
 
   def __customBoxplot(self,Xaxis,Yaxis,**kwargs):
     """
@@ -239,32 +255,7 @@ class Template_graphs():
           method='restyle'
       )
       agg_func.append(agg)
-    return agg_func
-
-  def __custom_read_csv_file(self):
-    """
-    Lectura y filtrado basico del fichero CSV
-    """
-    customChunkSize = int(self.properties["CSV_READER"]["chunk_size"])
-    result = pd.DataFrame()
-    # Se generan 2 iteradores , uno para la barra de carga y otro para elctura de datos
-    df,chunck_count = tee(pd.read_csv(self.filename,error_bad_lines=False,
-                                      warn_bad_lines=False, chunksize=customChunkSize,
-                                      low_memory=False))
-    count_of_chunks = self.__getNumberOfChunks(chunck_count)
-    del chunck_count
-    # Llamada inicial pintando 0% de progreso
-    print("Se inicia la lectura del fichero\n******************")
-    self.__printProgressBar(0,count_of_chunks)
-    for index,chunk in enumerate(df):
-        chunk = self.__parse_dataframe(chunk) # Parsea datos actuales
-        chunk = self.__dataTreatment(chunk) # Añade informacion al datagrama
-        #chunk.dropna(axis=0, inplace=True) # Borra las lineas con valores nulos
-        result = result.append(chunk)
-        # Actualiza la barra de carga
-        self.__printProgressBar(index + 1,count_of_chunks)
-    del df
-    return result
+    return agg_func  
 
   def __printProgressBar (self, iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
     """
@@ -319,11 +310,13 @@ class Template_graphs():
   
   def __run_selected_func(self,func,**kwargs):
     switcher = {
-          "latencia": partial(self.latencyGraph,**kwargs),
-          "response_code": partial(self.responseCodeGraph,**kwargs),
-          "boxplot_seaborn": partial(self.boxplot_seaborn,**kwargs),
-          "boxplot_plotly": partial(self.boxplot_plotly,**kwargs),
-          "valores_unicos": partial(self.obtainUniqueValuesFromColumn,**kwargs),
+          "latencia": partial(self.__latencyGraph,**kwargs),
+          "response_code": partial(self.__responseCodeGraph,**kwargs),
+          "boxplot_seaborn": partial(self.__boxplot_seaborn,**kwargs),
+          "boxplot_plotly": partial(self.__boxplot_plotly,**kwargs),
+          "valores_unicos": partial(self.__obtainUniqueValuesFromColumn,**kwargs)
     }
     func = switcher.get(func, lambda: "Función no definida")
     return func()
+      
+    

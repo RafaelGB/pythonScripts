@@ -37,25 +37,29 @@ def start():
   if not (checkArgs(groupedArgs)):
     print("Error critico en los argumentos - fin del programa")
     return
-  # Inicialización en funcion de los parámetros de entrada
+  # En caso de no tener parámetros opcionales cargar los de por defecto
+  optionalArgs = defaultOptionalArgs(groupedArgs)
+  # Inicialización en funcion de los parámetros de entrada obligatorios
   options = groupedArgs["-o"].all
   filename = groupedArgs["-f"].all[0]
+  # Inicialización en funcion de los parámetros de entrada opcionales ( o por defecto )
+  mode = optionalArgs["-m"]
   # Inicialización de configuracion
   configMap = read_conf("conf.cfg")
   # Seleccionamos la función a lanzar
+  print(options)
   for option in options:
-    select_option(option,filename,configMap,**dict(groupedArgs))
+    select_option(option,mode,filename,configMap,groupedArgs)
 
-def select_option(option,filename,configMap,**kwargs):
+def select_option(option,mode,filename,configMap,groupedArgs):
+  print("MODO "+mode)
   graphsClass = Template_graphs(filename,configMap)
   switcher = {
-        "latencia": partial(graphsClass.run_by_parts(option),**kwargs),
-        "response_code": partial(graphsClass.run_by_parts(option),**kwargs),
-        "boxplot_seaborn": partial(graphsClass.boxplot_seaborn,**kwargs),
-        "boxplot_plotly": partial(graphsClass.boxplot_plotly,**kwargs),
-        "valores_unicos": partial(graphsClass.obtainUniqueValuesFromColumn,**kwargs),
+        "full": partial(graphsClass.run_full,option,groupedArgs),
+        "chunks": partial(graphsClass.run_by_parts,option,groupedArgs)
+        
   }
-  func = switcher.get(option, lambda: "Función no definida")
+  func = switcher.get(mode, lambda: "Modo de ejecución no contemplada")
   return func()
 """
 *************
@@ -63,6 +67,9 @@ def select_option(option,filename,configMap,**kwargs):
 *************
 """
 def checkArgs(groupedArgs):
+  """
+  Comprobación de los parámetros de entrada obligatorios
+  """
   isCorrect = True
   # Comprueba argumentos sobre el fichero que contiene los datos
   if '-f' not in groupedArgs:
@@ -79,8 +86,18 @@ def checkArgs(groupedArgs):
   elif not bool(groupedArgs['-o'].not_files):
     print("No se ha elegido ninguna opcion para el argumento -o")
     isCorrect = False
-
   return isCorrect
+
+def defaultOptionalArgs(groupedArgs):
+  """
+  Comprobación de los parámetros de entrada opcionales e inicialización
+  a valores por defecto si aplica
+  """
+  optionalArgs = {}
+  optionalArgs["-m"] = "full" if '-m' not in groupedArgs else groupedArgs["-m"].all[0]
+  
+  return optionalArgs
+
 
 if __name__ == '__main__':
   start()
