@@ -88,13 +88,11 @@ class Template_graphs():
     # Inicio de la funcion
     choosenHeader = obtainOptionalParameter(self.properties["VALORES_UNICOS"]["optional_parameter"],**kwargs)
     if choosenHeader is None:
-      print("Error: El valor de la columna no se ha introducido")
-      print("*** "+self.properties["VALORES_UNICOS"]["optional_parameter"]+" columnName")
-      return None
+      raise Exception('Falta el argumento {} columnName'.format(self.properties["VALORES_UNICOS"]["optional_parameter"]))
 
     if choosenHeader not in self.df:
       print("Error: La columna no existe en el dataframe")
-      return None
+      raise Exception('Error: La columna {} no existe en el dataframe'.format(choosenHeader))
 
     filename = self.properties["VALORES_UNICOS"]["filename"]+"_"+choosenHeader+".txt"
     f= open(filename,"w+")
@@ -178,7 +176,7 @@ class Template_graphs():
   ******************
   FUNCIONES DE APOYO
   ******************
-  """  
+  """
   def __formatFilename(self,label,filename):
     """
     Dada una etiqueta, el timelapse de la muestra y a opcion se monta el
@@ -284,8 +282,11 @@ class Template_graphs():
     chunk['responseCode'] = chunk['responseCode'].map(lambda x: responseCodeNormalizer(x))
     chunk = chunk.dropna(subset=['responseCode'])
     # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
-    chunk['timeStamp'] = chunk['timeStamp'].map(lambda x: None if len(str(x)) != 13 or not str(x).isdigit()  else x)
+    chunk['timeStamp'] = chunk['timeStamp'].map(lambda x: timeStampNormalizer(x))
     chunk = chunk.dropna(subset=['timeStamp'])
+    # Agrupa los hilos levantados en función de un intervalo definido por configuración
+    chunk['allThreads'] = chunk['allThreads'].map(lambda x: allThreadsNormalizer(x,self.properties["NORMALIZER"]["allThreadsInterval"]))
+    chunk = chunk.dropna(subset=['allThreads'])
     return chunk
   
 
