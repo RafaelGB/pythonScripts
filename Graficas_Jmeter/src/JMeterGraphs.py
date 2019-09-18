@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 import sys
+import traceback
 import os
 
 sys.path.insert(0, os.path.abspath('..'))
@@ -47,20 +48,28 @@ def start():
   # Inicialización de configuracion
   configMap = read_conf("conf.cfg")
   # Seleccionamos la función a lanzar
-  print(options)
   for option in options:
     select_option(option,mode,filename,configMap,groupedArgs)
 
 def select_option(option,mode,filename,configMap,groupedArgs):
-  print("MODO "+mode)
-  graphsClass = Template_graphs(filename,configMap)
-  switcher = {
-        "full": partial(graphsClass.run_full,option,groupedArgs),
-        "chunks": partial(graphsClass.run_by_parts,option,groupedArgs)
-        
-  }
-  func = switcher.get(mode, lambda: "Modo de ejecución no contemplada")
-  return func()
+  try:
+    print("MODO "+mode)
+    graphsClass = Template_graphs(filename,configMap)
+    switcher = {
+          configMap["SWITCH_MODE"]["full"]: partial(graphsClass.run_full,option,groupedArgs),
+          configMap["SWITCH_MODE"]["chunks"]: partial(graphsClass.run_by_parts,option,groupedArgs)
+          
+    }
+    func = switcher.get(mode, lambda: "Modo de ejecución no contemplada")
+    return func()
+  except Exception as error:
+    print("[ERROR] => con Modo: {}, Opcion: {} ha saltado una excepción".format(option,mode))
+    print(error)
+    print("**************")
+    print("[TRACEBACK] =>")
+    traceback.print_exc(file=sys.stdout)
+    
+    return None
 """
 *************
  UTILIDADES
@@ -98,6 +107,7 @@ def defaultOptionalArgs(groupedArgs):
   
   return optionalArgs
 
-
+def showHelp():
+  print()
 if __name__ == '__main__':
   start()

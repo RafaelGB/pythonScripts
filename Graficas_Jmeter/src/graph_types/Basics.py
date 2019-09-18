@@ -13,6 +13,7 @@ from itertools import tee
 from functools import partial
 
 from graph_types.DataframeHelper import format_timestamp
+from graph_types.BasicsUtils import *
 class Template_graphs():
    # Variables propias de la clase
   colors = {
@@ -57,7 +58,7 @@ class Template_graphs():
     df,chunck_count = tee(pd.read_csv(self.filename,error_bad_lines=False,
                                       warn_bad_lines=False, chunksize=customChunkSize,
                                       low_memory=False))
-    count_of_chunks = self.__getNumberOfChunks(chunck_count)
+    count_of_chunks = getNumberOfChunks(chunck_count)
     del chunck_count
     # Llamada inicial pintando 0% de progreso
     print("Se inicia la lectura del fichero\n******************")
@@ -85,58 +86,44 @@ class Template_graphs():
     los valores únicos y el número de veces que aparecen
     """
     # Inicio de la funcion
-    column = str(kwargs["--column"].not_files[0])
-    if column is None:
+    choosenHeader = obtainOptionalParameter(self.properties["VALORES_UNICOS"]["optional_parameter"],**kwargs)
+    if choosenHeader is None:
       print("Error: El valor de la columna no se ha introducido")
-      print("*** --column columnName")
+      print("*** "+self.properties["VALORES_UNICOS"]["optional_parameter"]+" columnName")
       return None
 
-    if column not in self.df:
+    if choosenHeader not in self.df:
       print("Error: La columna no existe en el dataframe")
       return None
 
-    filename = self.properties["FILENAMES"]["unique_value_counts"]+"_"+column+".txt"
+    filename = self.properties["VALORES_UNICOS"]["filename"]+"_"+choosenHeader+".txt"
     f= open(filename,"w+")
-    table = self.df[column].value_counts()
+    table = self.df[choosenHeader].value_counts()
     f.write(str(table))
     f.close()
 
-  def __latencyGraph(self,**kwargs):
+  def __plotlyGraph(self,**kwargs):
       """
       Gráfica orientada a tiempos de respuesta
       devuelve un fichero html para una consulta interactiva de la información
-      """      
-      traceLatency = self.__customTrace(self.df['date'],
-                                        self.df['Latency'],
-                                        mode = self.properties['GRAPHICS']['scatter_mode'],
-                                        name=self.properties['GRAPHICS']['trace_latency_label'],
+      """
+      # Inicialización de parámetros
+      choosenHeader = obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
+      date = self.properties["CSV_HEADERS"]["date"]
+      traceName = self.properties["TRACE_GRAPHIC_PLOTLY"][choosenHeader]
+      mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']     
+      traceLatency = self.__customTrace(self.df[date],
+                                        self.df[choosenHeader],
+                                        mode = mode,
+                                        name=traceName,
                                         color=self.colors["red"])
       layout = go.Layout(
-                      title='Gráfica',
-                      plot_bgcolor='rgb(230, 230,230)', 
+                      title=self.properties['LAYOUT_GRAPHIC_PLOTLY']['title'],
+                      plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
                       showlegend=True
                       )
       fig = go.Figure(data=[traceLatency], layout=layout)
-      filename = self.__formatFilename(self.properties['FILENAMES']['latency_name'],self.filename)
-      plot(fig, filename=filename)
-
-  def __responseCodeGraph(self,**kwargs):
-      """
-      Gráfica orientada a exponer los tipos de respuesta devueltas
-      por el servidor a lo largo del tiempo
-      """
-      traceLatency = self.__customTrace(self.df['date'],
-                                        self.df['responseCode'],
-                                        mode = self.properties['GRAPHICS']['scatter_mode'],
-                                        name=self.properties['GRAPHICS']['trace_server_response_name'],
-                                        color=self.colors["red"])
-      layout = go.Layout(
-                      title='Gráfica',
-                      plot_bgcolor='rgb(230, 230,230)', 
-                      showlegend=True
-                      )
-      fig = go.Figure(data=[traceLatency], layout=layout)
-      filename = self.__formatFilename(self.properties['FILENAMES']['response_code_name'],self.filename)
+      filename = self.__formatFilename(self.properties['FILENAMES'][choosenHeader],self.filename)
       plot(fig, filename=filename)
 
   def __boxplot_plotly(self,**kwargs):
@@ -144,24 +131,27 @@ class Template_graphs():
       Boxplot orientado a tiempos de respuesta
       devuelve un fichero html para una consulta interactiva de la información
       """
-      # Inicio del boxplot 
-      y = str(kwargs["--column"].not_files[0])
-      if y is None:
-        print("Error: El valor de la columna no se ha introducido")
-        print("Método de uso: *** --column nombreColumna")
-        return None
+      choosenHeader_x = obtainOptionalParameter(self.properties["BOXPLOT_PLOTLY"]["optional_parameter_x"],**kwargs)
+      choosenHeader_y = obtainOptionalParameter(self.properties["BOXPLOT_PLOTLY"]["optional_parameter_y"],**kwargs)
+      if choosenHeader_x is None:
+        raise Exception('Falta el argumento {} columnName'.format(self.properties["BOXPLOT_PLOTLY"]["optional_parameter_x"]))
 
-      if y not in self.df:
-        print("Error: La columna no existe en el dataframe")
-        return None
+      if choosenHeader_x not in self.df:
+        raise Exception('Error: La columna {} no existe en el dataframe'.format(choosenHeader_x))
+
+      if choosenHeader_y is None:
+        raise Exception('Falta el argumento {} columnName'.format(self.properties["BOXPLOT_PLOTLY"]["optional_parameter_y"]))
+
+      if choosenHeader_y not in self.df:
+        raise Exception('Error: La columna {} no existe en el dataframe'.format(choosenHeader_y))
       
       cf.set_config_file(offline=True, world_readable=True, theme='ggplot')
       # Inicio de la lógica de la función
       layout = go.Layout(title="Boxplot",font=dict(family='Courier New, monospace', size=18, color='rgb(0,0,0)'))
       # Define el boxplot
-      latencia = self.__customBoxplot(self.df[y],self.df['Latency'],showlegend=True,name=self.properties['BOXPLOT_PLOTLY']['trace_latency_name'])
+      latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],showlegend=True,name=self.properties['TRACE_BOXPLOT_PLOTLY'][choosenHeader_x])
       # Define el nombre del fichero
-      filename = self.__formatFilename(self.properties['FILENAMES']['boxplot_plotly_name'],self.filename)
+      filename = self.__formatFilename(self.properties["BOXPLOT_PLOTLY"]["filename"]+"_"+choosenHeader_x+"_"+choosenHeader_y,self.filename)
       plot({
             "data": [latencia], 
             "layout": layout
@@ -191,9 +181,9 @@ class Template_graphs():
   """  
   def __formatFilename(self,label,filename):
     """
-    Dada una etiqueta y un nombre de fichero, se forma el nombre final del html
+    Dada una etiqueta, el timelapse de la muestra y a opcion se monta el
+    nombre del fichero a generar
     """
-    
     firstDate = format_timestamp(self.df["timeStamp"].iloc[0])
     lastDate = format_timestamp(self.df["timeStamp"].iloc[-1])
     prefix = label+"___"+firstDate+"___"+lastDate+"___"
@@ -291,32 +281,25 @@ class Template_graphs():
     Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
     """
     # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
-    chunk['responseCode'] = chunk['responseCode'].map(lambda x: None if not str(x).isdigit() or x is None else int(x))
-    chunk['responseCode'] = chunk['responseCode'].map(lambda x: None if x >600 or x < 100 else x)
+    chunk['responseCode'] = chunk['responseCode'].map(lambda x: responseCodeNormalizer(x))
     chunk = chunk.dropna(subset=['responseCode'])
     # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
     chunk['timeStamp'] = chunk['timeStamp'].map(lambda x: None if len(str(x)) != 13 or not str(x).isdigit()  else x)
     chunk = chunk.dropna(subset=['timeStamp'])
     return chunk
   
-  def __getNumberOfChunks(self,reader):
-    """
-    Dado un fileReader te devuelve el numero de apartados que tiene
-    """
-    number_of_chunks=0
-    for chunk in reader:
-      number_of_chunks=number_of_chunks+1
-    return number_of_chunks
+
   
   def __run_selected_func(self,func,**kwargs):
     switcher = {
-          "latencia": partial(self.__latencyGraph,**kwargs),
-          "response_code": partial(self.__responseCodeGraph,**kwargs),
-          "boxplot_seaborn": partial(self.__boxplot_seaborn,**kwargs),
-          "boxplot_plotly": partial(self.__boxplot_plotly,**kwargs),
-          "valores_unicos": partial(self.__obtainUniqueValuesFromColumn,**kwargs)
+          self.properties["SWITCH_OPTION"]["plotlyGraph"]: partial(self.__plotlyGraph,**kwargs),
+          self.properties["SWITCH_OPTION"]["boxplot_seaborn"]: partial(self.__boxplot_seaborn,**kwargs),
+          self.properties["SWITCH_OPTION"]["boxplot_plotly"]: partial(self.__boxplot_plotly,**kwargs),
+          self.properties["SWITCH_OPTION"]["valores_unicos"]: partial(self.__obtainUniqueValuesFromColumn,**kwargs)
     }
     func = switcher.get(func, lambda: "Función no definida")
     return func()
-      
+
+    
+
     
