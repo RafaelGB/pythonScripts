@@ -113,7 +113,7 @@ def defaultOptionalArgs(groupedArgs):
   return optionalArgs
 
 def showHelp():
-  f = open('readme.md', 'r')
+  f = open('../readme.md', 'r')
   file_contents = f.read()
   print (file_contents)
   f.close()

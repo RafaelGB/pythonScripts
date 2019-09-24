@@ -101,7 +101,7 @@ class Template_graphs():
   """  
   def __obtainUniqueValuesFromColumn(self,**kwargs):
     """
-    Dado el nombre d euna columna pasada por consola, obtiene todos 
+    Dado el nombre de una columna pasada por consola, obtiene todos 
     los valores únicos y el número de veces que aparecen
     """
     # Inicio de la funcion
@@ -193,7 +193,8 @@ class Template_graphs():
   
   def __performanceSystemMetrics(self,**kwargs):
     """
-    ( POR DEFINIR )
+    Con las métricas obtenidas del sistema al que ataca JMeter (usando un agente), devuelve una gráfica con
+    cada medida parametrizada (CPU, Memoria, NetworkIO,...)
     """
     uniquePerfLabels = self.df.label.unique()
     self.__normalize_performance_metrics(uniquePerfLabels)
