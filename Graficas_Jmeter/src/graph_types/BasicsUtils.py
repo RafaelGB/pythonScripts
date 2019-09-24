@@ -11,6 +11,12 @@ class BasicUtils():
   """
   FUNCIONES PUBLICAS
   """
+  def str_to_boolean(self,string):
+      if string == 'True':
+          return True
+      elif string == 'False':
+          return False
+      raise Exception('Error: La transformacion de {} a booleano no está soportada'.format(string))
   def obtainOptionalParameter(self, label,**kwargs):
     """
     En funcion de una etiqueta y el mapa de argumentos recibido en la entrada,

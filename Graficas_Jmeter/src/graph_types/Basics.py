@@ -165,7 +165,7 @@ class Template_graphs():
       # Inicio de la lógica de la función
       layout = go.Layout(title="Boxplot",font=dict(family='Courier New, monospace', size=18, color='rgb(0,0,0)'))
       # Define el boxplot
-      latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],showlegend=True,name=self.properties['TRACE_BOXPLOT_PLOTLY'][choosenHeader_x])
+      latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],boxpoints="all",showlegend=True,name=self.properties['TRACE_BOXPLOT_PLOTLY'][choosenHeader_x])
       # Define el nombre del fichero
       filename = self.__formatFilename(self.properties["BOXPLOT_PLOTLY"]["filename"]+"_"+choosenHeader_x+"_"+choosenHeader_y,self.filename)
       plot({
@@ -252,11 +252,13 @@ class Template_graphs():
     custom_showlegend = None
     if "showlegend" in kwargs:
       custom_showlegend = kwargs["showlegend"]
+    if "boxpoints" in kwargs:
+      custom_boxpoints = kwargs["boxpoints"]
     # Creación del boxplot
     boxplot = go.Box(x=Xaxis,y=Yaxis,
                     showlegend=(True,custom_showlegend)["showlegend" in kwargs],
                     name=('Boxplot',custom_name)["name" in kwargs],
-                    boxpoints=False,
+                    boxpoints=(False,custom_boxpoints)["boxpoints" in kwargs],
                     jitter=0.3,
                     boxmean=(True,custom_boxmean)["boxmean" in kwargs]
                     )
@@ -325,9 +327,14 @@ class Template_graphs():
     Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
     """
     # Aplica granularidad al dataframe si está activado
-    if (bool(self.properties["NORMALIZER"]["granularity_active"])):
+    if (self.bu.str_to_boolean(self.properties["NORMALIZER"]["granularity_active"])):
+      print("Granularidad activada")
       chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.granularityNormalizer(x))
-      chunk = chunk.drop_duplicates(subset=[self.timeStamp_label,self.label_label], keep="last")
+      subsetLabels =[self.timeStamp_label]
+      # En caso de conener la etiqueta label, es necesario filtrar con ella para no perder informacion
+      if self.label_label in chunk:
+        subsetLabels.append(self.label_label)
+      chunk = chunk.drop_duplicates(subset=subsetLabels, keep="last")
     # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
     chunk[self.responseCode_label] = chunk[self.responseCode_label].map(lambda x: self.bu.responseCodeNormalizer(x))
     chunk = chunk.dropna(subset=[self.responseCode_label])
