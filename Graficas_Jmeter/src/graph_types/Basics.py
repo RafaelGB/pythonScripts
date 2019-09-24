@@ -323,12 +323,10 @@ class Template_graphs():
     """
     Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
     """
-    print(chunk)
     # Aplica granularidad al dataframe si está activado
     if (bool(self.properties["NORMALIZER"]["granularity_active"])):
       chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.granularityNormalizer(x))
       chunk = chunk.drop_duplicates(subset=[self.timeStamp_label,self.label_label], keep="last")
-    print(chunk)
     # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
     chunk[self.responseCode_label] = chunk[self.responseCode_label].map(lambda x: self.bu.responseCodeNormalizer(x))
     chunk = chunk.dropna(subset=[self.responseCode_label])

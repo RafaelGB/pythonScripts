@@ -40,6 +40,11 @@ def start():
     return
   # En caso de no tener parámetros opcionales cargar los de por defecto
   optionalArgs = defaultOptionalArgs(groupedArgs)
+  # Si se ha solicitado la opción de ayuda, muestra el panel
+  if "-h" in groupedArgs or "--help" in groupedArgs:
+    showHelp()
+    # Tras mostrar la ayuda se sale del programa
+    return
   # Inicialización en funcion de los parámetros de entrada obligatorios
   options = groupedArgs["-o"].all
   filename = groupedArgs["-f"].all[0]
@@ -103,11 +108,15 @@ def defaultOptionalArgs(groupedArgs):
   a valores por defecto si aplica
   """
   optionalArgs = {}
-  optionalArgs["-m"] = "full" if '-m' not in groupedArgs else groupedArgs["-m"].all[0]
+  optionalArgs["-m"] = (groupedArgs["-m"].all[0],"full")['-m' not in groupedArgs]
   
   return optionalArgs
 
 def showHelp():
-  print()
+  f = open('readme.md', 'r')
+  file_contents = f.read()
+  print (file_contents)
+  f.close()
+
 if __name__ == '__main__':
   start()
