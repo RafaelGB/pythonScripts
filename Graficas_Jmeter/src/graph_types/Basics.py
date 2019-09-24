@@ -13,7 +13,7 @@ from itertools import tee
 from functools import partial
 
 from graph_types.DataframeHelper import format_timestamp
-from graph_types.BasicsUtils import *
+from graph_types.BasicsUtils import BasicUtils
 class Template_graphs():
    # Variables propias de la clase
   colors = {
@@ -26,8 +26,27 @@ class Template_graphs():
   def __init__(self,filename,configMap, *args, **kwargs):
     # Inicialización de variables globales
     self.filename = filename
-    self.properties = configMap 
-    
+    self.properties = configMap
+    self.bu = BasicUtils(self.properties)
+    # Inicialización de cabeceras
+    self.timeStamp_label = self.properties["CSV_HEADERS"]["timeStamp"]
+    self.elapsed_label = self.properties["CSV_HEADERS"]["elapsed"]
+    self.label_label = self.properties["CSV_HEADERS"]["label"] 
+    self.responseCode_label = self.properties["CSV_HEADERS"]["responseCode"]
+    self.responseMessage_label = self.properties["CSV_HEADERS"]["responseMessage"]
+    self.threadName_label = self.properties["CSV_HEADERS"]["threadName"]
+    self.dataType_label = self.properties["CSV_HEADERS"]["dataType"]
+    self.success_label = self.properties["CSV_HEADERS"]["success"]
+    self.bytes_label = self.properties["CSV_HEADERS"]["bytes"]
+    self.sentBytes_label = self.properties["CSV_HEADERS"]["sentBytes"]
+    self.grpThreads_label = self.properties["CSV_HEADERS"]["grpThreads"]
+    self.allThreads_label = self.properties["CSV_HEADERS"]["allThreads"]
+    self.URL_label = self.properties["CSV_HEADERS"]["URL"]
+    self.Latency_label = self.properties["CSV_HEADERS"]["Latency"]
+    self.IdleTime_label = self.properties["CSV_HEADERS"]["IdleTime"]
+    self.Connect_label = self.properties["CSV_HEADERS"]["Connect"] 
+    self.date_label = self.properties["CSV_HEADERS"]["date"]
+
   """
   *************
   PARTE PÚBLICA
@@ -42,7 +61,6 @@ class Template_graphs():
     # Se genera el datagrama con el fichero
     df = pd.read_csv(self.filename, error_bad_lines=False,
                                       warn_bad_lines=False, low_memory=False)
-   
     df = self.__parse_dataframe(df) # Parsea datos actuales
     self.df = self.__dataTreatment(df) # Añade informacion al datagrama
     self.__run_selected_func(func_to_exec,**dict(groupedArgs))
@@ -58,7 +76,8 @@ class Template_graphs():
     df,chunck_count = tee(pd.read_csv(self.filename,error_bad_lines=False,
                                       warn_bad_lines=False, chunksize=customChunkSize,
                                       low_memory=False))
-    count_of_chunks = getNumberOfChunks(chunck_count)
+                                      
+    count_of_chunks = self.bu.getNumberOfChunks(chunck_count)
     del chunck_count
     # Llamada inicial pintando 0% de progreso
     print("Se inicia la lectura del fichero\n******************")
@@ -86,7 +105,7 @@ class Template_graphs():
     los valores únicos y el número de veces que aparecen
     """
     # Inicio de la funcion
-    choosenHeader = obtainOptionalParameter(self.properties["VALORES_UNICOS"]["optional_parameter"],**kwargs)
+    choosenHeader = self.bu.obtainOptionalParameter(self.properties["VALORES_UNICOS"]["optional_parameter"],**kwargs)
     if choosenHeader is None:
       raise Exception('Falta el argumento {} columnName'.format(self.properties["VALORES_UNICOS"]["optional_parameter"]))
 
@@ -106,11 +125,10 @@ class Template_graphs():
       devuelve un fichero html para una consulta interactiva de la información
       """
       # Inicialización de parámetros
-      choosenHeader = obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
-      date = self.properties["CSV_HEADERS"]["date"]
+      choosenHeader = self.bu.obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
       traceName = self.properties["TRACE_GRAPHIC_PLOTLY"][choosenHeader]
       mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']     
-      traceLatency = self.__customTrace(self.df[date],
+      traceLatency = self.__customTrace(self.df[self.date_label],
                                         self.df[choosenHeader],
                                         mode = mode,
                                         name=traceName,
@@ -129,8 +147,8 @@ class Template_graphs():
       Boxplot orientado a tiempos de respuesta
       devuelve un fichero html para una consulta interactiva de la información
       """
-      choosenHeader_x = obtainOptionalParameter(self.properties["BOXPLOT_PLOTLY"]["optional_parameter_x"],**kwargs)
-      choosenHeader_y = obtainOptionalParameter(self.properties["BOXPLOT_PLOTLY"]["optional_parameter_y"],**kwargs)
+      choosenHeader_x = self.bu.obtainOptionalParameter(self.properties["BOXPLOT_PLOTLY"]["optional_parameter_x"],**kwargs)
+      choosenHeader_y = self.bu.obtainOptionalParameter(self.properties["BOXPLOT_PLOTLY"]["optional_parameter_y"],**kwargs)
       if choosenHeader_x is None:
         raise Exception('Falta el argumento {} columnName'.format(self.properties["BOXPLOT_PLOTLY"]["optional_parameter_x"]))
 
@@ -172,6 +190,33 @@ class Template_graphs():
       plt.ylabel("Latencia (milisegundos)")
       myFig.savefig(self.properties["BOXPLOT_SEABORN"]["image_name"]+"."+self.properties["BOXPLOT_SEABORN"]["image_format"],
                     format=self.properties["BOXPLOT_SEABORN"]["image_format"])
+  
+  def __performanceSystemMetrics(self,**kwargs):
+    """
+    ( POR DEFINIR )
+    """
+    uniquePerfLabels = self.df.label.unique()
+    self.__normalize_performance_metrics(uniquePerfLabels)
+    # Create traces
+    data = []
+    for key in uniquePerfLabels:
+      key = self.bu.adjustStringToLabel(key)
+      data.append(go.Scatter(x=self.df[self.date_label], y=self.df[key],
+                            mode='lines',
+                            name=key))
+      layout = go.Layout(
+                        title=self.properties['LAYOUT_GRAPHIC_PLOTLY']['title'],
+                        plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
+                        showlegend=True
+                        )
+    # Define el nombre del fichero
+    filename = self.__formatFilename(self.properties["PERFORM_COLLECTOR"]["filename"],self.filename)
+    fig = go.Figure(data=data)
+    plot(fig,
+            filename=filename
+          )
+    
+
   """
   ******************
   FUNCIONES DE APOYO
@@ -182,8 +227,8 @@ class Template_graphs():
     Dada una etiqueta, el timelapse de la muestra y a opcion se monta el
     nombre del fichero a generar
     """
-    firstDate = format_timestamp(self.df["timeStamp"].iloc[0])
-    lastDate = format_timestamp(self.df["timeStamp"].iloc[-1])
+    firstDate = format_timestamp(self.df[self.timeStamp_label].iloc[0])
+    lastDate = format_timestamp(self.df[self.timeStamp_label].iloc[-1])
     prefix = label+"___"+firstDate+"___"+lastDate+"___"
     for endRegex in self.file_extention_tuple:
           filename = sub(endRegex+'$', '.html', filename)
@@ -270,33 +315,51 @@ class Template_graphs():
     """
     Se añaden los datos de valor necesarios sobre el dataframe propio de la clase
     """
-    chunk['date'] = pd.to_datetime(chunk['timeStamp'], unit='ms')
-    chunk['date'] = pd.to_datetime(chunk['date'], format='%d/%b/%Y:%H:%M:%S', utc=True)
+    chunk[self.date_label] = pd.to_datetime(chunk[self.timeStamp_label], unit='ms')
+    chunk[self.date_label] = pd.to_datetime(chunk[self.date_label], format='%d/%b/%Y:%H:%M:%S', utc=True)
     return chunk
-  
+    
   def __parse_dataframe(self,chunk):
     """
     Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
     """
+    print(chunk)
+    # Aplica granularidad al dataframe si está activado
+    if (bool(self.properties["NORMALIZER"]["granularity_active"])):
+      chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.granularityNormalizer(x))
+      chunk = chunk.drop_duplicates(subset=[self.timeStamp_label,self.label_label], keep="last")
+    print(chunk)
     # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
-    chunk['responseCode'] = chunk['responseCode'].map(lambda x: responseCodeNormalizer(x))
-    chunk = chunk.dropna(subset=['responseCode'])
+    chunk[self.responseCode_label] = chunk[self.responseCode_label].map(lambda x: self.bu.responseCodeNormalizer(x))
+    chunk = chunk.dropna(subset=[self.responseCode_label])
     # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
-    chunk['timeStamp'] = chunk['timeStamp'].map(lambda x: timeStampNormalizer(x))
-    chunk = chunk.dropna(subset=['timeStamp'])
+    chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.timeStampNormalizer(x))
+    chunk = chunk.dropna(subset=[self.timeStamp_label])
     # Agrupa los hilos levantados en función de un intervalo definido por configuración
-    chunk['allThreads'] = chunk['allThreads'].map(lambda x: allThreadsNormalizer(x,self.properties["NORMALIZER"]["allThreadsInterval"]))
-    chunk = chunk.dropna(subset=['allThreads'])
+    chunk[self.allThreads_label] = chunk[self.allThreads_label].map(lambda x: self.bu.allThreadsNormalizer(x))
+    chunk = chunk.dropna(subset=[self.allThreads_label])
     return chunk
   
+  def __normalize_performance_metrics(self,uniqueValues):
+    """
+    Para la opcion 'system_metrics' se normaliza la información pertinente para poder ser tratada
+    """
+    # Descarta etiquetas que contengan numeros
+    self.df[self.label_label] = self.df[self.label_label].map(lambda x: self.bu.performanceLabelMetricNormalizer(x))
+    self.df = self.df.dropna(subset=[self.label_label])
+    # Añade nuevas métricas al dataframe
+    for performMetric in uniqueValues:
+      adjust_label = self.bu.adjustStringToLabel(performMetric)
+      self.df[adjust_label] = self.df.apply(lambda x: self.bu.performanceElapsedMetricNormalizer(x.label, x.elapsed, performMetric), axis=1)
 
-  
+
   def __run_selected_func(self,func,**kwargs):
     switcher = {
           self.properties["SWITCH_OPTION"]["plotlyGraph"]: partial(self.__plotlyGraph,**kwargs),
           self.properties["SWITCH_OPTION"]["boxplot_seaborn"]: partial(self.__boxplot_seaborn,**kwargs),
           self.properties["SWITCH_OPTION"]["boxplot_plotly"]: partial(self.__boxplot_plotly,**kwargs),
-          self.properties["SWITCH_OPTION"]["valores_unicos"]: partial(self.__obtainUniqueValuesFromColumn,**kwargs)
+          self.properties["SWITCH_OPTION"]["valores_unicos"]: partial(self.__obtainUniqueValuesFromColumn,**kwargs),
+          self.properties["SWITCH_OPTION"]["performanceSystemMetrics"]: partial(self.__performanceSystemMetrics,**kwargs)
     }
     func = switcher.get(func, lambda: "Función no definida")
     return func()

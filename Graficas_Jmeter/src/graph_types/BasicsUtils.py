@@ -1,24 +1,59 @@
-def obtainOptionalParameter(label,**kwargs):
+class BasicUtils():
+  """
+  PREPROCESOS DE CLASE
+  """
+  def __init__(self, configMap):
+    # Inicialización de variables globales de clase
+    self.properties = configMap
+    self.performanceDict = {}
+    for key in self.properties["PERFORM_COLLECTOR"]:
+        self.performanceDict[self.adjustStringToLabel(self.properties["PERFORM_COLLECTOR"][key])] = 0
+  """
+  FUNCIONES PUBLICAS
+  """
+  def obtainOptionalParameter(self, label,**kwargs):
     """
     En funcion de una etiqueta y el mapa de argumentos recibido en la entrada,
     devuelve el parámetro asociado a dicha columna si existe
     """
     return str(kwargs[label].not_files[0])
 
-def getNumberOfChunks(reader):
+  def getNumberOfChunks(self, reader):
     """
     Dado un fileReader te devuelve el numero de apartados que tiene
     """
     number_of_chunks=0
     for chunk in reader:
-      number_of_chunks=number_of_chunks+1
+        number_of_chunks=number_of_chunks+1
     return number_of_chunks
 
-def responseCodeNormalizer(responseCode):
+  def adjustStringToLabel(self, mainString):
+    # Caracteres a remplazar
+    toBeReplaces = [" ","/"]
+    newString = "_"
+    for elem in toBeReplaces:
+        # Check if string is in the main string
+        if elem in str(mainString):
+            # Reemplaza el elemento por el marcaje apropiado
+            mainString = mainString.replace(elem, newString)
+    return  mainString
+
+  # Funciones para normalizar los datos
+  # -----------------------------------
+  def granularityNormalizer(self, timeStamp):
+      granularity = int(self.properties["NORMALIZER"]["granularity"])
+      timeStamp = timeStamp // granularity
+      timeStamp = timeStamp * granularity
+      return timeStamp
+
+  def responseCodeNormalizer(self, responseCode):
     """
     Normaliza los datos de tiempo de respuesta
     para poder trabajar con ellos
     """
+    # Rellena valores nulos
+    if str(responseCode) == "nan":
+        return "Sin respuesta"
     # Filtra primero valores residuales no esperados
     if not str(responseCode).isdigit():
         return None
@@ -39,7 +74,7 @@ def responseCodeNormalizer(responseCode):
     # En caso de que la opcion no esté contemplada se descarta
     return None
 
-def timeStampNormalizer(timeStamp):
+  def timeStampNormalizer(self, timeStamp):
     """
     Normaliza los datos de timeStamp
     para poder trabajar con ellos
@@ -50,11 +85,12 @@ def timeStampNormalizer(timeStamp):
     else:
         return timeStamp
 
-def allThreadsNormalizer(allThreads,str_interval):
+  def allThreadsNormalizer(self, allThreads):
     """
-    Normaliza los datos de los hilso activos levantados
+    Normaliza los datos de los hilos activos levantados
     para poder trabajar con ellos
     """
+    str_interval = self.properties["NORMALIZER"]["allThreadsInterval"]
     # Descartar posibles valores no procesables
     if (not str(allThreads).isdigit()):
         return None
@@ -62,5 +98,39 @@ def allThreadsNormalizer(allThreads,str_interval):
     allThreads = int(allThreads)
     interval = int(str_interval)
     allThreads = allThreads//interval
-    allThreads = allThreads*20
+    allThreads = allThreads*interval
     return allThreads
+
+  def performanceLabelMetricNormalizer(self, performanceMetric):
+    """
+    Normaliza la columna label interpretada con las etiquetas de rendimiento
+    del sistema, obtenidas con el agente 'PerfMon Metrics Collector'
+    """
+    # Descartar posibles valores que no sean enteramente string
+    if (any(char.isdigit() for char in performanceMetric)):
+        return None
+    # Para evitar ilegibilidad, agrupa los hilos en intervalos
+    return performanceMetric
+
+  def performanceElapsedMetricNormalizer(self, label, elapsed, srcMetric):
+    """
+    Normaliza la columna elapsed interpretada con los parámetros de rendimiento
+    del sistema, obtenidas con el agente 'PerfMon Metrics Collector'
+    """
+    performCollectorMetrics = self.properties["PERFORM_COLLECTOR"]
+    # Indica el uso de una variable global de función
+    key = self.adjustStringToLabel(srcMetric)
+    if label == srcMetric:
+        # Si coincide la metrica a tratar con la etiqueta normalizamos el dato
+        if performCollectorMetrics["CPU"] == label:
+            # CPU pasa a ser de 0% a 100%
+            elapsed = elapsed // 1000
+        elif performCollectorMetrics["Memory"] == label:
+            # Memoria escalada 1:1000
+            elapsed = elapsed // 1000
+        # registra el nuevo valor
+        self.performanceDict[key] = elapsed
+    else:
+        # Utiliza el valor almacenado si no coincide en el tiempo
+        elapsed = self.performanceDict[key]
+    return elapsed
