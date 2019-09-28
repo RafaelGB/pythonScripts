@@ -1,0 +1,96 @@
+# ---------------------------------------
+#               Ficheros
+# ---------------------------------------
+[FILENAMES]
+# Para cada una de las cabeceras JMeter
+Latency = LATENCIA
+responseCode = RESPCODE
+# Para cada una de las cabeceras Grafana
+Memory = MEMORY
+
+# Relacionado con CSV
+[CSV_READER]
+chunk_size = 40000
+
+[CSV_HEADERS]
+# por defecto
+timeStamp = timeStamp
+elapsed = elapsed
+label = label
+responseCode = responseCode
+responseMessage = responseMessage
+threadName = threadName
+dataType = dataType
+success = success
+bytes = bytes
+sentBytes = sentBytes
+grpThreads = grpThreads
+allThreads = allThreads
+URL = URL
+Latency = Latency
+IdleTime = IdleTime
+Connect = Connect
+# propios
+date = Time
+
+[NORMALIZER]
+allThreadsInterval = 20
+granularity_active = False
+granularity = 2000
+# -----------------------------------------------
+#                Gráficos PLOTLY
+# scatter_mode = markers | lines | lines+markers
+# -----------------------------------------------
+[GRAPHIC_PLOTLY]
+scatter_mode = lines
+optional_parameter = --column
+
+[TRACE_GRAPHIC_PLOTLY]
+Latency = Latencia en milisegundos
+responseCode = Respuesta del servidor
+Memory = Consumo de memoria en MB
+
+[LAYOUT_GRAPHIC_PLOTLY]
+title = Gráfica
+plot_bgcolor = rgb(230, 230,230)
+
+[BOXPLOT_PLOTLY]
+image_format = jpeg
+optional_parameter_x = --colx
+optional_parameter_y = --coly
+filename = BPPLOTLY
+
+[TRACE_BOXPLOT_PLOTLY]
+Latency = Latencia en milisegundos
+responseCode = Respuesta del servidor
+allThreads = Número de hilos activos
+# ---------------------------------------
+#           Funciones dataframe
+# ---------------------------------------
+[VALORES_UNICOS]
+optional_parameter = --column
+filename = valores_unicos
+
+# ---------------------------------------
+#          Performance metrics
+# ---------------------------------------
+[PERFORM_COLLECTOR]
+CPU = localhost CPU
+Network_I_O = localhost Network I/O
+Memory = localhost Memory
+filename = perform_agent
+
+# ---------------------------------------
+#          Opciones de cada menú
+# ---------------------------------------
+[SWITCH_MODE]
+full = full
+chunks = chunks
+grafana = grafana
+
+[SWITCH_OPTION]
+plotlyGraph = plotlyGraph
+boxplot_seaborn = boxplot_seaborn
+boxplot_plotly = boxplot_plotly
+valores_unicos = valores_unicos
+performanceSystemMetrics = system_metrics

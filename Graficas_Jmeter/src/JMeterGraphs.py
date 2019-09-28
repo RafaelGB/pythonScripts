@@ -54,15 +54,16 @@ def start():
   configMap = read_conf("conf.cfg")
   # Seleccionamos la función a lanzar
   for option in options:
-    select_option(option,mode,filename,configMap,groupedArgs)
+    select_mode(option,mode,filename,configMap,groupedArgs)
 
-def select_option(option,mode,filename,configMap,groupedArgs):
+def select_mode(option,mode,filename,configMap,groupedArgs):
   try:
     print("MODO "+mode)
     graphsClass = Template_graphs(filename,configMap)
     switcher = {
           configMap["SWITCH_MODE"]["full"]: partial(graphsClass.run_full,option,groupedArgs),
-          configMap["SWITCH_MODE"]["chunks"]: partial(graphsClass.run_by_parts,option,groupedArgs)
+          configMap["SWITCH_MODE"]["chunks"]: partial(graphsClass.run_by_parts,option,groupedArgs),
+          configMap["SWITCH_MODE"]["grafana"]: partial(graphsClass.run_from_grafana,option,groupedArgs)
           
     }
     func = switcher.get(mode, lambda: "Modo de ejecución no contemplada")

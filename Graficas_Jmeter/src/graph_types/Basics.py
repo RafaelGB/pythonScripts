@@ -52,6 +52,20 @@ class Template_graphs():
   PARTE PÚBLICA
   *************
   """
+  def run_from_grafana(self,func_to_exec,groupedArgs):
+    """
+    Lectura y ejecución COMPLETA del fichero CSV y el proceso seleccionado
+    """
+    print("ANALÍTICAS DE GRAFANA - "+func_to_exec)
+    self.source_num_chunk = None
+    # Se genera el datagrama con el fichero
+    self.df = pd.read_csv(self.filename, error_bad_lines=False,
+                                      warn_bad_lines=False, low_memory=False,sep=';')
+    self.df = self.df.dropna()
+    self.df["Memory"] = self.df["Value"].map(lambda x: self.bu.grafanaMemoryMetricNormalizer(x))
+    self.df = self.df.dropna(subset=["Memory"])
+    self.__run_selected_func(func_to_exec,**dict(groupedArgs))
+
   def run_full(self,func_to_exec,groupedArgs):
     """
     Lectura y ejecución COMPLETA del fichero CSV y el proceso seleccionado
@@ -128,17 +142,19 @@ class Template_graphs():
       choosenHeader = self.bu.obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
       traceName = self.properties["TRACE_GRAPHIC_PLOTLY"][choosenHeader]
       mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']     
-      traceLatency = self.__customTrace(self.df[self.date_label],
+      mainTrace = self.__customTrace(self.df[self.date_label],
                                         self.df[choosenHeader],
                                         mode = mode,
                                         name=traceName,
                                         color=self.colors["red"])
+                                      
       layout = go.Layout(
                       title=self.properties['LAYOUT_GRAPHIC_PLOTLY']['title'],
                       plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
                       showlegend=True
                       )
-      fig = go.Figure(data=[traceLatency], layout=layout)
+
+      fig = go.Figure(data=[mainTrace], layout=layout)
       filename = self.__formatFilename(self.properties['FILENAMES'][choosenHeader],self.filename)
       plot(fig, filename=filename)
 
@@ -228,8 +244,11 @@ class Template_graphs():
     Dada una etiqueta, el timelapse de la muestra y a opcion se monta el
     nombre del fichero a generar
     """
-    firstDate = format_timestamp(self.df[self.timeStamp_label].iloc[0])
-    lastDate = format_timestamp(self.df[self.timeStamp_label].iloc[-1])
+    firstDate = ""
+    lastDate = ""
+    if(self.timeStamp_label in self.df):
+      firstDate = format_timestamp(self.df[self.timeStamp_label].iloc[0])
+      lastDate = format_timestamp(self.df[self.timeStamp_label].iloc[-1])
     prefix = label+"___"+firstDate+"___"+lastDate+"___"
     for endRegex in self.file_extention_tuple:
           filename = sub(endRegex+'$', '.html', filename)

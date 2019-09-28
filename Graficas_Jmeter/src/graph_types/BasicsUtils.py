@@ -1,3 +1,8 @@
+import re
+
+#VARIABLES GLOBALES
+MB_SCALE = (1024*1024)
+
 class BasicUtils():
   """
   PREPROCESOS DE CLASE
@@ -44,8 +49,8 @@ class BasicUtils():
             mainString = mainString.replace(elem, newString)
     return  mainString
 
-  # Funciones para normalizar los datos
-  # -----------------------------------
+  # Funciones para normalizar los datos de JMETER
+  # ---------------------------------------------
   def granularityNormalizer(self, timeStamp):
       granularity = int(self.properties["NORMALIZER"]["granularity"])
       timeStamp = timeStamp // granularity
@@ -140,3 +145,18 @@ class BasicUtils():
         # Utiliza el valor almacenado si no coincide en el tiempo
         elapsed = self.performanceDict[key]
     return elapsed
+
+  # Funciones para normalizar los datos de GRAFANA
+  # ----------------------------------------------
+  def grafanaMemoryMetricNormalizer(self, grafanaMemoryMetric):
+        """
+        Normaliza la columna label interpretada con las etiquetas de rendimiento
+        del sistema, obtenidas con el agente 'PerfMon Metrics Collector'
+        """
+        # Descartar posibles valores que no sean dígitos
+        if not re.match("^[0-9]{3}\.[0-9]{3}\.[0-9]{3}$",grafanaMemoryMetric):
+            return None
+        # Ajustar a MB
+        global MB_SCALE
+        grafanaMemoryMetric = int(grafanaMemoryMetric.replace(".","")) // MB_SCALE
+        return grafanaMemoryMetric
