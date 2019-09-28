@@ -52,20 +52,26 @@ class Template_graphs():
   PARTE PÚBLICA
   *************
   """
-  def run_from_grafana(self,func_to_exec,groupedArgs):
+  def run_from_grafana(self,option,groupedArgs):
     """
-    Lectura y ejecución COMPLETA del fichero CSV y el proceso seleccionado
+    Lectura y ejecución de una gráfica proveniente de grafana del fichero CSV y el proceso seleccionado
+    TODO o no exporta bien grafana la info o la grafica no es muy fina... datos inconclusos
     """
-    print("ANALÍTICAS DE GRAFANA - "+func_to_exec)
+    print("ANALÍTICAS DE GRAFANA - "+option)
     self.source_num_chunk = None
-    # Se genera el datagrama con el fichero
+    # Se genera el datagrama con el fichero y se elimina contenido nulo
     self.df = pd.read_csv(self.filename, error_bad_lines=False,
                                       warn_bad_lines=False, low_memory=False,sep=';')
     self.df = self.df.dropna()
-    self.df["Memory"] = self.df["Value"].map(lambda x: self.bu.grafanaMemoryMetricNormalizer(x))
-    self.df = self.df.dropna(subset=["Memory"])
-    self.__run_selected_func(func_to_exec,**dict(groupedArgs))
-
+    if option == self.properties["GRAFANA_COLLECTOR"]["memory"]:
+      self.df[option] = self.df[self.properties["GRAFANA_COLLECTOR"]["value"]].map(lambda x: self.bu.grafanaMemoryMetricNormalizer(x))
+    else:
+      raise Exception('Error: La opcion {} no está contemplada para Grafana'.format(option))
+    self.df = self.df.dropna(subset=[option])
+    # Para el modo de grafana, la opcion es igual al parámetro opcional de la gráfica
+    groupedArgs[self.properties["GRAPHIC_PLOTLY"]["optional_parameter"]] = groupedArgs["-o"]
+    self.__run_selected_func(self.properties["SWITCH_OPTION"]["plotlyGraph"],**dict(groupedArgs))
+    
   def run_full(self,func_to_exec,groupedArgs):
     """
     Lectura y ejecución COMPLETA del fichero CSV y el proceso seleccionado
