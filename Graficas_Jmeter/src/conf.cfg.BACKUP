@@ -5,6 +5,7 @@
 # Para cada una de las cabeceras JMeter
 Latency = LATENCIA
 responseCode = RESPCODE
+responseMessage = RESPMSG
 # Para cada una de las cabeceras Grafana
 Memory = MEMORY
 
@@ -33,10 +34,17 @@ Connect = Connect
 # propios
 date = Time
 
+# -----------------------------------------------
+#             Normalización de los datos
+# [NORMALIZER]
+# granularity_keep = first | last | False
+# -----------------------------------------------
 [NORMALIZER]
 allThreadsInterval = 20
-granularity_active = False
-granularity = 2000
+granularity_active = True
+granularity_keep = first
+granularity = 20000
+
 # -----------------------------------------------
 #                Gráficos PLOTLY
 # scatter_mode = markers | lines | lines+markers
@@ -56,14 +64,16 @@ plot_bgcolor = rgb(230, 230,230)
 
 [BOXPLOT_PLOTLY]
 image_format = jpeg
+boxpoints = False
 optional_parameter_x = --colx
 optional_parameter_y = --coly
 filename = BPPLOTLY
 
 [TRACE_BOXPLOT_PLOTLY]
 Latency = Latencia en milisegundos
-responseCode = Respuesta del servidor
+responseCode = Código de respuesta del servidor
 allThreads = Número de hilos activos
+responseMessage = Naturaleza de la respuesta del servidor
 # ---------------------------------------
 #           Funciones dataframe
 # ---------------------------------------
@@ -79,6 +89,17 @@ CPU = localhost CPU
 Network_I_O = localhost Network I/O
 Memory = localhost Memory
 filename = perform_agent
+
+# ---------------------------------------
+#          Grafana metrics
+# ---------------------------------------
+[GRAFANA_COLLECTOR]
+# Originales
+value = Value
+# custom
+memory = Memory
+Network_I_O = Network
+CPU = CPU
 
 # ---------------------------------------
 #          Opciones de cada menú

@@ -187,7 +187,8 @@ class Template_graphs():
       # Inicio de la lógica de la función
       layout = go.Layout(title="Boxplot",font=dict(family='Courier New, monospace', size=18, color='rgb(0,0,0)'))
       # Define el boxplot
-      latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],boxpoints="all",showlegend=True,name=self.properties['TRACE_BOXPLOT_PLOTLY'][choosenHeader_x])
+      custom_boxpoints = (self.properties["BOXPLOT_PLOTLY"]["boxpoints"],False)[self.properties["BOXPLOT_PLOTLY"]["boxpoints"] == "False"]
+      latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],boxpoints=custom_boxpoints,showlegend=True,name=self.properties['TRACE_BOXPLOT_PLOTLY'][choosenHeader_x])
       # Define el nombre del fichero
       filename = self.__formatFilename(self.properties["BOXPLOT_PLOTLY"]["filename"]+"_"+choosenHeader_x+"_"+choosenHeader_y,self.filename)
       plot({
@@ -359,7 +360,7 @@ class Template_graphs():
       # En caso de conener la etiqueta label, es necesario filtrar con ella para no perder informacion
       if self.label_label in chunk:
         subsetLabels.append(self.label_label)
-      chunk = chunk.drop_duplicates(subset=subsetLabels, keep="last")
+      chunk = chunk.drop_duplicates(subset=subsetLabels, keep=self.properties["NORMALIZER"]["granularity_keep"])
     # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
     chunk[self.responseCode_label] = chunk[self.responseCode_label].map(lambda x: self.bu.responseCodeNormalizer(x))
     chunk = chunk.dropna(subset=[self.responseCode_label])
