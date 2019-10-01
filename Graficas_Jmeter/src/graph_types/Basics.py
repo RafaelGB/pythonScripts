@@ -157,7 +157,8 @@ class Template_graphs():
       layout = go.Layout(
                       title=self.properties['LAYOUT_GRAPHIC_PLOTLY']['title'],
                       plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
-                      showlegend=True
+                      showlegend=True,
+                      font=dict(family='Courier New, monospace', size=20, color='rgb(0,0,0)')
                       )
 
       fig = go.Figure(data=[mainTrace], layout=layout)
@@ -185,7 +186,7 @@ class Template_graphs():
       
       cf.set_config_file(offline=True, world_readable=True, theme='ggplot')
       # Inicio de la lógica de la función
-      layout = go.Layout(title="Boxplot",font=dict(family='Courier New, monospace', size=18, color='rgb(0,0,0)'))
+      layout = go.Layout(title="Boxplot",font=dict(family='Courier New, monospace', size=22, color='rgb(0,0,0)'))
       # Define el boxplot
       custom_boxpoints = (self.properties["BOXPLOT_PLOTLY"]["boxpoints"],False)[self.properties["BOXPLOT_PLOTLY"]["boxpoints"] == "False"]
       latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],boxpoints=custom_boxpoints,showlegend=True,name=self.properties['TRACE_BOXPLOT_PLOTLY'][choosenHeader_x])
