@@ -67,9 +67,13 @@ class BasicUtils():
         return "Sin respuesta"
     # Filtra primero valores residuales no esperados
     if not str(responseCode).isdigit():
-        return None
+        try:
+            responseCode = int(responseCode)
+        except:
+            return None
     # Asigna a cada valor entero una condición
     code = int(responseCode)
+    
     if code == 200:
         return "200: OK"
     if code == 401:
@@ -104,7 +108,10 @@ class BasicUtils():
     str_interval = self.properties["NORMALIZER"]["allThreadsInterval"]
     # Descartar posibles valores no procesables
     if (not str(allThreads).isdigit()):
-        return None
+        try:
+            allThreads = int(allThreads)
+        except:
+             return None
     # Para evitar ilegibilidad, agrupa los hilos en intervalos
     allThreads = int(allThreads)
     interval = int(str_interval)

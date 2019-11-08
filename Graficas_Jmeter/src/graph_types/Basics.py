@@ -83,7 +83,10 @@ class Template_graphs():
                                       warn_bad_lines=False, low_memory=False)
     df = self.__parse_dataframe(df) # Parsea datos actuales
     self.df = self.__dataTreatment(df) # Añade informacion al datagrama
-    self.__run_selected_func(func_to_exec,**dict(groupedArgs))
+    if self.df.size > 0:
+      self.__run_selected_func(func_to_exec,**dict(groupedArgs))
+    else:
+      print("El dataframe no contiene ningún valor tras aplicar la normalización - se descarta la ejecución")
 
   def run_by_parts(self,func_to_exec,groupedArgs):
     """
@@ -254,6 +257,7 @@ class Template_graphs():
     """
     firstDate = ""
     lastDate = ""
+
     if(self.timeStamp_label in self.df):
       firstDate = format_timestamp(self.df[self.timeStamp_label].iloc[0])
       lastDate = format_timestamp(self.df[self.timeStamp_label].iloc[-1])
@@ -353,6 +357,7 @@ class Template_graphs():
     """
     Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
     """
+    print("numero de elementos iniciales: "+str(chunk.size))
     # Aplica granularidad al dataframe si está activado
     if (self.bu.str_to_boolean(self.properties["NORMALIZER"]["granularity_active"])):
       print("Granularidad activada")
@@ -362,15 +367,19 @@ class Template_graphs():
       if self.label_label in chunk:
         subsetLabels.append(self.label_label)
       chunk = chunk.drop_duplicates(subset=subsetLabels, keep=self.properties["NORMALIZER"]["granularity_keep"])
+      print("numero de elementos tras aplicar la granularidad: "+str(chunk.size))
     # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
     chunk[self.responseCode_label] = chunk[self.responseCode_label].map(lambda x: self.bu.responseCodeNormalizer(x))
     chunk = chunk.dropna(subset=[self.responseCode_label])
+    print("numero de elementos tras aplicar normalización en código de respuesta: "+str(chunk.size))
     # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
     chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.timeStampNormalizer(x))
     chunk = chunk.dropna(subset=[self.timeStamp_label])
+    print("numero de elementos tras aplicar normalización en timestamp: "+str(chunk.size))
     # Agrupa los hilos levantados en función de un intervalo definido por configuración
     chunk[self.allThreads_label] = chunk[self.allThreads_label].map(lambda x: self.bu.allThreadsNormalizer(x))
     chunk = chunk.dropna(subset=[self.allThreads_label])
+    print("numero de elementos tras aplicar normalización en hilos ejecutados: "+str(chunk.size))
     return chunk
   
   def __normalize_performance_metrics(self,uniqueValues):
