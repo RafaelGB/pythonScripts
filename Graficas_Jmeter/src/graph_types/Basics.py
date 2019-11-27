@@ -1,3 +1,6 @@
+import os
+import copy
+
 import pandas as pd
 import plotly.graph_objs as go
 import matplotlib.pyplot as plt
@@ -17,7 +20,8 @@ from graph_types.BasicsUtils import BasicUtils
 class Template_graphs():
    # Variables propias de la clase
   colors = {
-    "red":'r'
+    'red' : 'r',
+    'blue' : 'b'
   }
   file_extention_tuple = ('.csv','.CSV')
   """
@@ -44,9 +48,11 @@ class Template_graphs():
     self.URL_label = self.properties["CSV_HEADERS"]["URL"]
     self.Latency_label = self.properties["CSV_HEADERS"]["Latency"]
     self.IdleTime_label = self.properties["CSV_HEADERS"]["IdleTime"]
-    self.Connect_label = self.properties["CSV_HEADERS"]["Connect"] 
+    self.Connect_label = self.properties["CSV_HEADERS"]["Connect"]
+    # Inicialización de cabeceras añadidas 
     self.date_label = self.properties["CSV_HEADERS"]["date"]
-
+    # Objetos necesarios para el modo de comparativa
+    self.compareDFList = []
   """
   *************
   PARTE PÚBLICA
@@ -82,6 +88,8 @@ class Template_graphs():
     df = pd.read_csv(self.filename, error_bad_lines=False,
                                       warn_bad_lines=False, low_memory=False)
     df = self.__parse_dataframe(df) # Parsea datos actuales
+    if '--offset' in groupedArgs:
+      df = self.__applyOffsets(df) # Aplica offset en caso de multiples dataframes
     self.df = self.__dataTreatment(df) # Añade informacion al datagrama
     if self.df.size > 0:
       self.__run_selected_func(func_to_exec,**dict(groupedArgs))
@@ -108,7 +116,6 @@ class Template_graphs():
     for index,chunk in enumerate(df):
         chunk = self.__parse_dataframe(chunk) # Parsea datos actuales
         chunk = self.__dataTreatment(chunk) # Añade informacion al datagrama
-
         self.df = chunk
         self.source_num_chunk = str(index)
         
@@ -117,6 +124,13 @@ class Template_graphs():
         # Actualiza la barra de carga
         self.__printProgressBar(index + 1,count_of_chunks)
     del df
+  """
+  *************
+  Setters
+  *************
+  """
+  def setFilename(self,filename):
+    self.filename = filename
   """
   *********************
   FUNCIONES PRINCIPALES
@@ -149,24 +163,27 @@ class Template_graphs():
       """
       # Inicialización de parámetros
       choosenHeader = self.bu.obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
-      traceName = self.properties["TRACE_GRAPHIC_PLOTLY"][choosenHeader]
+      traceName = self.filename + " - " + self.properties["TRACE_GRAPHIC_PLOTLY"][choosenHeader]
       mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']     
       mainTrace = self.__customTrace(self.df[self.date_label],
                                         self.df[choosenHeader],
                                         mode = mode,
                                         name=traceName,
                                         color=self.colors["red"])
-                                      
-      layout = go.Layout(
+                                
+      self.compareDFList.append(mainTrace)
+
+      if "generate-html" not in kwargs or ("generate-html" in kwargs and bool(kwargs['generate-html'])):
+        layout = go.Layout(
                       title=self.properties['LAYOUT_GRAPHIC_PLOTLY']['title'],
                       plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
                       showlegend=True,
                       font=dict(family='Courier New, monospace', size=20, color='rgb(0,0,0)')
                       )
-
-      fig = go.Figure(data=[mainTrace], layout=layout)
-      filename = self.__formatFilename(self.properties['FILENAMES'][choosenHeader],self.filename)
-      plot(fig, filename=filename)
+        fig = go.Figure(data=self.compareDFList, layout=layout)
+        filename = self.__formatFilename(self.properties['FILENAMES'][choosenHeader],self.filename)
+        plot(fig, filename=filename)
+        self.compareDFList = []
 
   def __boxplot_plotly(self,**kwargs):
       """
@@ -244,6 +261,44 @@ class Template_graphs():
             filename=filename
           )
     
+  def __numberHitsPerNMiliseconds(self,**kwargs):
+    """
+    Gráfica orientada a tiempos de respuesta
+    devuelve un fichero html para una consulta interactiva de la información
+    """
+    # Inicialización de parámetros
+    print("En __numberHitsPerNMiliseconds : "+str(self.df[self.timeStamp_label]))
+    self.df["count"] = self.df[self.timeStamp_label].map(lambda x: self.bu.adjustMilisecondsToAnotherUnit(x))
+    self.df = self.df.dropna(subset=["count"])
+    print("numero de elementos tras aplicar el ajuste de milisegundos a otra unidad: "+str(self.df.size))
+    labels = self.df["count"].unique()
+    values = self.df["count"].value_counts().values
+    
+    print(values)
+    traceName = self.filename + " - " + "probando"
+    mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']     
+    mainTrace = self.__customTrace(self.df["count"].unique(),
+                                  values,
+                                  mode = mode,
+                                  name=traceName,
+                                  color=self.colors["red"])
+    self.compareDFList.append(mainTrace)
+
+    if "generate-html" not in kwargs or ("generate-html" in kwargs and bool(kwargs['generate-html'])):
+      layout = go.Layout(
+            plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
+            showlegend=True,
+            font=dict(family='Courier New, monospace', size=20, color='rgb(0,0,0)'),
+            margin={'l': 0, 'r': 0, 't': 100, 'b': 0},
+            xaxis={'automargin': True, 'title': 'Tiempo ( en x segundos)'},
+            yaxis={'automargin': True, 'title': 'Numero de transacciones'},
+            title = "Numero de transacciones por segundo"
+            )
+
+      fig = go.Figure(data=self.compareDFList, layout=layout)
+      filename = self.__formatFilename(self.properties['FILENAMES'][self.timeStamp_label],self.filename)
+      plot(fig, filename=filename)
+      self.compareDFList = []
 
   """
   ******************
@@ -262,9 +317,8 @@ class Template_graphs():
       firstDate = format_timestamp(self.df[self.timeStamp_label].iloc[0])
       lastDate = format_timestamp(self.df[self.timeStamp_label].iloc[-1])
     prefix = label+"___"+firstDate+"___"+lastDate+"___"
-    for endRegex in self.file_extention_tuple:
-          filename = sub(endRegex+'$', '.html', filename)
-    return prefix+filename
+    filename = os.path.splitext(filename)[0]
+    return filename+prefix+'.html'
 
   def __customBoxplot(self,Xaxis,Yaxis,**kwargs):
     """
@@ -373,6 +427,7 @@ class Template_graphs():
     chunk = chunk.dropna(subset=[self.responseCode_label])
     print("numero de elementos tras aplicar normalización en código de respuesta: "+str(chunk.size))
     # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
+
     chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.timeStampNormalizer(x))
     chunk = chunk.dropna(subset=[self.timeStamp_label])
     print("numero de elementos tras aplicar normalización en timestamp: "+str(chunk.size))
@@ -382,6 +437,14 @@ class Template_graphs():
     print("numero de elementos tras aplicar normalización en hilos ejecutados: "+str(chunk.size))
     return chunk
   
+  def __applyOffsets(self,chunk):
+    # En función del timeStamp más reducido, aplicar un offset para abstraer el valor
+    print("Valor del offset referencia:"+str(chunk[self.timeStamp_label].min()))
+    chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.offsetTimestampNormalizer(x,chunk[self.timeStamp_label].min()))
+    chunk = chunk.dropna(subset=[self.timeStamp_label])
+    print("numero de elementos tras aplicar el offset al timestamp: "+str(chunk.size))
+    return chunk
+
   def __normalize_performance_metrics(self,uniqueValues):
     """
     Para la opcion 'system_metrics' se normaliza la información pertinente para poder ser tratada
@@ -396,15 +459,17 @@ class Template_graphs():
 
 
   def __run_selected_func(self,func,**kwargs):
+    print("seleccionando funcion: "+func)
     switcher = {
           self.properties["SWITCH_OPTION"]["plotlyGraph"]: partial(self.__plotlyGraph,**kwargs),
           self.properties["SWITCH_OPTION"]["boxplot_seaborn"]: partial(self.__boxplot_seaborn,**kwargs),
           self.properties["SWITCH_OPTION"]["boxplot_plotly"]: partial(self.__boxplot_plotly,**kwargs),
           self.properties["SWITCH_OPTION"]["valores_unicos"]: partial(self.__obtainUniqueValuesFromColumn,**kwargs),
-          self.properties["SWITCH_OPTION"]["performanceSystemMetrics"]: partial(self.__performanceSystemMetrics,**kwargs)
+          self.properties["SWITCH_OPTION"]["performanceSystemMetrics"]: partial(self.__performanceSystemMetrics,**kwargs),
+          self.properties["SWITCH_OPTION"]["numberHitsPerNMiliseconds"]: partial(self.__numberHitsPerNMiliseconds,**kwargs)
     }
-    func = switcher.get(func, lambda: "Función no definida")
-    return func()
+    function = switcher.get(func, lambda: print("La opción '"+func+"' no está contemplada"))
+    return function()
 
     
 

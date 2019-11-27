@@ -17,7 +17,6 @@ from functools import partial
 from datetime import datetime
 from graph_types.Basics import Template_graphs
 
-file_extention_tuple = ('.csv','.CSV')
 def read_conf(configFilename):
   """
   Dado un nombre de fichero (tipo incluido), carga la configuración y se devuelve mapeada
@@ -46,24 +45,46 @@ def start():
     return
   # Inicialización en funcion de los parámetros de entrada obligatorios
   options = groupedArgs["-o"].all
-  filename = groupedArgs["-f"].all[0]
+
+  # Inicialización en funcion de los parámetros de entrada obligatorios
+  path = groupedArgs["-f"].all[0]
+  files = []
+  if os.path.isdir(path): # En caso de ser un directorio la ruta de entrada 
+    # r=root, d=directories, f = files
+    for r, d, f in os.walk(path):
+        for aFile in f:
+            if '.csv' in aFile or '.CSV' in aFile:
+              files.append(os.path.join(r, aFile))
+  elif os.path.isfile(path): # En caso de ser un fichero la ruta de entrada
+     files.append(os.path.join('.', path))
   # Inicialización en funcion de los parámetros de entrada opcionales ( o por defecto )
   mode = optionalArgs["-m"]
   # Inicialización de configuracion
   configMap = read_conf("conf.cfg")
-  # Seleccionamos la función a lanzar
-  for option in options:
-    select_mode(option,mode,filename,configMap,groupedArgs)
+  print("Se pasan a procesar los siguientes ficheros:"+ str(files))
+  singletonClass = None
+  if '--compare-mode' in groupedArgs:
+    singletonClass = Template_graphs(None,configMap)
+  for index,filename in enumerate(files):
+    if '--compare-mode' in groupedArgs:
+      groupedArgs['generate-html'] = (index >= len(files) - 1)
+      
+    # Seleccionamos la función a lanzar
+    for option in options:
+      select_mode(option,mode,filename,configMap,groupedArgs,singletonClass)
 
-def select_mode(option,mode,filename,configMap,groupedArgs):
+def select_mode(option,mode,filename,configMap,groupedArgs,singletonClass):
   try:
     print("MODO "+mode)
-    graphsClass = Template_graphs(filename,configMap)
+    if singletonClass != None:
+      singletonClass.setFilename(filename)
+    else:
+      singletonClass = Template_graphs(filename,configMap)
+      
     switcher = {
-          configMap["SWITCH_MODE"]["full"]: partial(graphsClass.run_full,option,groupedArgs),
-          configMap["SWITCH_MODE"]["chunks"]: partial(graphsClass.run_by_parts,option,groupedArgs),
-          configMap["SWITCH_MODE"]["grafana"]: partial(graphsClass.run_from_grafana,option,groupedArgs)
-          
+          configMap["SWITCH_MODE"]["full"]: partial(singletonClass.run_full,option,groupedArgs),
+          configMap["SWITCH_MODE"]["chunks"]: partial(singletonClass.run_by_parts,option,groupedArgs),
+          configMap["SWITCH_MODE"]["grafana"]: partial(singletonClass.run_from_grafana,option,groupedArgs)          
     }
     func = switcher.get(mode, lambda: "Modo de ejecución no contemplada")
     return func()
@@ -89,7 +110,7 @@ def checkArgs(groupedArgs):
   if '-f' not in groupedArgs:
     print("Falta argumento -f necesario para indicar fichero")
     isCorrect = False
-  elif not bool(groupedArgs['-f'].files) or len(groupedArgs['-f'].files) > 1:
+  elif not bool(groupedArgs['-f'].all) or len(groupedArgs['-f'].all) > 1:
     print("Debe indicarse una ruta a fichero CSV para el argumento -f")
     isCorrect = False
 

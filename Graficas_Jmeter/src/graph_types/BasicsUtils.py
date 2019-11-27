@@ -98,7 +98,7 @@ class BasicUtils():
     if len(str(timeStamp)) != 13 or not str(timeStamp).isdigit():
         return None
     else:
-        return timeStamp
+        return int(timeStamp)
 
   def allThreadsNormalizer(self, allThreads):
     """
@@ -156,14 +156,33 @@ class BasicUtils():
   # Funciones para normalizar los datos de GRAFANA
   # ----------------------------------------------
   def grafanaMemoryMetricNormalizer(self, grafanaMemoryMetric):
-        """
-        Normaliza la columna label interpretada con las etiquetas de rendimiento
-        del sistema, obtenidas con el agente 'PerfMon Metrics Collector'
-        """
-        # Descartar posibles valores que no sean dígitos
-        if not re.match("^[0-9]{3}\.[0-9]{3}\.[0-9]{3}$",grafanaMemoryMetric):
-            return None
-        # Ajustar a MB
-        global MB_SCALE
-        grafanaMemoryMetric = int(grafanaMemoryMetric.replace(".","")) // MB_SCALE
-        return grafanaMemoryMetric
+    """
+    Normaliza la columna label interpretada con las etiquetas de rendimiento
+    del sistema, obtenidas con el agente 'PerfMon Metrics Collector'
+    """
+    # Descartar posibles valores que no sean dígitos
+    if not re.match("^[0-9]{3}\.[0-9]{3}\.[0-9]{3}$",grafanaMemoryMetric):
+        return None
+    # Ajustar a MB
+    global MB_SCALE
+    grafanaMemoryMetric = int(grafanaMemoryMetric.replace(".","")) // MB_SCALE
+    return grafanaMemoryMetric
+
+  # Funciones para aplicar un offset sobre tiempos
+  # ----------------------------------------------
+  def offsetTimestampNormalizer(self, timeStamp,offset):
+    """
+    Aplica una reducción común a la línea temporal para superponer gráficas
+    """
+    return timeStamp - offset
+
+  # Funciones para añadir información a un dataframe
+  # ------------------------------------------------
+  def adjustMilisecondsToAnotherUnit(self, timeStamp):
+    """
+    Aplica un ajuste de los milisegundos a otra unidad de tiempo mayor
+    en función de la configuración asignada
+    """
+    adjustment = int(self.properties["NORMALIZER"]["adjust_miliseconds"])
+    timeStamp = int(timeStamp) // adjustment
+    return timeStamp
