@@ -15,7 +15,7 @@ from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 from itertools import tee
 from functools import partial
 
-from graph_types.DataframeHelper import format_timestamp
+from graph_types.DataframeHelper import format_timestamp, equilibrateListsWithNulls
 from graph_types.BasicsUtils import BasicUtils
 class Template_graphs():
    # Variables propias de la clase
@@ -53,6 +53,7 @@ class Template_graphs():
     self.date_label = self.properties["CSV_HEADERS"]["date"]
     # Objetos necesarios para el modo de comparativa
     self.compareDFList = []
+    self.filenameList = []
   """
   *************
   PARTE PÚBLICA
@@ -267,38 +268,25 @@ class Template_graphs():
     devuelve un fichero html para una consulta interactiva de la información
     """
     # Inicialización de parámetros
-    print("En __numberHitsPerNMiliseconds : "+str(self.df[self.timeStamp_label]))
     self.df["count"] = self.df[self.timeStamp_label].map(lambda x: self.bu.adjustMilisecondsToAnotherUnit(x))
     self.df = self.df.dropna(subset=["count"])
-    print("numero de elementos tras aplicar el ajuste de milisegundos a otra unidad: "+str(self.df.size))
-    labels = self.df["count"].unique()
-    values = self.df["count"].value_counts().values
-    
-    print(values)
-    traceName = self.filename + " - " + "probando"
-    mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']     
-    mainTrace = self.__customTrace(self.df["count"].unique(),
-                                  values,
-                                  mode = mode,
-                                  name=traceName,
-                                  color=self.colors["red"])
-    self.compareDFList.append(mainTrace)
-
+    print("numero de elementos tras aplicar el ajuste de milisegundos de "+
+    self.properties["NORMALIZER"]["adjust_miliseconds"]+
+    ": "+str(self.df.size))
+    print("Se guarda el dataframe tratado para el fichero "+ self.filename)
+    self.compareDFList.append(self.df)
+    self.filenameList.append(self.filename)
     if "generate-html" not in kwargs or ("generate-html" in kwargs and bool(kwargs['generate-html'])):
-      layout = go.Layout(
-            plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
-            showlegend=True,
-            font=dict(family='Courier New, monospace', size=20, color='rgb(0,0,0)'),
-            margin={'l': 0, 'r': 0, 't': 100, 'b': 0},
-            xaxis={'automargin': True, 'title': 'Tiempo ( en x segundos)'},
-            yaxis={'automargin': True, 'title': 'Numero de transacciones'},
-            title = "Numero de transacciones por segundo"
-            )
-
-      fig = go.Figure(data=self.compareDFList, layout=layout)
+     
+      margin={'l': 0, 'r': 0, 't': 100, 'b': 0}
+      xaxis={'automargin': True, 'title': 'Tiempo ( en x segundos)'}
+      yaxis={'automargin': True, 'title': 'Numero de transacciones'}
+      title = "Numero de transacciones por segundo"
+      fig = self.__generatePlotFromMultipleDF(margin, xaxis, yaxis, title, **kwargs) 
       filename = self.__formatFilename(self.properties['FILENAMES'][self.timeStamp_label],self.filename)
       plot(fig, filename=filename)
       self.compareDFList = []
+      self.filenameList = []
 
   """
   ******************
@@ -439,11 +427,57 @@ class Template_graphs():
   
   def __applyOffsets(self,chunk):
     # En función del timeStamp más reducido, aplicar un offset para abstraer el valor
-    print("Valor del offset referencia:"+str(chunk[self.timeStamp_label].min()))
-    chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.offsetTimestampNormalizer(x,chunk[self.timeStamp_label].min()))
+    minFromTimestamp = chunk[self.timeStamp_label].min()
+    print("Valor del offset referencia: "+str(minFromTimestamp))
+    chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.offsetTimestampNormalizer(x,minFromTimestamp))
     chunk = chunk.dropna(subset=[self.timeStamp_label])
     print("numero de elementos tras aplicar el offset al timestamp: "+str(chunk.size))
     return chunk
+
+  def __generatePlotFromMultipleDF(self, ctm_margin, ctm_xaxis, ctm_yaxis, ctm_title, **kwargs):
+    # Inicialización de parámetros
+    choosenHeader = self.bu.obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
+    mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']  
+    traceList = []
+    labelsList = []
+    valuesList = []
+    for srcDf in self.compareDFList:
+      print("Obteniendo info del dataframe con '"+str(len(srcDf))+"' registros")
+      labels = srcDf["count"].unique()
+      values = srcDf["count"].value_counts().values
+      print("Size de labels: "+str(len(labels)))
+      print("Size de values: "+str(len(values)))
+      labelsList.append(labels)
+      valuesList.append(values)
+      print("Información obtenida")
+    
+    
+    labelsList, valuesList = equilibrateListsWithNulls(labelsList,valuesList)
+
+    for srcFilename, srcLabel, srcValues in zip(self.filenameList, labelsList, valuesList):
+      print("Generando traza de gráfica con '"+str(len(srcValues))+"' valores")
+      traceName = srcFilename + " - " + self.properties["TRACE_GRAPHIC_PLOTLY"][choosenHeader]
+      trace = self.__customTrace(srcLabel,
+                                srcValues,
+                                mode = mode,
+                                name=traceName,
+                                color=self.colors["red"])
+      traceList.append(trace)
+      print("Traza generada")
+                       
+    layout = go.Layout(
+            plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
+            showlegend=True,
+            font=dict(family='Courier New, monospace', size=20, color='rgb(0,0,0)'),
+            margin=ctm_margin,
+            xaxis=ctm_xaxis,
+            yaxis=ctm_yaxis,
+            title = ctm_title
+            )
+    print("Construyendo Figura con todas las trazas( puede tardar con registros voluminosos)")   
+    fig = go.Figure(data=traceList, layout=layout)
+    print("figura contruida")
+    return fig
 
   def __normalize_performance_metrics(self,uniqueValues):
     """

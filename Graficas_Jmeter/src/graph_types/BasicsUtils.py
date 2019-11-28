@@ -80,6 +80,8 @@ class BasicUtils():
         return "401 No autorizado"
     if code == 404:
         return "404 Servicio no encontrado"
+    if code == 408:
+        return "408 Request Timeout Error"
     if code == 500:
         return "500: Error interno del servidor"
     if code == 503:
