@@ -51,6 +51,7 @@ class Template_graphs():
     self.Connect_label = self.properties["CSV_HEADERS"]["Connect"]
     # Inicialización de cabeceras añadidas 
     self.date_label = self.properties["CSV_HEADERS"]["date"]
+    self.count_label = self.properties["CSV_HEADERS"]["count"]
     # Objetos necesarios para el modo de comparativa
     self.compareDFList = []
     self.filenameList = []
@@ -90,7 +91,7 @@ class Template_graphs():
                                       warn_bad_lines=False, low_memory=False)
     df = self.__parse_dataframe(df) # Parsea datos actuales
     if '--offset' in groupedArgs:
-      df = self.__applyOffsets(df) # Aplica offset en caso de multiples dataframes
+      df = self.__applyOffsets(df) # Aplica offset en caso de indicarse sobre el timestamp
     self.df = self.__dataTreatment(df) # Añade informacion al datagrama
     if self.df.size > 0:
       self.__run_selected_func(func_to_exec,**dict(groupedArgs))
@@ -112,7 +113,7 @@ class Template_graphs():
     count_of_chunks = self.bu.getNumberOfChunks(chunck_count)
     del chunck_count
     # Llamada inicial pintando 0% de progreso
-    print("Se inicia la lectura del fichero\n******************")
+    print("******************\nSe inicia la lectura del fichero\n******************")
     self.__printProgressBar(0,count_of_chunks)
     for index,chunk in enumerate(df):
         chunk = self.__parse_dataframe(chunk) # Parsea datos actuales
@@ -164,7 +165,7 @@ class Template_graphs():
       """
       # Inicialización de parámetros
       choosenHeader = self.bu.obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
-      traceName = self.filename + " - " + self.properties["TRACE_GRAPHIC_PLOTLY"][choosenHeader]
+      traceName = self.filename
       mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']     
       mainTrace = self.__customTrace(self.df[self.date_label],
                                         self.df[choosenHeader],
@@ -207,10 +208,11 @@ class Template_graphs():
       
       cf.set_config_file(offline=True, world_readable=True, theme='ggplot')
       # Inicio de la lógica de la función
-      layout = go.Layout(title="Boxplot",font=dict(family='Courier New, monospace', size=22, color='rgb(0,0,0)'))
+      #go.Layout(title="Boxplot",font=dict(family='Courier New, monospace', size=22, color='rgb(0,0,0)'))
+      layout = self.__customLayout(choosenHeader_x,choosenHeader_y,self.properties['LAYOUT_BOXPLOT_PLOTLY']['title'])
       # Define el boxplot
       custom_boxpoints = (self.properties["BOXPLOT_PLOTLY"]["boxpoints"],False)[self.properties["BOXPLOT_PLOTLY"]["boxpoints"] == "False"]
-      latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],boxpoints=custom_boxpoints,showlegend=True,name=self.properties['TRACE_BOXPLOT_PLOTLY'][choosenHeader_x])
+      latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],boxpoints=custom_boxpoints,showlegend=True,name=self.properties['AXIS_LABELS'][choosenHeader_x])
       # Define el nombre del fichero
       filename = self.__formatFilename(self.properties["BOXPLOT_PLOTLY"]["filename"]+"_"+choosenHeader_x+"_"+choosenHeader_y,self.filename)
       plot({
@@ -268,22 +270,20 @@ class Template_graphs():
     devuelve un fichero html para una consulta interactiva de la información
     """
     # Inicialización de parámetros
-    self.df["count"] = self.df[self.timeStamp_label].map(lambda x: self.bu.adjustMilisecondsToAnotherUnit(x))
-    self.df = self.df.dropna(subset=["count"])
+    self.df[self.count_label] = self.df[self.timeStamp_label].map(lambda x: self.bu.adjustMilisecondsToAnotherUnit(x))
+    self.df = self.df.dropna(subset=[self.count_label])
     print("numero de elementos tras aplicar el ajuste de milisegundos de "+
-    self.properties["NORMALIZER"]["adjust_miliseconds"]+
-    ": "+str(self.df.size))
+          self.properties["NORMALIZER"]["adjust_miliseconds"]+
+          ": "+str(self.df.size))
     print("Se guarda el dataframe tratado para el fichero "+ self.filename)
     self.compareDFList.append(self.df)
     self.filenameList.append(self.filename)
     if "generate-html" not in kwargs or ("generate-html" in kwargs and bool(kwargs['generate-html'])):
-     
-      margin={'l': 0, 'r': 0, 't': 100, 'b': 0}
-      xaxis={'automargin': True, 'title': 'Tiempo ( en x segundos)'}
-      yaxis={'automargin': True, 'title': 'Numero de transacciones'}
-      title = "Numero de transacciones por segundo"
-      fig = self.__generatePlotFromMultipleDF(margin, xaxis, yaxis, title, **kwargs) 
-      filename = self.__formatFilename(self.properties['FILENAMES'][self.timeStamp_label],self.filename)
+      fig = self.__generateCountPlotFromMultipleDF(self.timeStamp_label,
+                                                  self.count_label,
+                                                  self.properties['LAYOUT_COUNT_PLOTLY']['title'],
+                                                   **kwargs) 
+      filename = self.__formatFilename(self.properties['COUNT_PLOTLY']['filename'],self.filename)
       plot(fig, filename=filename)
       self.compareDFList = []
       self.filenameList = []
@@ -349,6 +349,26 @@ class Template_graphs():
             name = ("no name",kwargs["name"])["name" in kwargs]
             )
     return trace
+
+  def __customLayout(self, xaxis_label, yaxis_label, ctm_title, **kwargs):
+    """
+    Calculo de traza en el esquema estadistico en funcion de los siguientes parametros de entrada
+    Xaxis : label para el eje x
+    Yaxis : label para el eje y
+    """
+    ctm_margin={'l': 0, 'r': 0, 't': 100, 'b': 0}
+    ctm_xaxis={'automargin': True, 'title': self.properties['AXIS_LABELS'][xaxis_label]}
+    ctm_yaxis={'automargin': True, 'title': self.properties['AXIS_LABELS'][yaxis_label]}
+    layout = go.Layout(
+            plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
+            showlegend=True,
+            font=dict(family='Courier New, monospace', size=20, color='rgb(0,0,0)'),
+            margin=ctm_margin,
+            xaxis=ctm_xaxis,
+            yaxis=ctm_yaxis,
+            title = ctm_title
+            )
+    return layout
 
   def __constructAggregations(self):
     """
@@ -428,13 +448,15 @@ class Template_graphs():
   def __applyOffsets(self,chunk):
     # En función del timeStamp más reducido, aplicar un offset para abstraer el valor
     minFromTimestamp = chunk[self.timeStamp_label].min()
-    print("Valor del offset referencia: "+str(minFromTimestamp))
+    # Para evitar perder información, se resta del mínimo el ajuste de unidades
+    minFromTimestamp = minFromTimestamp - int(self.properties["NORMALIZER"]["adjust_miliseconds"])
+    print("Valor del offset referencia con el ajuste aplicado: "+str(minFromTimestamp))
     chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.offsetTimestampNormalizer(x,minFromTimestamp))
     chunk = chunk.dropna(subset=[self.timeStamp_label])
     print("numero de elementos tras aplicar el offset al timestamp: "+str(chunk.size))
     return chunk
 
-  def __generatePlotFromMultipleDF(self, ctm_margin, ctm_xaxis, ctm_yaxis, ctm_title, **kwargs):
+  def __generateCountPlotFromMultipleDF(self, ctm_xaxis, ctm_yaxis, ctm_title, **kwargs):
     # Inicialización de parámetros
     choosenHeader = self.bu.obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
     mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']  
@@ -456,24 +478,17 @@ class Template_graphs():
 
     for srcFilename, srcLabel, srcValues in zip(self.filenameList, labelsList, valuesList):
       print("Generando traza de gráfica con '"+str(len(srcValues))+"' valores")
-      traceName = srcFilename + " - " + self.properties["TRACE_GRAPHIC_PLOTLY"][choosenHeader]
+      traceName = srcFilename
       trace = self.__customTrace(srcLabel,
                                 srcValues,
-                                mode = mode,
+                                mode=mode,
                                 name=traceName,
                                 color=self.colors["red"])
       traceList.append(trace)
       print("Traza generada")
                        
-    layout = go.Layout(
-            plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
-            showlegend=True,
-            font=dict(family='Courier New, monospace', size=20, color='rgb(0,0,0)'),
-            margin=ctm_margin,
-            xaxis=ctm_xaxis,
-            yaxis=ctm_yaxis,
-            title = ctm_title
-            )
+    layout = self.__customLayout(ctm_xaxis, ctm_yaxis, ctm_title)
+
     print("Construyendo Figura con todas las trazas( puede tardar con registros voluminosos)")   
     fig = go.Figure(data=traceList, layout=layout)
     print("figura contruida")
