@@ -29,5 +29,5 @@ def equilibrateListsWithNulls(mapKeyList, mapValueList):
 
         newMapKeyList.append(referenceMapKey)
         newMapValueList.append(newMapValue)
-        newMapValueList.insert(referenceIndex,referenceMapValue)
+    newMapValueList.insert(referenceIndex,referenceMapValue)
     return newMapKeyList, newMapValueList

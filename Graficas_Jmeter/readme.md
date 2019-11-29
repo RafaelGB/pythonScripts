@@ -14,10 +14,10 @@ La funcionalidad del script es ofrecer información y material gráfico sobre lo
   * `boxplot_plotly`: Devuelve una interfaz con un boxplot de la columna x (`--colx`), columna y (`--coly`) indicadas por parámetro.
   * `valores_unicos`: Dado el nombre de una columna determinada como parámetro (`--column`), obtiene todos los valores únicos y el número de veces que aparecen.
   * `system_metrics`: Con las métricas obtenidas del sistema al que ataca JMeter (usando un agente), devuelve una gráfica con cada medida parametrizada (CPU, Memoria, NetworkIO,...)
+  * `number_hits_per_unit`: Usando el número de registros  en el fichero CSV y la columna de timeStamp como referencia, devuelve una representación gráfica del número de registros capturados por unidad de tiempo configurable
 * `-h` ó `--help`: muetra por consola el manual de uso
 * `--compare-mode`:  \[OPCIONAL\]  Para aquellas opciones de tipo traza, con esta opción recoge la gráfica obtenida de diferentes ficheros y genera una gráfica con todas las trazas superpuestas
 * `--offset`:  En caso de querer inicializar la columna del CSV referente al tiempo a 0 ( facilita la comparativa entre gráficas con diferentes rangos temporales\
-  \
 
 ## Ejemplos
 
@@ -29,3 +29,14 @@ python JMeterGraphs.py -f data.CSV -m full -o boxplot_plotly --colx allThreads -
 ```
 
 ![boxplot.gif](readme_resources/boxplot-gif.gif)
+
+Gráfica  orientada a transacciones por unidad de tiempo:
+
+```shell
+# Ejecución en modo full de la latencia sobre el número de hilos
+python JMeterGraphs.py -f Pruebas -m full -o number_hits_per_unit --offset
+```
+
+> Se aplica un offset, el cual es compatible con cambios de unidad de tiempo, en este caso se ha cambiado a segundos por configuración
+
+![count.gif](readme_resources/count-gif.gif)

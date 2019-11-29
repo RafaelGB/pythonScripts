@@ -458,7 +458,6 @@ class Template_graphs():
 
   def __generateCountPlotFromMultipleDF(self, ctm_xaxis, ctm_yaxis, ctm_title, **kwargs):
     # Inicialización de parámetros
-    choosenHeader = self.bu.obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
     mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']  
     traceList = []
     labelsList = []
