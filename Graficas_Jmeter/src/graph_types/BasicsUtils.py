@@ -1,5 +1,8 @@
 import re
 
+import numpy as np
+import pandas as pd
+
 #VARIABLES GLOBALES
 MB_SCALE = (1024*1024)
 
@@ -22,6 +25,7 @@ class BasicUtils():
       elif string == 'False':
           return False
       raise Exception('Error: La transformacion de {} a booleano no está soportada'.format(string))
+
   def obtainOptionalParameter(self, label,**kwargs):
     """
     En funcion de una etiqueta y el mapa de argumentos recibido en la entrada,
@@ -52,10 +56,23 @@ class BasicUtils():
   # Funciones para normalizar los datos de JMETER
   # ---------------------------------------------
   def granularityNormalizer(self, timeStamp):
+      """
+      Modifica la base de tiempos timeStamp para forzar una granularidad de muestreo
+      """
       granularity = int(self.properties["NORMALIZER"]["granularity"])
       timeStamp = timeStamp // granularity
       timeStamp = timeStamp * granularity
       return timeStamp
+    
+  def realLatencyNormalizer(self, latency, connect):
+      """
+      Resta a la latencia total el tiempo de conexión para obtener el resultado
+      real de procesado por el servicio Rest
+      """
+      try:
+        return int(latency) - int(connect)
+      except:
+        return np.nan
 
   def responseCodeNormalizer(self, responseCode):
     """
@@ -64,32 +81,20 @@ class BasicUtils():
     """
     # Rellena valores nulos
     if str(responseCode) == "nan":
-        return "Sin respuesta"
+        return np.nan
     # Filtra primero valores residuales no esperados
     if not str(responseCode).isdigit():
         try:
             responseCode = int(responseCode)
         except:
-            return None
+            return np.nan
     # Asigna a cada valor entero una condición
-    code = int(responseCode)
-    
-    if code == 200:
-        return "200: OK"
-    if code == 401:
-        return "401 No autorizado"
-    if code == 404:
-        return "404 Servicio no encontrado"
-    if code == 408:
-        return "408 Request Timeout Error"
-    if code == 500:
-        return "500: Error interno del servidor"
-    if code == 503:
-        return "503: Servicio no disponible"
-    if code == 504:
-        return "504: Gateway timeout"
-    # En caso de que la opcion no esté contemplada se descarta
-    return None
+    code = str(responseCode)
+    if code in self.properties["RESPONSE_CODE_VALUES"]:
+        return self.properties["RESPONSE_CODE_VALUES"][code]
+    else:
+        # En caso de que la opcion no esté contemplada se descarta
+        return np.nan
 
   def timeStampNormalizer(self, timeStamp):
     """
@@ -98,7 +103,7 @@ class BasicUtils():
     """
     # Asegura que el tiempo esté en milisegundos y sea un número
     if len(str(timeStamp)) != 13 or not str(timeStamp).isdigit():
-        return None
+        return np.nan
     else:
         return int(timeStamp)
 
@@ -113,7 +118,7 @@ class BasicUtils():
         try:
             allThreads = int(allThreads)
         except:
-             return None
+             return np.nan
     # Para evitar ilegibilidad, agrupa los hilos en intervalos
     allThreads = int(allThreads)
     interval = int(str_interval)
@@ -128,7 +133,7 @@ class BasicUtils():
     """
     # Descartar posibles valores que no sean enteramente string
     if (any(char.isdigit() for char in performanceMetric)):
-        return None
+        return np.nan
     # Para evitar ilegibilidad, agrupa los hilos en intervalos
     return performanceMetric
 
@@ -164,7 +169,7 @@ class BasicUtils():
     """
     # Descartar posibles valores que no sean dígitos
     if not re.match("^[0-9]{3}\.[0-9]{3}\.[0-9]{3}$",grafanaMemoryMetric):
-        return None
+        return np.nan
     # Ajustar a MB
     global MB_SCALE
     grafanaMemoryMetric = int(grafanaMemoryMetric.replace(".","")) // MB_SCALE
@@ -180,11 +185,45 @@ class BasicUtils():
 
   # Funciones para añadir información a un dataframe
   # ------------------------------------------------
+  def obtainDateWithEpochMillis(self,timestamp):
+    """
+    Genera una fecha a partir de milisegundos en formato epoch millis
+    """
+    try:  
+        result = pd.to_datetime(timestamp, unit='ms')
+        return result
+    except:
+        return np.nan
+
   def adjustMilisecondsToAnotherUnit(self, timeStamp):
     """
     Aplica un ajuste de los milisegundos a otra unidad de tiempo mayor
     en función de la configuración asignada
     """
-    adjustment = int(self.properties["NORMALIZER"]["adjust_miliseconds"])
-    timeStamp = int(timeStamp) // adjustment
-    return timeStamp
+    try:
+        adjustment = int(self.properties["NORMALIZER"]["adjust_miliseconds"])
+        stop = int(self.properties["NORMALIZER"]["adjust_stops"])
+
+        if stop >= adjustment:
+            raise Exception("El tiempo de parada no puede ser mayor al de bloque")
+
+        adjustment  = adjustment + stop
+        if (timeStamp > adjustment) and (timeStamp % adjustment < stop):
+            return np.nan
+        else:
+            return timeStamp // adjustment
+
+    except:
+        return np.nan
+
+  # Funciones para "humanizar" la información recibida
+  # --------------------------------------------------
+  def humanizeDateWithFormat(self,date):
+    """
+    Genera una fecha a partir de milisegundos en formato epoch millis
+    """
+    try:  
+        result = pd.to_datetime(date, format='%d/%b/%Y:%H:%M:%S', utc=True)
+        return result
+    except:
+        return np.nan

@@ -17,6 +17,7 @@ from functools import partial
 
 from graph_types.DataframeHelper import format_timestamp, equilibrateListsWithNulls
 from graph_types.BasicsUtils import BasicUtils
+from graph_types.ReportUtils import ReportUtils
 class Template_graphs():
    # Variables propias de la clase
   colors = {
@@ -32,6 +33,8 @@ class Template_graphs():
     self.filename = filename
     self.properties = configMap
     self.bu = BasicUtils(self.properties)
+    self.ru = ReportUtils(self.properties)
+    
     # Inicialización de cabeceras
     self.timeStamp_label = self.properties["CSV_HEADERS"]["timeStamp"]
     self.elapsed_label = self.properties["CSV_HEADERS"]["elapsed"]
@@ -52,6 +55,8 @@ class Template_graphs():
     # Inicialización de cabeceras añadidas 
     self.date_label = self.properties["CSV_HEADERS"]["date"]
     self.count_label = self.properties["CSV_HEADERS"]["count"]
+    self.RealLatency_label = self.properties["CSV_HEADERS"]["RealLatency"]
+    
     # Objetos necesarios para el modo de comparativa
     self.compareDFList = []
     self.filenameList = []
@@ -93,7 +98,7 @@ class Template_graphs():
     if '--offset' in groupedArgs:
       df = self.__applyOffsets(df) # Aplica offset en caso de indicarse sobre el timestamp
     self.df = self.__dataTreatment(df) # Añade informacion al datagrama
-    if self.df.size > 0:
+    if self.df.shape[0] > 1:
       self.__run_selected_func(func_to_exec,**dict(groupedArgs))
     else:
       print("El dataframe no contiene ningún valor tras aplicar la normalización - se descarta la ejecución")
@@ -138,25 +143,26 @@ class Template_graphs():
   FUNCIONES PRINCIPALES
   *********************
   """  
-  def __obtainUniqueValuesFromColumn(self,**kwargs):
+  def __generateReport(self,**kwargs):
     """
     Dado el nombre de una columna pasada por consola, obtiene todos 
     los valores únicos y el número de veces que aparecen
     """
+    self.df[self.count_label] = self.df[self.timeStamp_label].map(lambda x: self.bu.adjustMilisecondsToAnotherUnit(x))
+    self.df = self.df.dropna(subset=[self.count_label])
+    print("numero de filas tras aplicar el ajuste de milisegundos de "+
+          self.properties["NORMALIZER"]["adjust_miliseconds"]+
+          ": "+str(self.df.shape[0]))
     # Inicio de la funcion
-    choosenHeader = self.bu.obtainOptionalParameter(self.properties["VALORES_UNICOS"]["optional_parameter"],**kwargs)
-    if choosenHeader is None:
-      raise Exception('Falta el argumento {} columnName'.format(self.properties["VALORES_UNICOS"]["optional_parameter"]))
+    label = self.properties["INFORME"]["filename"]
+    filename = self.__formatFilename(label,self.filename,'.txt')
+    self.ru.setDataframe(self.df)
 
-    if choosenHeader not in self.df:
-      print("Error: La columna no existe en el dataframe")
-      raise Exception('Error: La columna {} no existe en el dataframe'.format(choosenHeader))
+    self.ru.hitRate(**kwargs)
+    self.ru.obtain_unique_results_from_optional_param(**kwargs)
+    self.ru.obtain_num_records_per_time_unit(**kwargs)
 
-    filename = self.properties["VALORES_UNICOS"]["filename"]+"_"+choosenHeader+".txt"
-    f= open(filename,"w+")
-    table = self.df[choosenHeader].value_counts()
-    f.write(str(table))
-    f.close()
+    self.ru.generateReport(filename)
 
   def __plotlyGraph(self,**kwargs):
       """
@@ -176,12 +182,7 @@ class Template_graphs():
       self.compareDFList.append(mainTrace)
 
       if "generate-html" not in kwargs or ("generate-html" in kwargs and bool(kwargs['generate-html'])):
-        layout = go.Layout(
-                      title=self.properties['LAYOUT_GRAPHIC_PLOTLY']['title'],
-                      plot_bgcolor=self.properties['LAYOUT_GRAPHIC_PLOTLY']['plot_bgcolor'], 
-                      showlegend=True,
-                      font=dict(family='Courier New, monospace', size=20, color='rgb(0,0,0)')
-                      )
+        layout = self.__customLayout(self.date_label,choosenHeader,self.properties['LAYOUT_GRAPHIC_PLOTLY']['title'])
         fig = go.Figure(data=self.compareDFList, layout=layout)
         filename = self.__formatFilename(self.properties['FILENAMES'][choosenHeader],self.filename)
         plot(fig, filename=filename)
@@ -212,7 +213,7 @@ class Template_graphs():
       layout = self.__customLayout(choosenHeader_x,choosenHeader_y,self.properties['LAYOUT_BOXPLOT_PLOTLY']['title'])
       # Define el boxplot
       custom_boxpoints = (self.properties["BOXPLOT_PLOTLY"]["boxpoints"],False)[self.properties["BOXPLOT_PLOTLY"]["boxpoints"] == "False"]
-      latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],boxpoints=custom_boxpoints,showlegend=True,name=self.properties['AXIS_LABELS'][choosenHeader_x])
+      latencia = self.__customBoxplot(self.df[choosenHeader_x],self.df[choosenHeader_y],boxpoints=custom_boxpoints,showlegend=True,name=self.filename)
       # Define el nombre del fichero
       filename = self.__formatFilename(self.properties["BOXPLOT_PLOTLY"]["filename"]+"_"+choosenHeader_x+"_"+choosenHeader_y,self.filename)
       plot({
@@ -272,9 +273,9 @@ class Template_graphs():
     # Inicialización de parámetros
     self.df[self.count_label] = self.df[self.timeStamp_label].map(lambda x: self.bu.adjustMilisecondsToAnotherUnit(x))
     self.df = self.df.dropna(subset=[self.count_label])
-    print("numero de elementos tras aplicar el ajuste de milisegundos de "+
+    print("numero de filas tras aplicar el ajuste de milisegundos de "+
           self.properties["NORMALIZER"]["adjust_miliseconds"]+
-          ": "+str(self.df.size))
+          ": "+str(self.df.shape[0]))
     print("Se guarda el dataframe tratado para el fichero "+ self.filename)
     self.compareDFList.append(self.df)
     self.filenameList.append(self.filename)
@@ -293,7 +294,7 @@ class Template_graphs():
   FUNCIONES DE APOYO
   ******************
   """
-  def __formatFilename(self,label,filename):
+  def __formatFilename(self,label,filename,suffix='.html'):
     """
     Dada una etiqueta, el timelapse de la muestra y a opcion se monta el
     nombre del fichero a generar
@@ -306,7 +307,7 @@ class Template_graphs():
       lastDate = format_timestamp(self.df[self.timeStamp_label].iloc[-1])
     prefix = label+"___"+firstDate+"___"+lastDate+"___"
     filename = os.path.splitext(filename)[0]
-    return filename+prefix+'.html'
+    return filename+prefix+suffix
 
   def __customBoxplot(self,Xaxis,Yaxis,**kwargs):
     """
@@ -411,49 +412,56 @@ class Template_graphs():
     """
     Se añaden los datos de valor necesarios sobre el dataframe propio de la clase
     """
-    chunk[self.date_label] = pd.to_datetime(chunk[self.timeStamp_label], unit='ms')
-    chunk[self.date_label] = pd.to_datetime(chunk[self.date_label], format='%d/%b/%Y:%H:%M:%S', utc=True)
+    chunk[self.date_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.obtainDateWithEpochMillis(x))
+    chunk = chunk.dropna(subset=[self.date_label])
+    print("numero de filas tras generar la columna de fecha a partir de timestamp: "+str(chunk.shape[0]))
+    chunk[self.date_label] = chunk[self.date_label].map(lambda x:self.bu.humanizeDateWithFormat(x))
+    chunk = chunk.dropna(subset=[self.date_label])
+    print("numero de filas tras aplicar formato a la fecha: " + str(chunk.shape[0]))
+    chunk[self.RealLatency_label] = chunk.apply(lambda x: self.bu.realLatencyNormalizer(x.Latency, x.Connect), axis=1)
+    chunk = chunk.dropna(subset=[self.RealLatency_label])
+    print("numero de filas tras insertar una columna de latencia real: "+str(chunk.shape[0]))
     return chunk
-    
+      
   def __parse_dataframe(self,chunk):
     """
     Una vez cargado el dataframe se realizan comprobaciones para su usabilidad
     """
-    print("numero de elementos iniciales: "+str(chunk.size))
+    print("numero de filas iniciales: "+str(chunk.shape[0]))
     # Aplica granularidad al dataframe si está activado
     if (self.bu.str_to_boolean(self.properties["NORMALIZER"]["granularity_active"])):
-      print("Granularidad activada")
+      print("¡Granularidad activada!")
       chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.granularityNormalizer(x))
       subsetLabels =[self.timeStamp_label]
       # En caso de conener la etiqueta label, es necesario filtrar con ella para no perder informacion
       if self.label_label in chunk:
         subsetLabels.append(self.label_label)
       chunk = chunk.drop_duplicates(subset=subsetLabels, keep=self.properties["NORMALIZER"]["granularity_keep"])
-      print("numero de elementos tras aplicar la granularidad: "+str(chunk.size))
+      print("numero de filas tras aplicar la granularidad: "+str(chunk.shape[0]))
     # Agrupa los diferentes errores ajenos a la peticion rest como error de conexion
     chunk[self.responseCode_label] = chunk[self.responseCode_label].map(lambda x: self.bu.responseCodeNormalizer(x))
     chunk = chunk.dropna(subset=[self.responseCode_label])
-    print("numero de elementos tras aplicar normalización en código de respuesta: "+str(chunk.size))
+    print("numero de filas tras aplicar normalización en código de respuesta: "+str(chunk.shape[0]))
     # Descarta timestamps que hayan podido ser recortados o carezcan de sentido
 
     chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.timeStampNormalizer(x))
     chunk = chunk.dropna(subset=[self.timeStamp_label])
-    print("numero de elementos tras aplicar normalización en timestamp: "+str(chunk.size))
+    print("numero de filas tras aplicar normalización en timestamp: "+str(chunk.shape[0]))
     # Agrupa los hilos levantados en función de un intervalo definido por configuración
     chunk[self.allThreads_label] = chunk[self.allThreads_label].map(lambda x: self.bu.allThreadsNormalizer(x))
     chunk = chunk.dropna(subset=[self.allThreads_label])
-    print("numero de elementos tras aplicar normalización en hilos ejecutados: "+str(chunk.size))
+    print("numero de filas tras aplicar normalización en hilos ejecutados: "+str(chunk.shape[0]))
     return chunk
   
   def __applyOffsets(self,chunk):
     # En función del timeStamp más reducido, aplicar un offset para abstraer el valor
     minFromTimestamp = chunk[self.timeStamp_label].min()
     # Para evitar perder información, se resta del mínimo el ajuste de unidades
-    minFromTimestamp = minFromTimestamp - int(self.properties["NORMALIZER"]["adjust_miliseconds"])
+    minFromTimestamp = minFromTimestamp - int(self.properties["NORMALIZER"]["adjust_miliseconds"]) -  int(self.properties["NORMALIZER"]["adjust_stops"])
     print("Valor del offset referencia con el ajuste aplicado: "+str(minFromTimestamp))
     chunk[self.timeStamp_label] = chunk[self.timeStamp_label].map(lambda x: self.bu.offsetTimestampNormalizer(x,minFromTimestamp))
     chunk = chunk.dropna(subset=[self.timeStamp_label])
-    print("numero de elementos tras aplicar el offset al timestamp: "+str(chunk.size))
+    print("numero de filas tras aplicar el offset al timestamp: "+str(chunk.shape[0]))
     return chunk
 
   def __generateCountPlotFromMultipleDF(self, ctm_xaxis, ctm_yaxis, ctm_title, **kwargs):
@@ -512,7 +520,7 @@ class Template_graphs():
           self.properties["SWITCH_OPTION"]["plotlyGraph"]: partial(self.__plotlyGraph,**kwargs),
           self.properties["SWITCH_OPTION"]["boxplot_seaborn"]: partial(self.__boxplot_seaborn,**kwargs),
           self.properties["SWITCH_OPTION"]["boxplot_plotly"]: partial(self.__boxplot_plotly,**kwargs),
-          self.properties["SWITCH_OPTION"]["valores_unicos"]: partial(self.__obtainUniqueValuesFromColumn,**kwargs),
+          self.properties["SWITCH_OPTION"]["generateReport"]: partial(self.__generateReport,**kwargs),
           self.properties["SWITCH_OPTION"]["performanceSystemMetrics"]: partial(self.__performanceSystemMetrics,**kwargs),
           self.properties["SWITCH_OPTION"]["numberHitsPerNMiliseconds"]: partial(self.__numberHitsPerNMiliseconds,**kwargs)
     }

@@ -6,6 +6,8 @@
 Latency = LATENCIA
 responseCode = RESPCODE
 responseMessage = RESPMSG
+realLatency= LATENCIAREAL
+timeStamp = TIMESTAMP
 # Para cada una de las cabeceras Grafana
 Memory = MEMORY
 
@@ -31,37 +33,53 @@ URL = URL
 Latency = Latency
 IdleTime = IdleTime
 Connect = Connect
+
 # propios
+RealLatency = RealLatency
 date = Time
+count = count
+
+
+# -----------------------------------------------
+#      Valores cerrados para las cabeceras
+# -----------------------------------------------
+[RESPONSE_CODE_VALUES]
+200 = 200: OK
+401 = 401: No autorizado
+404 = 404: Servicio no encontrado
+408 = 408: Request Timeout Error
+500 = 500: Error interno del servidor
+502 = 502: Bad Gateway
+503 = 503: Servicio no disponible
+504 = 504: Gateway timeout
 
 # -----------------------------------------------
 #             Normalización de los datos
 # [NORMALIZER]
+# granularity_active = True | False
 # granularity_keep = first | last | False
 # -----------------------------------------------
 [NORMALIZER]
-allThreadsInterval = 20
-granularity_active = True
+allThreadsInterval = 1
+granularity_active = False
 granularity_keep = first
-granularity = 20000
-
+granularity = 500
+adjust_miliseconds = 60000
+adjust_stops = 0
 # -----------------------------------------------
 #                Gráficos PLOTLY
 # scatter_mode = markers | lines | lines+markers
 # -----------------------------------------------
+# Grafica de trazas comparando 2 columnas del dataframe
 [GRAPHIC_PLOTLY]
 scatter_mode = lines
 optional_parameter = --column
 
-[TRACE_GRAPHIC_PLOTLY]
-Latency = Latencia en milisegundos
-responseCode = Respuesta del servidor
-Memory = Consumo de memoria en MB
-
 [LAYOUT_GRAPHIC_PLOTLY]
-title = Gráfica
+title = Gráfica de trazas
 plot_bgcolor = rgb(230, 230,230)
 
+# Grafica boxplot
 [BOXPLOT_PLOTLY]
 image_format = jpeg
 boxpoints = False
@@ -69,17 +87,40 @@ optional_parameter_x = --colx
 optional_parameter_y = --coly
 filename = BPPLOTLY
 
-[TRACE_BOXPLOT_PLOTLY]
+[LAYOUT_BOXPLOT_PLOTLY]
+title = Representación dataframe estilo Boxplot
+
+# Grafica de conteo por unidad de tiempo
+[COUNT_PLOTLY]
+filename = CNTLOTLY
+
+[LAYOUT_COUNT_PLOTLY]
+title = Numero de transacciones por segundo
+
+# String asociado a cabecera
+[AXIS_LABELS]
 Latency = Latencia en milisegundos
 responseCode = Código de respuesta del servidor
 allThreads = Número de hilos activos
 responseMessage = Naturaleza de la respuesta del servidor
+timeStamp = Unidad de tiempo
+count = Numero de transacciones
+Time = Fecha a nivel de milisegundo
+RealLatency = Latencia real ( total - conexión) en ms
+
 # ---------------------------------------
 #           Funciones dataframe
+# Apartados: 
+#   - título
+#   - parámetro asociado a la entrada
 # ---------------------------------------
-[VALORES_UNICOS]
-optional_parameter = --column
-filename = valores_unicos
+[INFORME]
+unique_value_title = Valores Únicos
+unique_value_param = --unique_value
+num_records_title = Numero de transacciones por unidad de tiempo
+num_records_param = --time_record
+hit_rate_title = Tasa de aciertos y fallos
+filename = informe
 
 # ---------------------------------------
 #          Performance metrics
@@ -113,5 +154,6 @@ grafana = grafana
 plotlyGraph = plotlyGraph
 boxplot_seaborn = boxplot_seaborn
 boxplot_plotly = boxplot_plotly
-valores_unicos = valores_unicos
+generateReport = generate_report
 performanceSystemMetrics = system_metrics
+numberHitsPerNMiliseconds = number_hits_per_unit
