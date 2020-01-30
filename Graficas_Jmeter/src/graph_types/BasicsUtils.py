@@ -70,7 +70,10 @@ class BasicUtils():
       real de procesado por el servicio Rest
       """
       try:
-        return int(latency) - int(connect)
+        realLatency = int(latency) - int(connect)
+        if realLatency < 0:
+            raise Exception("Valor de latencia incongruente")
+        return realLatency
       except:
         return np.nan
 
