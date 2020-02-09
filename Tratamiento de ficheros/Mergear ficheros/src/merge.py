@@ -12,12 +12,12 @@ from tkinter.filedialog import askopenfilename
 import shutil
 
 # Dependencias propias
-from decorators.panel_decorator import PanelDecorator
+from decorators.panel_decorator import architecture_Decorator
 from classes.visuals import Panel
 def start(*args, **kwargs):
     panel = Panel()
     panel.merge_files()
-    return None
+    panel.mainloop()
 
 if __name__ == '__main__':
   start()
