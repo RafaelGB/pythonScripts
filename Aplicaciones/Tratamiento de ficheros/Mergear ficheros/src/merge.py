@@ -9,14 +9,12 @@ import traceback
 # Librerias de terceros
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
-import shutil
 
 # Dependencias propias
-from decorators.panel_decorator import architecture_Decorator
+#from  import architecture_Decorator
 from classes.visuals import Panel
 def start(*args, **kwargs):
     panel = Panel()
-    panel.merge_files()
     panel.mainloop()
 
 if __name__ == '__main__':
