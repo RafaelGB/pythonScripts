@@ -7,12 +7,13 @@ setup(
     author="Rafael Gómez Bermejo",
     author_email="sernn2@gmail.com",
     name="architecture-tools-RafaelGB",
-    version='0.0.5',
+    version='0.0.7',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3',
         'Topic :: Adaptive Technologies',
+		'Operating System :: OS Independent',
       ],
       keywords='architecture wrapper',
       url='https://github.com/RafaelGB/pythonScripts',
@@ -23,7 +24,7 @@ setup(
     install_requires=[
           'markdown',
     ],
-    python_requires='>=3.7',
+    python_requires='>=3.6',
     include_package_data=True,
     zip_safe=False
 )
