@@ -9,10 +9,6 @@ import configparser
 import logging
 import sys
 
-
-# Librerias de terceros
-import shutil
-
 class arq_decorator():
     def __init__(self, *a, **kw):
         self.dec_args = a
