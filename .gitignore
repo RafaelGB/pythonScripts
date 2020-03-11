@@ -110,11 +110,13 @@ venv.bak/
 *.json
 
 # custom folders
-resources/
+ resources/
 *.html
 *.csv
 *.CSV
 *.txt
 *.zip
+*.bat
 
-!Configuracion/*/*
+!Arquitectura/arq_server/resources/*
+!Arquitectura/arq_server/resources/*/*

@@ -1,8 +1,15 @@
+#!/bin/python -B
+
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
+import json
+
 from flask import Flask
 from flask import jsonify
 from flask import request
 
-app = Flask(__name__)
+from arq_server.containers.IocContainer import IocContainer
+#app = Flask(__name__)
 
 
 quarks = [{'appName': 'up', 'charge': '+2/3'},
@@ -13,7 +20,12 @@ quarks = [{'appName': 'up', 'charge': '+2/3'},
 apps = {
     "cleanDirectory":{"init":"clase"}
 }
-
+"""
+-----------------------------------
+            ENDPOINTS
+-----------------------------------
+"""
+"""
 @app.route('/applications/<string:appName>', methods=['GET'])
 def returnOne(appName):
     if appName in apps:
@@ -26,5 +38,8 @@ def addOne(appName):
     quarks.append(new_quark)
     return jsonify({'quarks' : quarks})
 
+"""
 if __name__ == "__main__":
-    app.run(debug=True)
+    logger = IocContainer.config_service().getProperty("logger","main")
+    print(logger)
+    #app.run(debug=True)
