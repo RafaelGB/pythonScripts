@@ -2,10 +2,9 @@
 """Example of dependency injection in Python."""
 import logging
 import sqlite3
-
 from dependency_injector import containers, providers
 # own
-from arq_server.services.ConfigService import ConfigService
+from arq_server.services.CoreService import CoreService
 from arq_server.main import main
 class IocContainer(containers.DeclarativeContainer):
     """Application IoC container."""
@@ -17,7 +16,7 @@ class IocContainer(containers.DeclarativeContainer):
 
     # Services
 
-    config_service = providers.Factory(ConfigService)
+    core_service = providers.Factory(CoreService)
     """
     # Misc
 
