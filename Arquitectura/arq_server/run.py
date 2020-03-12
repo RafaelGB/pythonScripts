@@ -40,6 +40,9 @@ def addOne(appName):
 
 """
 if __name__ == "__main__":
-    logger = IocContainer.core_service().config_service().getProperty("base","filename_app_info")
-    print(logger)
+    arq = IocContainer
+    print(arq.core_service_provider().config_service_provider().getProperty("base","filename_app_info"))
+    print(arq.rest_service().prueba())
+    
+   
     #app.run(debug=True)
