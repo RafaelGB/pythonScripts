@@ -111,10 +111,10 @@ class Configuration:
         # Itera sobnrte todos los elementos del diccionario
         for (key, value) in dictObj.items():
             # Comprueba si satisface la condición del parámetro para añadir al diccionario
-            if callback((key, value)):
+            if callback(key):
                 newDict[key] = value
         return newDict
-    
+
 class CoreService(containers.DeclarativeContainer):
     """Application IoC container."""
 
@@ -123,8 +123,10 @@ class CoreService(containers.DeclarativeContainer):
     #database_client = providers.Singleton(sqlite3.connect, config.database.dsn)
 
     # Services
-    logger_service_provider = providers.Singleton(Logger)
-    config_service_provider = providers.Singleton(
+    logger_service = providers.Singleton(Logger)
+
+    config_service = providers.Singleton(
         Configuration,
-        logger=logger_service_provider()
+        logger=logger_service
     )
+

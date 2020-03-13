@@ -8,18 +8,8 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 
-from arq_server.containers.IocContainer import IocContainer
-#app = Flask(__name__)
+from arq_server.containers.ArqContainer import ArqContainer
 
-
-quarks = [{'appName': 'up', 'charge': '+2/3'},
-          {'name': 'down', 'charge': '-1/3'},
-          {'name': 'charm', 'charge': '+2/3'},
-          {'name': 'strange', 'charge': '-1/3'}]
-
-apps = {
-    "cleanDirectory":{"init":"clase"}
-}
 """
 -----------------------------------
             ENDPOINTS
@@ -40,9 +30,9 @@ def addOne(appName):
 
 """
 if __name__ == "__main__":
-    arq = IocContainer
-    print(arq.core_service_provider().config_service_provider().getProperty("base","filename_app_info"))
-    print(arq.rest_service().prueba())
-    
+ 
+    # propiedad = ArqContainer.core_service().config_service().getProperty("base","filename_app_info")
+    # ArqContainer.rest_service().prueba()
+    ArqContainer.rest_service().start_server()
    
     #app.run(debug=True)

@@ -1,1 +1,1 @@
-from . import CoreService, RestService
+from . import CoreService
