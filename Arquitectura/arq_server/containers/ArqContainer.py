@@ -5,9 +5,10 @@ import sqlite3
 from dependency_injector import containers, providers
 # own
 from arq_server.services.CoreService import CoreService
-from arq_server.services.RestService import FlaskFunctions
+from arq_server.services.protocols.RestService import FlaskFunctions
 from arq_server.main import main
-class IocContainer(containers.DeclarativeContainer):
+
+class ArqContainer(containers.DeclarativeContainer):
     """Application IoC container."""
     #logger = providers.Singleton(logging.Logger, name='logger')
 
@@ -17,15 +18,9 @@ class IocContainer(containers.DeclarativeContainer):
 
     # Services
 
-    core_service_provider = providers.Singleton(CoreService)
-    rest_service = providers.Factory(
-        FlaskFunctions,
-        core=core_service_provider()
-    )
-    """
-    # Misc
+    core_service = providers.Singleton(CoreService)
 
-    main = providers.Callable(
-        main.main
+    rest_service = providers.Singleton(
+        FlaskFunctions,
+        core=core_service
     )
-    """
