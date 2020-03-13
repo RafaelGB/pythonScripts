@@ -1,0 +1,21 @@
+{
+    "error":{
+        "methodNotSupported": {
+            "errorCode": "methodNotSupported",
+            "errorMessage": "el método solicitado no está soportado"
+        },
+        "itemNotFound": {
+            "errorCode": "itemNotFound",
+            "errorMessage": "Item not found"
+        },
+        "itemAlreadyExists": {
+            "errorCode": "itemAlreadyExists",
+            "errorMessage": "Could not create item. Item already exists"
+        }
+    },
+    "methods":{
+        "applications_api":{
+
+        }
+    }
+}

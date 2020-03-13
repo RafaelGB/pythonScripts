@@ -1,6 +1,0 @@
-{
-    "cleanDirectory":{
-        "path":"cleanDirectory/",
-        "init":"removeConfFiles.py"
-    }
-}

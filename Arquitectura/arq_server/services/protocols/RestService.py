@@ -12,10 +12,10 @@ import json
 from dependency_injector import containers, providers
 # own
 from arq_server.services.CoreService import CoreService
-from arq_server.services.protocols.MethodViews import selectMethod
+from arq_server.services.protocols.MethodViews import selectMethod, init_update_methods_conf
 class FlaskFunctions:
     """TODO"""
-    server = Flask("mi_aplicacion")
+    server = Flask("arq_rest_server")
     
     def __init__(self,core):
         self.__init_services(
@@ -27,6 +27,7 @@ class FlaskFunctions:
         self.local_conf_alias = self.config.getProperty("groups","flask")
         self.local_conf=self.config.getGroupOfProperties(self.local_conf_alias)
         self.__init_url_rules()
+        self.__init_info_maps()
         self.logger.info("FIN - arranque funcionalidades de Flask")
         
     def start_server(self):
@@ -60,11 +61,10 @@ class FlaskFunctions:
             self.parent_path,
             self.config.getProperty("base","path.resources"),
             self.config.getProperty("applications","path.app.repository"),
-            self.config.getProperty("applications","filename.app.info")
+            self.config.getProperty("applications","filename.method_views")
             )
-        if path.exists(app_info_path):
-            with open(app_info_path, 'rt') as f:
-                self.app_info = json.load(f)
+        
+        init_update_methods_conf(app_info_path)
 
 
     
