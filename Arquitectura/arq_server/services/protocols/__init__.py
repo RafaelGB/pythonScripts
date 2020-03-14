@@ -1,1 +1,1 @@
-from . import RestService
+from . import rest

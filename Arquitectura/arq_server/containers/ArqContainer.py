@@ -5,8 +5,7 @@ import sqlite3
 from dependency_injector import containers, providers
 # own
 from arq_server.services.CoreService import CoreService
-from arq_server.services.protocols.RestService import FlaskFunctions
-from arq_server.main import main
+from arq_server.services.protocols.ProtocolsService import ProtocolsService
 
 class ArqContainer(containers.DeclarativeContainer):
     """Application IoC container."""
@@ -19,8 +18,4 @@ class ArqContainer(containers.DeclarativeContainer):
     # Services
 
     core_service = providers.Singleton(CoreService)
-
-    rest_service = providers.Singleton(
-        FlaskFunctions,
-        core=core_service
-    )
+    protocols_service = providers.Singleton(ProtocolsService)

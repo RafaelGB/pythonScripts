@@ -24,7 +24,10 @@ class Logger:
         self.logger.info("¡servicio de logging levantado!")
 
     def arqLogger(self):
-        return self.logger
+        return logging.getLogger("arquitecture")
+
+    def appLogger(self):
+        return logging.getLogger("app")
 
     def __setup_logging(self,
     default_path='logging.json',

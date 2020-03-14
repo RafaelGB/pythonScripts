@@ -8,26 +8,26 @@ from logging.config import fileConfig
 import configparser
 import logging
 import sys
-# own
-from arq_server.containers.ArqContainer import ArqContainer
+
 class arq_decorator():
     def __init__(self, *a, **kw):
         self.dec_args = a
         self.dec_kw = kw
+        self.cache = {}
         self.parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__))).parent
 
-        if not self.__core_init():
-            raise Exception("Error durante la inicialización de funcionalidades básicas, revisar logs y/o consola")
-        if not self.__services_init():
-            raise Exception("Error durante la inicialización de los servicios de arquitectura, revisar logs y/o consola")
+        if not self.__conf_init():
+            raise Exception("Inicialización de configuración fallida, revisar logs y/o consola")
+        if not self.__logger_init():
+            raise Exception("Inicialización de loggers fallida, revisar logs y/o consola")
 
     def __call__(self, class_or_fun):
         # self.func = func
         if isclass(class_or_fun):
             self.logger.info('Arranque de la clase "%s"',class_or_fun.__name__)
     
-            setattr(class_or_fun, "logger", self.logger)
-            setattr(class_or_fun, "config", self.config)
+            setattr(class_or_fun, "logger", self.logger_func)
+            setattr(class_or_fun, "confMap", self.confMap)
 
             for attr in class_or_fun.__dict__.keys():
                 
@@ -71,20 +71,33 @@ class arq_decorator():
         """
         self.logger.info('FIN - %s',func.__name__)  
 
-    def __core_init(self):
-        try:
-            self.logger = ArqContainer.core_service().logger_service().appLogger()
-            self.config = ArqContainer.core_service().config_service()
+    def __conf_init(self):
+        print('preprocesando configuración:', self.dec_args, self.dec_kw)
+        
+        if "conf_filename" in self.dec_kw:
+            conf_path = path.join(self.parent_path, self.dec_kw["conf_filename"])
+            print("Ruta de configuración general: ",conf_path)
+            self.confMap = configparser.ConfigParser()
+            self.confMap.read(conf_path)
+            {section: print("Seccion:"+section,dict(self.confMap[section])) for section in self.confMap.sections()}
             return True
-        except Exception as err:
-            self.logger.error(err)
+        else:
+            print("No se ha determinado ningún fichero de configuración")
             return False
-    def __services_init(self):
-        try:
-            self.protocols = ArqContainer.protocols_service()
+
+    def __logger_init(self):
+        # Create a custom logger 
+        if self.confMap.has_option("logger","filename") \
+        and self.confMap.has_option("logger","main") \
+        and self.confMap.has_option("logger","decorator"):
+            log_file_path = path.join(self.parent_path,self.confMap["paths"]["resources"],self.confMap["logger"]["filename"])
+            print("Ruta de configuración logging: ",log_file_path)
+            fileConfig(fname=log_file_path, disable_existing_loggers=False)
+            self.logger = logging.getLogger(self.confMap["logger"]["decorator"])
+            self.logger_func = logging.getLogger(self.confMap["logger"]["main"])
             return True
-        except Exception as err:
-            self.logger.error(err)
+        else:
+            print("No se ha configurado correctamente el logger. Añadir filename, decorator y main en el apartado de logger en el fichero de configuración")
             return False
         
         

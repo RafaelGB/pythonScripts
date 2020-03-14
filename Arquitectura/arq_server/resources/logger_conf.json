@@ -21,8 +21,18 @@
       "arq_file_handler": {
         "class": "logging.handlers.RotatingFileHandler",
         "level": "DEBUG",
-        "formatter": "simple",
+        "formatter": "debugging",
         "filename": "arq.log",
+        "maxBytes": 10485760,
+        "backupCount": 20,
+        "encoding": "utf8"
+      },
+
+      "app_file_handler": {
+        "class": "logging.handlers.RotatingFileHandler",
+        "level": "INFO",
+        "formatter": "simple",
+        "filename": "apps.log",
         "maxBytes": 10485760,
         "backupCount": 20,
         "encoding": "utf8"
@@ -41,6 +51,11 @@
   
     "loggers": {
       "arquitecture": {
+        "level": "DEBUG",
+        "handlers": ["console","arq_file_handler","error_file_handler"],
+        "propagate": false
+      },
+      "app": {
         "level": "INFO",
         "handlers": ["console","arq_file_handler","error_file_handler"],
         "propagate": false

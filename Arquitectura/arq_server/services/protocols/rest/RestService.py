@@ -12,7 +12,7 @@ import json
 from dependency_injector import containers, providers
 # own
 from arq_server.services.CoreService import CoreService
-from arq_server.services.protocols.MethodViews import selectMethod, init_update_methods_conf
+from arq_server.services.protocols.rest.MethodViews import selectMethod, init_update_methods_conf
 class FlaskFunctions:
     """TODO"""
     server = Flask("arq_rest_server")

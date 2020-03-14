@@ -1,15 +1,12 @@
 #!/bin/python -B
-
+"""
 import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 import json
-
-from flask import Flask
-from flask import jsonify
-from flask import request
-
+"""
+# own
 from arq_server.containers.ArqContainer import ArqContainer
-
+from arq_decorators.arq_decorator import arq_decorator
 """
 -----------------------------------
             ENDPOINTS
@@ -29,10 +26,36 @@ def addOne(appName):
     return jsonify({'quarks' : quarks})
 
 """
+@arq_decorator()
+class Prueba():
+    # declaro servicios propios del decorador para evitar que el lint indique error
+    logger: object
+    config: object
+    def __init__(self):
+        pass
+    
+    def prueba(self):
+        self.logger.info(self.config.getProperty("base","filename_app_info"))
+
+@arq_decorator()
+class Prueba2():
+    # declaro servicios propios del decorador para evitar que el lint indique error
+    logger = None
+    config = None
+    def __init__(self):
+        pass
+    
+    def prueba(self):
+        self.logger.info(self.config.getProperty("base","filename_app_info"))
 if __name__ == "__main__":
  
     # propiedad = ArqContainer.core_service().config_service().getProperty("base","filename_app_info")
     # ArqContainer.rest_service().prueba()
-    ArqContainer.rest_service().start_server()
+    prueba = Prueba()
+    prueba.prueba()
+
+    prueba2 = Prueba2()
+    prueba2.prueba()
+    #ArqContainer.protocols_service().rest_service().start_server()
    
     #app.run(debug=True)
