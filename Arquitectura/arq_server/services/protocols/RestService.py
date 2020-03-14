@@ -16,7 +16,6 @@ from arq_server.services.protocols.MethodViews import selectMethod, init_update_
 class FlaskFunctions:
     """TODO"""
     server = Flask("arq_rest_server")
-    
     def __init__(self,core):
         self.__init_services(
             core.logger_service(),
@@ -52,7 +51,14 @@ class FlaskFunctions:
             try:
                 url_rule_info = url_rule.split(';')
                 self.logger.info("Regla URL: '%s' con alias '%s'",url_rule_info[0],url_rule_info[1])
-                self.server.add_url_rule(url_rule_info[0], view_func=selectMethod(url_rule_info[1]).as_view(url_rule_info[1]))
+                self.server.add_url_rule(
+                    url_rule_info[0],
+                    view_func=selectMethod(url_rule_info[1]).
+                                           as_view(
+                                               url_rule_info[1],
+                                               url_rule_info[1]
+                                               )
+                    )
             except:
                 self.logger.error("Error añadiendo la regla de url '%s' al servidor",url_rule)
     
