@@ -1,4 +1,4 @@
-#!/bin/python -B
+#!/usr/bin/env python 
 """
 import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
@@ -6,7 +6,7 @@ import json
 """
 # own
 from arq_server.containers.ArqContainer import ArqContainer
-from arq_decorators.arq_decorator import arq_decorator
+from arq_decorators.arq_decorator import arq_decorator, ArqToolsTemplate
 """
 -----------------------------------
             ENDPOINTS
@@ -26,36 +26,24 @@ def addOne(appName):
     return jsonify({'quarks' : quarks})
 
 """
-@arq_decorator()
-class Prueba():
-    # declaro servicios propios del decorador para evitar que el lint indique error
-    logger: object
-    config: object
-    def __init__(self):
-        pass
-    
-    def prueba(self):
-        self.logger.info(self.config.getProperty("base","filename_app_info"))
 
-@arq_decorator()
-class Prueba2():
+class MiApp(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
-    logger = None
-    config = None
-    def __init__(self):
-        pass
     
+    def __init__(self,app_name, *args, **kwargs):
+        self.app_name = app_name
+        super().__init__(self.app_name,*args, **kwargs)
+
     def prueba(self):
-        self.logger.info(self.config.getProperty("base","filename_app_info"))
+        self.logger.info("utilizando log de la arquitectura en una clase. Propiedad '%s'",self.getProperty("mi.propiedad"))
+        
+        
 if __name__ == "__main__":
  
     # propiedad = ArqContainer.core_service().config_service().getProperty("base","filename_app_info")
     # ArqContainer.rest_service().prueba()
-    prueba = Prueba()
+    prueba = MiApp("app_pruebas")
     prueba.prueba()
-
-    prueba2 = Prueba2()
-    prueba2.prueba()
     #ArqContainer.protocols_service().rest_service().start_server()
    
     #app.run(debug=True)
