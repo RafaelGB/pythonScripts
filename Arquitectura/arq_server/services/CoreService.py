@@ -68,7 +68,9 @@ class Configuration:
         self.logger.info("conf general obtenida de '%s'",conf_path)
         self.confMap = configparser.ConfigParser()
         self.confMap.read(conf_path)
+        self.logger.debug("-"*20)
         {section: self.logger.debug("Sección: %s",json.dumps(dict(self.confMap[section]))) for section in self.confMap.sections()}
+        self.logger.debug("-"*20)
         self.logger.info("FIN - servicio de Configuración")
     
     def getProperty(self, group, key):
