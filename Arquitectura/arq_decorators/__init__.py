@@ -1,1 +1,1 @@
-from arq_decorators.arq_decorator import arq_decorator, ArqToolsTemplate
+from arq_decorators.arq_decorator import arq_decorator, ArqToolsTemplate, time_all_class_methods

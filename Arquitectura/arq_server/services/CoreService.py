@@ -18,9 +18,10 @@ class Logger:
     """
     def __init__(self):
         self.parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
-        logger_path = path.join(self.parent_path, "resources\\logger_conf.json")
+        logger_path = path.join(self.parent_path, "resources/logger_conf.json")
         self.__setup_logging(default_path=logger_path)
         self.logger = logging.getLogger("arquitecture")
+        self.logger.info("conf de logger obtenida de '%s'",logger_path)
         self.logger.info("¡servicio de logging levantado!")
 
     def arqLogger(self):
@@ -28,6 +29,13 @@ class Logger:
 
     def appLogger(self):
         return logging.getLogger("app")
+
+    def walkPathLogs(self, path_to_walk):
+        for (path, dirs, files) in os.walk(path_to_walk):
+            self.logger.info("Informe sobre el estado de la ruta '%s'",path)
+            self.logger.info("Listado de directorios: '%s'", dirs)
+            self.logger.info("Listado de ficheros: '%s'", files)
+            self.logger.info("----")
 
     def __setup_logging(self,
     default_path='logging.json',
@@ -56,7 +64,8 @@ class Configuration:
 
         self.parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
 
-        conf_path = path.join(self.parent_path, "resources\\arq_conf.cfg")
+        conf_path = path.join(self.parent_path, "resources/arq_conf.cfg")
+        self.logger.info("conf general obtenida de '%s'",conf_path)
         self.confMap = configparser.ConfigParser()
         self.confMap.read(conf_path)
         {section: self.logger.debug("Sección: %s",json.dumps(dict(self.confMap[section]))) for section in self.confMap.sections()}

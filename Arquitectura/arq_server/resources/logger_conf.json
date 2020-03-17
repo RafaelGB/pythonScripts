@@ -6,15 +6,15 @@
         "format": "[%(asctime)s - %(name)s - %(levelname)s ] %(message)s"
       },
       "debugging": {
-        "format": "[%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+        "format": "[%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)s - %(funcName)s() ] %(message)s"
       }
     },
   
     "handlers": {
       "console": {
         "class": "logging.StreamHandler",
-        "level": "INFO",
-        "formatter": "simple",
+        "level": "DEBUG",
+        "formatter": "debugging",
         "stream": "ext://sys.stdout"
       },
   
