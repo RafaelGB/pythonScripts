@@ -1,0 +1,20 @@
+{
+    "files.exclude": {
+        "**/Dockerfile": false,
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/*.pyc": true,
+        "**/__pycache__": true
+    },
+
+    "python.pythonPath": "C:\\Users\\sernn\\.virtualenvs\\Arquitectura-yCkMkwTs\\Scripts\\python.exe",
+    "python.linting.pylintArgs": [
+        "--load-plugins",
+        "pylint_flask"
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true
+}

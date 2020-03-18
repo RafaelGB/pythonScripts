@@ -24,6 +24,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+Pipfile.lock
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -89,7 +90,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-jmeter_env/
 
 # Spyder project settings
 .spyderproject
@@ -110,9 +110,15 @@ jmeter_env/
 *.json
 
 # custom folders
-resources/
+ resources/
 *.html
 *.csv
 *.CSV
 *.txt
 *.zip
+*.bat
+
+#Excepciones
+!Arquitectura/arq_server/resources/*
+!Arquitectura/arq_server/resources/*/*
+!Arquitectura/.vscode/*
