@@ -1,50 +1,42 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 """
 import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 import json
 """
-import sys, os
+import json
+import os
 import pathlib
+import sys
 
+from arq_decorators.arq_decorator import ArqToolsTemplate, arq_decorator
 # own
 from arq_server.containers.ArqContainer import ArqContainer
-from arq_decorators.arq_decorator import arq_decorator, ArqToolsTemplate
-"""
------------------------------------
-            ENDPOINTS
------------------------------------
-"""
-"""
-@app.route('/applications/<string:appName>', methods=['GET'])
-def returnOne(appName):
-    if appName in apps:
-        return jsonify(apps[appName])
 
-@app.route('/applications/<string:appName>', methods=['POST'])
-def addOne(appName):
-    new_quark = request.get_json()
-    print(new_quark)
-    quarks.append(new_quark)
-    return jsonify({'quarks' : quarks})
-
-"""
 
 class MiApp(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
-    
-    def __init__(self,app_name, *args, **kwargs):
-        super().__init__(self.__class__.__name__,*args, **kwargs)
-    
+
+    def __init__(self, *args, **kwargs):
+        className = self.__class__.__name__
+        super().__init__(className, *args, **kwargs)
+
+    def showOwnDirTree(self):
+        dirTree = self.getDirectoryTree(
+            os.path.dirname(os.path.abspath(__file__)))
+        self.logger.info(json.dumps(dirTree,  sort_keys=True, indent=4))
+        
     def prueba(self):
-        self.logger.info("utilizando log de la arquitectura en una clase. Propiedad '%s'",self.getProperty("mi.propiedad"))
+        self.logger.info("utilizando log de la arquitectura en una clase. Propiedad '%s'",
+                         self.getProperty("mi.propiedad"))
+
 
 if __name__ == "__main__":
- 
+
     prueba = MiApp("app_pruebas")
     prueba.prueba()
+    prueba.showOwnDirTree()
 
-  
-    #ArqContainer.protocols_service().rest_service().start_server()
-   
-    #app.run(debug=True)
+    # ArqContainer.protocols_service().rest_service().start_server()
+
+    # app.run(debug=True)

@@ -1,2 +1,1 @@
-from . import protocols
-from . import CoreService
+from . import CoreService, OSService, protocols
