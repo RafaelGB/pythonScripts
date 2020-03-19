@@ -1,4 +1,9 @@
 {
+  "properties": {
+    "base.path": "C:\\Users\\sernn\\OneDrive\\Desktop\\Proyectos\\pythonScripts\\Arquitectura",
+    "base.path.logs": "logs"
+  },
+  "logging_conf": {
     "version": 1,
     "disable_existing_loggers": false,
     "formatters": {
@@ -9,7 +14,7 @@
         "format": "[%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)s - %(funcName)s() ] %(message)s"
       }
     },
-  
+
     "handlers": {
       "console": {
         "class": "logging.StreamHandler",
@@ -17,12 +22,12 @@
         "formatter": "debugging",
         "stream": "ext://sys.stdout"
       },
-  
+
       "arq_file_handler": {
         "class": "logging.handlers.RotatingFileHandler",
         "level": "DEBUG",
         "formatter": "debugging",
-        "filename": "arq.log",
+        "filename": "{{base.path}}\\{{base.path.logs}}\\arq.log",
         "maxBytes": 10485760,
         "backupCount": 20,
         "encoding": "utf8"
@@ -32,38 +37,54 @@
         "class": "logging.handlers.RotatingFileHandler",
         "level": "DEBUG",
         "formatter": "debugging",
-        "filename": "apps.log",
+        "filename": "{{base.path}}\\{{base.path.logs}}\\apps.log",
         "maxBytes": 10485760,
         "backupCount": 20,
         "encoding": "utf8"
       },
-  
+
+      "test_file_handler": {
+        "class": "logging.handlers.RotatingFileHandler",
+        "level": "DEBUG",
+        "formatter": "debugging",
+        "filename": "{{base.path}}\\{{base.path.logs}}\\testing.log",
+        "maxBytes": 10485760,
+        "backupCount": 20,
+        "encoding": "utf8"
+      },
+
       "error_file_handler": {
         "class": "logging.handlers.RotatingFileHandler",
         "level": "ERROR",
         "formatter": "debugging",
-        "filename": "errors.log",
+        "filename": "{{base.path}}\\{{base.path.logs}}\\errors.log",
         "maxBytes": 10485760,
         "backupCount": 20,
         "encoding": "utf8"
       }
     },
-  
+
     "loggers": {
       "arquitecture": {
         "level": "DEBUG",
-        "handlers": ["console","arq_file_handler","error_file_handler"],
+        "handlers": ["console", "arq_file_handler", "error_file_handler"],
         "propagate": false
       },
       "app": {
         "level": "DEBUG",
-        "handlers": ["console","app_file_handler","error_file_handler"],
+        "handlers": ["console", "app_file_handler", "error_file_handler"],
+        "propagate": false
+      },
+      "testing": {
+        "level": "DEBUG",
+        "handlers": ["console", "test_file_handler"],
         "propagate": false
       }
     },
-  
+
     "root": {
       "level": "INFO",
       "handlers": ["console", "arq_file_handler", "error_file_handler"]
     }
   }
+}

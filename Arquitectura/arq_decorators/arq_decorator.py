@@ -13,7 +13,7 @@ import sys
 # metadata
 from typing import TypeVar
 import types
-# metrics 
+# metrics
 from datetime import datetime
 
 # own
@@ -21,41 +21,50 @@ from arq_server.containers.ArqContainer import ArqContainer
 from arq_server.services.CoreService import Configuration
 from arq_server.services.OSService import FileSystemTools
 
+
 def method_wrapper(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
-        logger = ArqContainer.core_service().logger_service().arqLogger()
-        logger.debug("INI - funcion '%s'",function.__name__)
-        before = datetime.now()  
-        result = function(*args, **kwargs)
+        logger: logging.getLogger() = ArqContainer.core_service().logger_service().arqLogger()
+        logger.debug("INI - funcion '%s'", function.__name__)
+        before = datetime.now()
+        try:
+            result = function(*args, **kwargs)
+        except Exception as e:
+            logger.error(
+                "Error no controlado por la arquitectura - funcion %s \n%s", function.__name__, e)
         after = datetime.now()
-        logger.debug("FIN - funcion '%s' - tiempo empleado: %s ms",function.__name__,(after-before).total_seconds() * 1000)
+        logger.debug("FIN - funcion '%s' - tiempo empleado: %s ms",
+                     function.__name__, (after-before).total_seconds() * 1000)
         return result
     return wrapper
 
+
 def arq_decorator(Cls):
     class NewApp(object):
-        
-        def __init__(self,*args,**kwargs):
-            self.__tools_init()
-            self.__logger.info("INI - arranque decorador de la clase %a",Cls.__name__)
-            args, kwargs = self.__set_arq_attributes(*args,**kwargs)
-            self.wrapped = Cls(*args, **kwargs)
-            self.__logger.info("FIN - arranque decorador de la clase %a",Cls.__name__)
 
-        def __getattribute__(self,attr):
+        def __init__(self, *args, **kwargs):
+            self.__tools_init()
+            self.__logger.info(
+                "INI - arranque decorador de la clase %a", Cls.__name__)
+            args, kwargs = self.__set_arq_attributes(*args, **kwargs)
+            self.wrapped = Cls(*args, **kwargs)
+            self.__logger.info(
+                "FIN - arranque decorador de la clase %a", Cls.__name__)
+
+        def __getattribute__(self, attr):
             """
             esta función es invocada cada vez que se accede a cualquier atributo de la clase decoradora. 
             En primer lugar intenta obtener el atributo de NewCls. Si falla, intenta obtener el 
             atributo de self.oInstance (un instancia de la clase decorada).
             """
             try:
-                x = super(NewApp,self).__getattribute__(attr)
-            except (AttributeError, TypeError) as e:      
+                x = super(NewApp, self).__getattribute__(attr)
+            except (AttributeError, TypeError) as e:
                 pass
             else:
                 return x
-            
+
             x = self.wrapped.__getattribute__(attr)
             if type(x) == types.MethodType:
                 x = method_wrapper(x)
@@ -88,12 +97,12 @@ def arq_decorator(Cls):
                 # SERVICES
                 self.__protocols = ArqContainer.protocols_service()
             except Exception as err:
-                self.logger.error(err)
-            
+                print(err)
+                raise err
 
-        def __set_arq_attributes(self,*args, **kwargs):
+        def __set_arq_attributes(self, *args, **kwargs):
             if "logger" not in kwargs:
-                    kwargs['logger'] = self.__logger
+                kwargs['logger'] = self.__logger
             if "config" not in kwargs:
                 kwargs['config'] = self.__config
             if "os_tools" not in kwargs:
@@ -112,33 +121,40 @@ class ArqToolsTemplate:
     # TYPE HINTS APP
     logger: logging.getLogger()
 
-    def __init__(self, app_name, *args,**kwargs):
+    def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
-        self.__init_kwargs_attrs(*args,**kwargs)
-        
+        self.__init_kwargs_attrs(*args, **kwargs)
+
     """
     --------------
     CORE Functions
     --------------
     """
+
     def getProperty(self, property_key) -> str:
         return self.__config.getProperty(self.app_name, property_key)
 
     def getPropertyDefault(self, property_key: str, default: str) -> str:
         return self.__config.getPropertyDefault(self.app_name, property_key, default)
 
-    def getDirectoryTree(self,dirPath):
+    def getDirectoryTree(self, dirPath) -> dict:
         return self.__os_tools.getDirectoryTree(dirPath)
 
+    def modifyValuesOnDict(self,a_dict,key,key_value) -> dict:
+        return self.__os_tools.modifyValuesOnDict(a_dict,key,key_value)
     """
     ------------------
     Internal Functions
     ------------------
     """
-    def __init_kwargs_attrs(self,*args,**kwargs):
+
+    def __init_kwargs_attrs(self, *args, **kwargs):
         for key, value in kwargs.items():
             # Valores privados propios de la clase plantilla
-            self.__dict__["_{}__{}".format(self.__class__.__name__, key)] = value
+            self.__dict__["_{}__{}".format(
+                self.__class__.__name__, key)] = value
         # Valores privados añadidos a la aplicación
-        self.__dict__["{}".format("logger")] = ArqContainer.core_service().logger_service().appLogger()
-        self.__logger.debug("Atributos disponibles en la clase: %s",self.__dict__)
+        self.__dict__["{}".format("logger")] = ArqContainer.core_service(
+        ).logger_service().appLogger()
+        self.__logger.debug(
+            "Atributos disponibles en la clase: %s", self.__dict__)

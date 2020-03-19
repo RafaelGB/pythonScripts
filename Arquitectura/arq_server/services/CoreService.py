@@ -2,6 +2,8 @@
 import configparser
 import logging
 from logging.config import fileConfig, dictConfig
+#Testing
+import unittest
 # Filesystem
 from os import path, getenv
 from pathlib import Path
@@ -30,12 +32,16 @@ class Logger:
     def appLogger(self):
         return logging.getLogger("app")
 
-    def walkPathLogs(self, path_to_walk):
-        for (path, dirs, files) in os.walk(path_to_walk):
-            self.logger.info("Informe sobre el estado de la ruta '%s'",path)
-            self.logger.info("Listado de directorios: '%s'", dirs)
-            self.logger.info("Listado de ficheros: '%s'", files)
-            self.logger.info("----")
+    def testingLogger(self):
+        return logging.getLogger("testing")
+
+    def __fixup(self, a_dict:dict, k:str, subst_dict:dict) -> dict:
+        for key in a_dict.keys():
+            if key == k:
+                for s_k, s_v in subst_dict.items():
+                    a_dict[key] = a_dict[key].replace("{{"+s_k+"}}",s_v)
+            elif type(a_dict[key]) is dict:
+                self.__fixup(a_dict[key], k, subst_dict)
 
     def __setup_logging(self,
     default_path='logging.json',
@@ -47,7 +53,8 @@ class Logger:
         if path.exists(file_path):
             with open(file_path, 'rt') as f:
                 config = json.load(f)
-                logging.config.dictConfig(config)
+                self.__fixup(config["logging_conf"],"filename",config["properties"])
+                logging.config.dictConfig(config["logging_conf"])
         else:
             print("Se inicializa el logger por defecto")
             logging.basicConfig(level=default_level)
@@ -129,6 +136,50 @@ class Configuration:
                 newDict[key] = value
         return newDict
 
+class LogThisTestCase(type):
+
+    def __new__(cls, name, bases, dct):
+        # if the TestCase already provides setUp, wrap it
+        if 'setUp' in dct:
+            setUp = dct['setUp']
+        else:
+            setUp = lambda self: None
+            print ("creating setUp...")
+
+        def wrappedSetUp(self):
+            # for hdlr in self.logger.handlers:
+            #    self.logger.removeHandler(hdlr)
+            self.hdlr = logging.StreamHandler(sys.stdout)
+            self.logger.addHandler(self.hdlr)
+            setUp(self)
+        dct['setUp'] = wrappedSetUp
+
+        # same for tearDown
+        if 'tearDown' in dct:
+            tearDown = dct['tearDown']
+        else:
+            tearDown = lambda self: None
+
+        def wrappedTearDown(self):
+            tearDown(self)
+            self.logger.removeHandler(self.hdlr)
+        dct['tearDown'] = wrappedTearDown
+
+        # return the class instance with the replaced setUp/tearDown
+        return type.__new__(cls, name, bases, dct)
+
+class LoggedTestCase(unittest.TestCase):
+    __metaclass__ = LogThisTestCase
+    logger = Logger().testingLogger()
+
+    def test_list_int(self):
+        data = [1, 2, 3]
+        result = sum(data)
+        self.assertEqual(result, 6)
+
+"""
+Inversion of control section
+""" 
 class CoreService(containers.DeclarativeContainer):
     """Application IoC container."""
 

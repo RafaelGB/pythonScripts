@@ -9,7 +9,7 @@
             "name": "Python: fichero de arranque",
             "type": "python",
             "request": "launch",
-            "program": "${cwd}\\arq_server\\run.py",
+            "program": "${cwd}\\arq_server\\test.py",
             "console": "integratedTerminal",
             "justMyCode": false
         }

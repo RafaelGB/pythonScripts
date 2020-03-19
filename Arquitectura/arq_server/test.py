@@ -35,7 +35,6 @@ if __name__ == "__main__":
 
     prueba = MiApp("app_pruebas")
     prueba.prueba()
-    prueba.showOwnDirTree()
 
     # ArqContainer.protocols_service().rest_service().start_server()
 
