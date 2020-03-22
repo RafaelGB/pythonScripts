@@ -5,6 +5,9 @@ from inspect import isclass
 from pathlib import Path
 from logging.config import fileConfig
 
+# Testing
+import unittest
+
 # filesystem
 import configparser
 import logging
@@ -13,6 +16,7 @@ import sys
 # metadata
 from typing import TypeVar
 import types
+
 # metrics
 from datetime import datetime
 
@@ -33,6 +37,7 @@ def method_wrapper(function):
         except Exception as e:
             logger.error(
                 "Error no controlado por la arquitectura - funcion %s \n%s", function.__name__, e)
+            raise e
         after = datetime.now()
         logger.debug("FIN - funcion '%s' - tiempo empleado: %s ms",
                      function.__name__, (after-before).total_seconds() * 1000)
@@ -93,16 +98,20 @@ def arq_decorator(Cls):
             try:
                 # CORE
                 self.__logger = ArqContainer.core_service().logger_service().arqLogger()
+                self.__logger_test = ArqContainer.core_service().logger_service().testingLogger()
                 self.__config = ArqContainer.core_service().config_service()
                 # SERVICES
                 self.__protocols = ArqContainer.protocols_service()
             except Exception as err:
-                print(err)
+                self.__logger.error(
+                    "Ha ocurrido un problema inicializando las funcionalidades de la arquitectura: %s", err)
                 raise err
 
         def __set_arq_attributes(self, *args, **kwargs):
             if "logger" not in kwargs:
                 kwargs['logger'] = self.__logger
+            if "logger_test" not in kwargs:
+                kwargs['logger_test'] = self.__logger_test
             if "config" not in kwargs:
                 kwargs['config'] = self.__config
             if "os_tools" not in kwargs:
@@ -113,6 +122,9 @@ def arq_decorator(Cls):
 
 @arq_decorator
 class ArqToolsTemplate:
+    # TEMPLATE VARS
+    __suite = unittest.TestSuite()
+
     # TYPE HINTS TEMPLATE
     __logger: logging.getLogger()
     __config: Configuration
@@ -124,6 +136,7 @@ class ArqToolsTemplate:
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
         self.__init_kwargs_attrs(*args, **kwargs)
+        self.__init_arq_test()
 
     """
     --------------
@@ -140,8 +153,71 @@ class ArqToolsTemplate:
     def getDirectoryTree(self, dirPath) -> dict:
         return self.__os_tools.getDirectoryTree(dirPath)
 
-    def modifyValuesOnDict(self,a_dict,key,key_value) -> dict:
-        return self.__os_tools.modifyValuesOnDict(a_dict,key,key_value)
+    """
+    --------------
+    OS Tools
+    --------------
+    """
+
+    def modifyValuesOnDict(self, a_dict, key, key_value) -> dict:
+        return self.__os_tools.modifyValuesOnDict(a_dict, key, key_value)
+
+    """
+    --------------
+    TESTING
+    --------------
+    """
+
+    def run_tests(self):
+
+        self.__logger_test.info("INI - test asignados a la aplicación %s\nNúmero de tests a ejecutar: '%d",
+                                self.app_name,
+                                self.__suite.countTestCases()
+                                )
+        unittest.TextTestRunner().run(self.__suite)
+        self.__logger_test.info(
+            "FIN - test asignados a la aplicación '%s'", self.app_name)
+
+    def add_test(self, newTest: unittest.TestCase):
+        try:
+            self.__suite.addTest(
+                unittest.FunctionTestCase(newTest)
+            )
+        except Exception as err:
+            self.__logger.error(
+                "Ha habido un problema añadiendo el test '%s' - %s",
+                newTest.__name__,
+                err
+            )
+
+    """
+    ------------------
+    FLAG Actions
+    ------------------
+    """
+    def  (self):
+        if bool(self.__config.getProperty("flags", "init.test")):
+            self.run_tests()
+    """
+    ------------------
+    Test asociados a la arquitectura
+    respuesta esperada: "resultado obntenido","resultado esperado"
+    ------------------
+    """
+
+    def __test_logging(self):
+        result = ""
+        expected = "OK"
+        try:
+            self.__logger_test.info("Log nivel info")
+            self.__logger_test.warn("Log nivel warn")
+            self.__logger_test.error("Log nivel err")
+            self.__logger_test.debug("Log nivel debug")
+            result = "OK"
+        except:
+            result = "KO"
+
+        assert result == expected
     """
     ------------------
     Internal Functions
@@ -156,5 +232,15 @@ class ArqToolsTemplate:
         # Valores privados añadidos a la aplicación
         self.__dict__["{}".format("logger")] = ArqContainer.core_service(
         ).logger_service().appLogger()
-        self.__logger.debug(
-            "Atributos disponibles en la clase: %s", self.__dict__)
+    # TESTING
+
+    def __init_arq_test(self):
+        for attr in dir(self):
+            test = getattr(self, attr)
+            if attr.startswith("_{}__{}".format(
+                    self.__class__.__name__, "test")) and callable(test):
+                self.__suite.addTest(
+                    unittest.FunctionTestCase(
+                        test
+                    )
+                )

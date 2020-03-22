@@ -18,24 +18,30 @@ class MiApp(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
 
     def __init__(self, *args, **kwargs):
-        className = self.__class__.__name__
-        super().__init__(className, *args, **kwargs)
+        super().__init__(self.__class__.__name__, *args, **kwargs)
+        self.__init_app_test()
+        self.actions_on_init()
 
-    def showOwnDirTree(self):
+    def test__showOwnDirTree(self):
         dirTree = self.getDirectoryTree(
             os.path.dirname(os.path.abspath(__file__)))
-        self.logger.info(json.dumps(dirTree,  sort_keys=True, indent=4))
+        self.__init_app_test()
         
-    def prueba(self):
-        self.logger.info("utilizando log de la arquitectura en una clase. Propiedad '%s'",
-                         self.getProperty("mi.propiedad"))
+    def __test__propioMiApp(self):
+        assert "aa" == "aa"
 
+    def __init_app_test(self):
+        for attr in dir(self):
+            test = getattr(self, attr)
+            if attr.startswith("_{}__{}".format(
+                    self.__class__.__name__, "test")) and callable(test):
+                self.add_test(test)
 
 if __name__ == "__main__":
 
-    prueba = MiApp("app_pruebas")
-    prueba.prueba()
-
+    prueba = MiApp()
+    
+    
     # ArqContainer.protocols_service().rest_service().start_server()
 
     # app.run(debug=True)
