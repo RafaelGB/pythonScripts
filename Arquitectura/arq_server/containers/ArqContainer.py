@@ -5,7 +5,7 @@ import sqlite3
 from dependency_injector import containers, providers
 # own
 from arq_server.services.CoreService import CoreService
-from arq_server.services.OSService import OSService
+from arq_server.services.support.UtilsService import UtilsService
 from arq_server.services.protocols.ProtocolsService import ProtocolsService
 
 class ArqContainer(containers.DeclarativeContainer):
@@ -18,5 +18,5 @@ class ArqContainer(containers.DeclarativeContainer):
 
     # Services
     core_service = providers.Singleton(CoreService)
-    os_service = providers.Singleton(OSService)
+    utils_service = providers.Singleton(UtilsService)
     protocols_service = providers.Singleton(ProtocolsService)

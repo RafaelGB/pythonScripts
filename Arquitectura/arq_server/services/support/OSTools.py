@@ -3,8 +3,6 @@ import sys, os
 import pathlib
 import logging
 # IoC
-from dependency_injector import containers, providers
-from arq_server.services.CoreService import CoreService
 from arq_server.services.CoreService import Configuration
 
 class FileSystemTools(object):
@@ -14,11 +12,6 @@ class FileSystemTools(object):
     def __init__(self,core, *args, **kwargs):
         self.__init_services(core)
         self.logger.info("Herramientas sistema de fichero arrancado correctamente")
-
-    def __init_services(self, core) -> None:
-        # Servicio de logging
-        self.logger = core.logger_service().arqLogger()
-        self.config = core.config_service()
 
     def getDirectoryTree(self,dirPath) -> dict:
         """
@@ -48,11 +41,7 @@ class FileSystemTools(object):
             elif type(a_dict[key]) is dict:
                 self.__fixup(a_dict[key], k, subst_dict)
     
-class OSService(containers.DeclarativeContainer):
-    """Application IoC container."""
-
-    # Services
-    file_system_tools = providers.Singleton(
-        FileSystemTools,
-        core=providers.Singleton(CoreService)
-    )
+    def __init_services(self, core) -> None:
+        # Servicio de logging
+        self.logger = core.logger_service().arqLogger()
+        self.config = core.config_service()

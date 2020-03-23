@@ -29,7 +29,8 @@ setup(
           'markdown',
           'dependency-injector==3.15.6',
           'flask',
-          'pylint==2.4.4'
+          'pylint',
+          'cachetools'
     ],
     python_requires='>=3.7',
     include_package_data=True,

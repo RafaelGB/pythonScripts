@@ -23,7 +23,6 @@ from datetime import datetime
 # own
 from arq_server.containers.ArqContainer import ArqContainer
 from arq_server.services.CoreService import Configuration
-from arq_server.services.OSService import FileSystemTools
 
 
 def method_wrapper(function):
@@ -115,13 +114,17 @@ def arq_decorator(Cls):
             if "config" not in kwargs:
                 kwargs['config'] = self.__config
             if "os_tools" not in kwargs:
-                kwargs['os_tools'] = ArqContainer.os_service().file_system_tools()
+                kwargs['utils'] = ArqContainer.utils_service()
             return args, kwargs
     return NewApp
 
 
 @arq_decorator
 class ArqToolsTemplate:
+    # TEMPLATE FLAGS
+    __flags = {
+        "skip_add_arq_test":False
+        }
     # TEMPLATE VARS
     __suite = unittest.TestSuite()
 
@@ -129,7 +132,7 @@ class ArqToolsTemplate:
     __logger: logging.getLogger()
     __config: Configuration
     __protocols: ArqContainer.protocols_service()
-    __os_tools: FileSystemTools
+    __utils: ArqContainer.utils_service()
     # TYPE HINTS APP
     logger: logging.getLogger()
 
@@ -151,7 +154,7 @@ class ArqToolsTemplate:
         return self.__config.getPropertyDefault(self.app_name, property_key, default)
 
     def getDirectoryTree(self, dirPath) -> dict:
-        return self.__os_tools.getDirectoryTree(dirPath)
+        return self.__utils.file_system_tools().getDirectoryTree(dirPath)
 
     """
     --------------
@@ -160,7 +163,7 @@ class ArqToolsTemplate:
     """
 
     def modifyValuesOnDict(self, a_dict, key, key_value) -> dict:
-        return self.__os_tools.modifyValuesOnDict(a_dict, key, key_value)
+        return self.__utils().file_system_tools().modifyValuesOnDict(a_dict, key, key_value)
 
     """
     --------------
@@ -192,10 +195,10 @@ class ArqToolsTemplate:
 
     """
     ------------------
-    FLAG Actions
+    Arquitecture FLAG Actions
     ------------------
     """
-    def  (self):
+    def actions_on_init(self):
         if bool(self.__config.getProperty("flags", "init.test")):
             self.run_tests()
     """
@@ -218,6 +221,27 @@ class ArqToolsTemplate:
             result = "KO"
 
         assert result == expected
+    
+    def __test_cacheTools(self):
+        jumps = 2000
+        before = datetime.now()
+        for i in range(jumps):
+            self.__config.getPropertyVerbose("base","path.resources")
+        after = datetime.now()
+        usedTimeNoCache = (after-before).total_seconds() * 1000
+
+        before = datetime.now()
+        for i in range(jumps):
+            self.__config.getProperty("base","path.resources")
+        after = datetime.now()
+        usedTimeCache = (after-before).total_seconds() * 1000
+        self.__logger_test.info(
+            "%d accesos a misma configuración. %d ms usando cache vs %d ms sin usar cache",
+            jumps,
+            usedTimeCache,
+            usedTimeNoCache
+        )
+        assert usedTimeCache < usedTimeNoCache
     """
     ------------------
     Internal Functions
@@ -235,12 +259,14 @@ class ArqToolsTemplate:
     # TESTING
 
     def __init_arq_test(self):
-        for attr in dir(self):
-            test = getattr(self, attr)
-            if attr.startswith("_{}__{}".format(
-                    self.__class__.__name__, "test")) and callable(test):
-                self.__suite.addTest(
-                    unittest.FunctionTestCase(
-                        test
+        if self.__flags["skip_add_arq_test"]:
+            for attr in dir(self):
+                test = getattr(self, attr)
+                if attr.startswith("_{}__{}".format(
+                        self.__class__.__name__, "test")) and callable(test):
+                    self.__suite.addTest(
+                        unittest.FunctionTestCase(
+                            test
+                        )
                     )
-                )
+            self.__flags["skip_add_arq_test"] = True
