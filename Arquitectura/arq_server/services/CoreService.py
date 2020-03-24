@@ -82,40 +82,48 @@ class Configuration:
         self.logger.info("FIN - servicio de Configuración")
     
     @cached(cache=TTLCache(maxsize=1024, ttl=600))
-    def getProperty(self, group, key):
+    def getProperty(self, group, key, parseType=str):
         """
         Obtener propiedad en función del grupo y la clave ( usando cache )
         """
         if group in self.confMap:
             if key in self.confMap[group]:
-                return self.confMap[group][key]
+                try:
+                    return parseType(self.confMap[group][key])
+                except:
+                    self.logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
+                    return None
             else:
-                self.logger.error("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
+                self.logger.warn("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
                 return None
         else:
-            self.logger.error("El grupo '%s' no está definido en configuración", group)
+            self.logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
     
-    def getPropertyVerbose(self, group, key):
+    def getPropertyVerbose(self, group, key, parseType=str):
         """
         Obtener propiedad en función del grupo y la clave ( sin usar cache )
         """
         if group in self.confMap:
             if key in self.confMap[group]:
-                return self.confMap[group][key]
+                try:
+                    return parseType(self.confMap[group][key])
+                except:
+                    self.logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
+                    return None
             else:
-                self.logger.error("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
+                self.logger.warn("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
                 return None
         else:
-            self.logger.error("El grupo '%s' no está definido en configuración", group)
+            self.logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
 
-    def getPropertyDefault(self, group, key, defaultValue):
+    def getPropertyDefault(self, group, key, defaultValue,parseType=str):
         """
         Obtener propiedad en función del grupo y la clave.
         En caso de no existir, define un valor por defecto
         """
-        propertyValue = self.getProperty(group,key)
+        propertyValue = self.getProperty(group,key,parseType)
         return (propertyValue, defaultValue)[propertyValue == None]
     
     def getGroupOfProperties(self,group_name):

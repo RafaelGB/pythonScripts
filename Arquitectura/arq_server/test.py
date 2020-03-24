@@ -22,10 +22,12 @@ class MiApp(ArqToolsTemplate):
         self.__init_app_test()
         self.actions_on_init()
 
-    def test__showOwnDirTree(self):
+    def getOwnDirTree(self):
         dirTree = self.getDirectoryTree(
             os.path.dirname(os.path.abspath(__file__)))
-        print(dirTree)
+
+    def __test_own(self):
+        assert "a"=="a"
 
     def __init_app_test(self):
         for attr in dir(self):
@@ -42,6 +44,9 @@ class MiApp2(ArqToolsTemplate):
         self.__init_app_test()
         self.actions_on_init()
 
+    def __test_own(self):
+        assert "a"=="a"
+        
     def __init_app_test(self):
         for attr in dir(self):
             test = getattr(self, attr)
@@ -51,6 +56,8 @@ class MiApp2(ArqToolsTemplate):
 
 if __name__ == "__main__":
     prueba = MiApp()
-    #prueba.test__showOwnDirTree()
+    prueba.run_own_test()
+    #prueba.getOwnDirTree()
     prueba2 = MiApp2()
+    prueba2.run_own_test()
 

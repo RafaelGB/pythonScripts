@@ -12,7 +12,7 @@ from arq_server.services.data_access.CacheTools  import RedisTools
 
 
     
-class UtilsService(containers.DeclarativeContainer):
+class DataService(containers.DeclarativeContainer):
     """Application IoC container."""
 
     # Services

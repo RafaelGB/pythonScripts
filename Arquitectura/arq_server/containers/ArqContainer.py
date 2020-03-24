@@ -7,7 +7,7 @@ from dependency_injector import containers, providers
 from arq_server.services.CoreService import CoreService
 from arq_server.services.support.UtilsService import UtilsService
 from arq_server.services.protocols.ProtocolsService import ProtocolsService
-
+from arq_server.services.data_access.DataService import DataService
 class ArqContainer(containers.DeclarativeContainer):
     """Application IoC container."""
     #logger = providers.Singleton(logging.Logger, name='logger')
@@ -20,3 +20,4 @@ class ArqContainer(containers.DeclarativeContainer):
     core_service = providers.Singleton(CoreService)
     utils_service = providers.Singleton(UtilsService)
     protocols_service = providers.Singleton(ProtocolsService)
+    data_service = providers.Singleton(DataService)

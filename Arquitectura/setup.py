@@ -30,7 +30,8 @@ setup(
           'dependency-injector==3.15.6',
           'flask',
           'pylint',
-          'cachetools'
+          'cachetools',
+          'redis'
     ],
     python_requires='>=3.7',
     include_package_data=True,

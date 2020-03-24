@@ -23,7 +23,7 @@ from datetime import datetime
 # own
 from arq_server.containers.ArqContainer import ArqContainer
 from arq_server.services.CoreService import Configuration
-
+from arq_server.services.data_access.CacheTools import RedisTools
 
 def method_wrapper(function):
     @wraps(function)
@@ -113,8 +113,10 @@ def arq_decorator(Cls):
                 kwargs['logger_test'] = self.__logger_test
             if "config" not in kwargs:
                 kwargs['config'] = self.__config
-            if "os_tools" not in kwargs:
+            if "utils" not in kwargs:
                 kwargs['utils'] = ArqContainer.utils_service()
+            if "cache" not in kwargs:
+                kwargs['cache'] = ArqContainer.data_service().cache_tools()
             return args, kwargs
     return NewApp
 
@@ -126,13 +128,14 @@ class ArqToolsTemplate:
         "skip_add_arq_test":False
         }
     # TEMPLATE VARS
-    __suite = unittest.TestSuite()
+    __saved_test = {}
 
     # TYPE HINTS TEMPLATE
     __logger: logging.getLogger()
     __config: Configuration
     __protocols: ArqContainer.protocols_service()
     __utils: ArqContainer.utils_service()
+    __cache: RedisTools
     # TYPE HINTS APP
     logger: logging.getLogger()
 
@@ -158,6 +161,8 @@ class ArqToolsTemplate:
 
     """
     --------------
+    SUPPORT
+    -------
     OS Tools
     --------------
     """
@@ -167,23 +172,83 @@ class ArqToolsTemplate:
 
     """
     --------------
+    DATA
+    ----
+    Cache
+    --------------
+    """
+    def getValFromCache(self, key:str, isFast:bool) -> any:
+        """
+        obtiene de cache el valor asociado a la clave usada como parámetro.
+        En caso de que el flag booleano 'isFast' sea 'True' y se haya realizado la misma
+        petición recientemente. Se ahorrará una consulta y devolverá el valor cacheado
+        """
+        return (self.__cache.getVal(key),self.__cache.getValFast(key))[isFast]
+    
+    def setValOnCache(self, key:str, value:any) -> None:
+        """
+        Añade a la cache el par 'Clave-Valor' usado como parámetros de entrada
+        """
+        self.__cache.setVal(key,value)
+    """
+    --------------
     TESTING
     --------------
     """
-
-    def run_tests(self):
-
-        self.__logger_test.info("INI - test asignados a la aplicación %s\nNúmero de tests a ejecutar: '%d",
-                                self.app_name,
-                                self.__suite.countTestCases()
-                                )
-        unittest.TextTestRunner().run(self.__suite)
-        self.__logger_test.info(
-            "FIN - test asignados a la aplicación '%s'", self.app_name)
-
     def add_test(self, newTest: unittest.TestCase):
+        """ Añade un test para la aplicación invocadora """
+        self.__add_test(self.app_name,newTest)
+
+    def run_own_test(self):
+        """ Ejecuta todos los test de la aplicación invocadora """
+        if self.app_name in self.__saved_test:
+            ownTest = self.__saved_test.pop(self.app_name)
+            self.__logger_test.info("INI - test asignados a la aplicación %s. Número de tests a ejecutar: '%d",
+                                    self.app_name,
+                                    ownTest.countTestCases()
+                                    )
+            unittest.TextTestRunner().run(ownTest)
+            self.__logger_test.info(
+                "FIN - test asignados a la aplicación '%s'. Test limpiados de la memoria", self.app_name)
+        else:
+            self.__logger_test.warn("No existen actualmente test para la aplicación %s. Para añadir uno utilice la función 'add_test'",self.app_name)
+
+    def run_arq_test(self):
+        """ Ejecuta todos los test asociados a la arquitectura """
+        if '__arq__' in self.__saved_test:
+            arqTest = self.__saved_test.pop('__arq__')
+            self.__logger_test.info("INI - test asignados a la arquitectura. Número de tests a ejecutar: '%d",
+                                    arqTest.countTestCases()
+                                    )
+            unittest.TextTestRunner().run(arqTest)
+            self.__logger_test.info(
+                "FIN - test asignados a la arquitectura. Test limpiados de la memoria")
+            self.__flags["skip_run_arq_test"] = True
+        else:
+            self.__logger_test.warn("Los test de arquitectura ya se han ejecutado. Reinicie la ejecución en caso de querer ejecutarlos de nuevo")
+
+
+
+    """
+    ------------------
+    Arquitecture FLAG Actions
+    ------------------
+    """
+    def actions_on_init(self):
+        if bool(self.__config.getProperty("flags", "init.test")):
+            self.run_arq_test()
+    """
+    ------------------
+    Test asociados a la arquitectura
+    respuesta esperada: "resultado obntenido","resultado esperado"
+    ------------------
+    """
+    def __add_test(self,context: str, newTest: unittest.TestCase):
         try:
-            self.__suite.addTest(
+            if not context in self.__saved_test:
+                testSuite = unittest.TestSuite()
+                self.__saved_test[context] = unittest.TestSuite()
+            self.__saved_test[context].addTest(
                 unittest.FunctionTestCase(newTest)
             )
         except Exception as err:
@@ -193,22 +258,8 @@ class ArqToolsTemplate:
                 err
             )
 
-    """
-    ------------------
-    Arquitecture FLAG Actions
-    ------------------
-    """
-    def actions_on_init(self):
-        if bool(self.__config.getProperty("flags", "init.test")):
-            self.run_tests()
-    """
-    ------------------
-    Test asociados a la arquitectura
-    respuesta esperada: "resultado obntenido","resultado esperado"
-    ------------------
-    """
-
     def __test_logging(self):
+        """TEST orientado a logging"""
         result = ""
         expected = "OK"
         try:
@@ -222,7 +273,8 @@ class ArqToolsTemplate:
 
         assert result == expected
     
-    def __test_cacheTools(self):
+    def __test_config(self):
+        """TEST orientado a configuracion"""
         jumps = 2000
         before = datetime.now()
         for i in range(jumps):
@@ -241,7 +293,31 @@ class ArqToolsTemplate:
             usedTimeCache,
             usedTimeNoCache
         )
+
         assert usedTimeCache < usedTimeNoCache
+    
+    def __test_cacheArq(self):
+        """TEST orientado a cache"""
+        if bool(self.__config.getProperty("flags", "enable.redis")):
+            key = "testKey"
+            value = "testValue"
+            obtainedValueFast = ""
+            obtainedValueNoFast = ""
+            jumps = 200
+            self.setValOnCache(key,value)
+            before = datetime.now()
+            for i in range(jumps):
+                obtainedValueNoFast = self.getValFromCache(key,False)
+            after = datetime.now()
+            usedTimeNoFast = (after-before).total_seconds() * 1000
+
+            before = datetime.now()
+            for i in range(jumps):
+                obtainedValueFast = self.getValFromCache(key,True)
+            after = datetime.now()
+            usedTimeFast = (after-before).total_seconds() * 1000
+
+            assert (value == obtainedValueFast) and (value == obtainedValueNoFast) and (usedTimeNoFast > usedTimeFast)
     """
     ------------------
     Internal Functions
@@ -259,12 +335,13 @@ class ArqToolsTemplate:
     # TESTING
 
     def __init_arq_test(self):
-        if self.__flags["skip_add_arq_test"]:
+        if not self.__flags["skip_add_arq_test"]:
             for attr in dir(self):
                 test = getattr(self, attr)
                 if attr.startswith("_{}__{}".format(
                         self.__class__.__name__, "test")) and callable(test):
-                    self.__suite.addTest(
+                    self.__add_test(
+                        '__arq__',
                         unittest.FunctionTestCase(
                             test
                         )
