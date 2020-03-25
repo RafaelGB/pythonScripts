@@ -6,7 +6,7 @@ from cachetools import cached, TTLCache
 #Testing
 import unittest
 # Filesystem
-from os import path, getenv
+from os import path, getenv,mkdir
 from pathlib import Path
 import sys
 import json
@@ -19,12 +19,16 @@ class Logger:
     ------
     Servicio para ofrecer logging centralizado al resto de servicios y aplicaciones
     """
+    isCustomCOnf: bool
     def __init__(self):
         self.parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
         logger_path = path.join(self.parent_path, "resources/logger_conf.json")
         self.__setup_logging(default_path=logger_path)
         self.logger = logging.getLogger("arquitecture")
-        self.logger.info("conf de logger obtenida de '%s'",logger_path)
+        if self.isCustomCOnf:
+            self.logger.info("conf de logger obtenida de '%s'",logger_path)
+        else:
+            self.logger.warn("ruta '%s' para configuración de logging no existente. Cargada configuración básica por defecto")
         self.logger.info("¡servicio de logging levantado!")
 
     def arqLogger(self):
@@ -56,8 +60,9 @@ class Logger:
                 config = json.load(f)
                 self.__fixup(config["logging_conf"],"filename",config["properties"])
                 logging.config.dictConfig(config["logging_conf"])
+                self.isCustomCOnf = True
         else:
-            print("Se inicializa el logger por defecto")
+            self.isCustomCOnf = False
             logging.basicConfig(level=default_level)
 
 class Configuration:
@@ -70,12 +75,8 @@ class Configuration:
         self.__init_services(logger)
         self.logger.info("INI - servicio de Configuración")
 
-        self.parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
-
-        conf_path = path.join(self.parent_path, "resources/arq_conf.cfg")
-        self.logger.info("conf general obtenida de '%s'",conf_path)
-        self.confMap = configparser.ConfigParser()
-        self.confMap.read(conf_path)
+        parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
+        self.__init_conf(parent_path,"arq_conf.cfg")
         self.logger.debug("-"*20)
         {section: self.logger.debug("Sección: %s",json.dumps(dict(self.confMap[section]))) for section in self.confMap.sections()}
         self.logger.debug("-"*20)
@@ -151,6 +152,16 @@ class Configuration:
         # Servicio de logging
         self.logger = logger.arqLogger()
     
+    def __init_conf(self,basepath,filename):
+        self.confMap = configparser.ConfigParser()
+        resources_path = path.join(basepath, "resources/")
+        conf_path = path.join(resources_path, filename)
+        self.logger.info("conf general obtenida de '%s'",conf_path)
+        
+        if not path.exists(conf_path):
+            generate_default_conf(resources_path,filename)
+        self.confMap.read(conf_path)
+
     def __filterTheDict(self, dictObj, callback):
         newDict = dict()
         # Itera sobnrte todos los elementos del diccionario
@@ -179,3 +190,37 @@ class CoreService(containers.DeclarativeContainer):
         logger=logger_service
     )
 
+
+def generate_default_conf(base_path:str, filename:str):
+    config = configparser.ConfigParser()
+    config['groups'] = {
+                         'environment': 'environment',
+                         'applications': 'applications',
+                         'flask': 'flask',
+                         'flags': 'flags',
+                         'redis': 'redis'
+                        }
+    config['base'] = {
+                         'path.resources': 'resources/'
+                        }    
+
+    config['applications'] = {
+                         'filename.method_views': 'methodViews.json',
+                         'path.app.repository': 'apps/'
+                        }
+
+    config['flask'] = {
+                         'shutdown': 'werkzeug.server.shutdown',
+                         'url.rule.applications': '/api/applications/<app_name>;applications_api'
+                        }
+    
+    config['flags'] = {
+                         'init.test': True,
+                         'enable.redis': False
+                        }
+                        
+    if not path.exists(conf_path):
+        mkdir(base_path)
+    conf_path = path.join(base_path, filename)
+    with open(conf_path, 'w') as configfile:
+        config.write(configfile)

@@ -39,7 +39,7 @@ class FileSystemTools(object):
                 for s_k, s_v in subst_dict.items():
                     a_dict[key] = a_dict[key].replace("{{"+s_k+"}}",s_v)
             elif type(a_dict[key]) is dict:
-                self.__fixup(a_dict[key], k, subst_dict)
+                self.modifyValuesOnDict(a_dict[key], k, subst_dict)
     
     def __init_services(self, core) -> None:
         # Servicio de logging

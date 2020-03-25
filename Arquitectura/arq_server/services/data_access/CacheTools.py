@@ -1,9 +1,11 @@
 # Data
 import redis
+from redis import StrictRedis
 # Base
 from cachetools import cached, TTLCache
 # filesystem
 import logging
+import json
 # IoC
 from arq_server.services.CoreService import Configuration
 
@@ -37,10 +39,12 @@ class RedisTools(object):
     client_name=None
     username=None
 
-    # Services
+    # Services TIPS
     logger: logging.getLogger()
     config: Configuration
     
+    __redis_client : StrictRedis
+
     def __init__(self, core):
         self.__init_services(core)
         # Local configuration
@@ -48,29 +52,46 @@ class RedisTools(object):
         self.__redis_conf=self.config.getGroupOfProperties(self.__redis_conf_alias)
         # Server configuration
         self.__conf_redis_client()
-        self.redis = redis.Redis(self.host, self.port,
+
+        self.__redis_client = redis.StrictRedis(self.host, self.port,
                  self.db, self.password, self.socket_timeout,
                  self.socket_connect_timeout,
                  self.socket_keepalive, self.socket_keepalive_options,
                  self.connection_pool, self.unix_socket_path,
-                 self.encoding, self.encoding_errors,
-                 self.charset, self.errors,
+                 self.encoding, self.encoding_errors, self.charset, self.errors,
                  self.decode_responses, self.retry_on_timeout,
                  self.ssl, self.ssl_keyfile, self.ssl_certfile,
                  self.ssl_cert_reqs, self.ssl_ca_certs,
-                 self.ssl_check_hostname,
-                 self.max_connections, self.single_connection_client,
+                 self.ssl_check_hostname,self.max_connections, self.single_connection_client,
                  self.health_check_interval, self.client_name, self.username)
     
-    def setVal(self, key:str, value:str)-> None:
-        self.redis.set(key,value)
+    def setVal(self, key:str, value:str,volatile=False,timeToExpire=60)-> None:
+        self.__redis_client.set(key,value)
+        if volatile:
+            self.__redis_client.expire(key,timeToExpire)
 
     @cached(cache=TTLCache(maxsize=1024, ttl=600))
     def getValFast(self, key:str) -> any:
-        return self.redis.get(key)
+        return self.__redis_client.get(key)
     
     def getVal(self, key:str) -> any:
-        return self.redis.get(key)
+        return self.__redis_client.get(key)
+
+    def setDict(self,key:str ,myDict:dict,volatile=False,timeToExpire=60) -> None:
+        marshallDict = json.dumps(myDict)
+        self.setVal(key,marshallDict,volatile=volatile,timeToExpire=timeToExpire)
+
+    @cached(cache=TTLCache(maxsize=4096, ttl=600))
+    def getDict(self,key:str ) -> dict:
+        myDict = json.loads(self.__redis_client.get(key))
+        return myDict
+
+    def existKey(self,key:str) -> bool:
+        return self.__redis_client.exists(key)
+
+    def deleteKeyList(self,keyList:[]) -> None:
+        self.logger.debug("Borrando las siguientes claves de cache:%s",keyList)
+        self.__redis_client.delete(keyList)
 
     def __init_services(self, core) -> None:
         # Servicio de logging
@@ -104,8 +125,3 @@ class RedisTools(object):
         self.health_check_interval = self.config.getPropertyDefault(self.__redis_conf_alias,"health_check_interval",self.health_check_interval,parseType=int)
         self.client_name = self.config.getPropertyDefault(self.__redis_conf_alias,"client_name",self.client_name)
         self.username = self.config.getPropertyDefault(self.__redis_conf_alias,"username",self.username)
-    
-if __name__ == "__main__":
-    prueba = RedisTools()
-    prueba.setVal("clave","valor")
-    print(prueba.getVal("clave"))

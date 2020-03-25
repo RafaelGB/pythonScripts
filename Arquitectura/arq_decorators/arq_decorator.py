@@ -25,6 +25,7 @@ from arq_server.containers.ArqContainer import ArqContainer
 from arq_server.services.CoreService import Configuration
 from arq_server.services.data_access.CacheTools import RedisTools
 
+
 def method_wrapper(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
@@ -125,8 +126,8 @@ def arq_decorator(Cls):
 class ArqToolsTemplate:
     # TEMPLATE FLAGS
     __flags = {
-        "skip_add_arq_test":False
-        }
+        "skip_add_arq_test": False
+    }
     # TEMPLATE VARS
     __saved_test = {}
 
@@ -143,6 +144,7 @@ class ArqToolsTemplate:
         self.app_name: str = app_name
         self.__init_kwargs_attrs(*args, **kwargs)
         self.__init_arq_test()
+        self.__actions_on_init()
 
     """
     --------------
@@ -150,13 +152,28 @@ class ArqToolsTemplate:
     --------------
     """
 
-    def getProperty(self, property_key) -> str:
-        return self.__config.getProperty(self.app_name, property_key)
+    def getProperty(self, property_key, parseType=str) -> any:
+        """
+        Recupera de la configuración de aplicación la propiedad solicitada por parámetro.
+        Por defecto se entenderá como String. Se facilita como parámetro opcional la posibilidad
+        de interpretar el tipo
+        """
+        return self.__config.getProperty(self.app_name, property_key, parseType=parseType)
 
-    def getPropertyDefault(self, property_key: str, default: str) -> str:
-        return self.__config.getPropertyDefault(self.app_name, property_key, default)
+    def getPropertyDefault(self, property_key: str, default: str, parseType=str) -> any:
+        """
+        Recupera de la configuración de aplicación la propiedad solicitada por parámetro. Añade
+        la posibilidad de incluir uin valor por defecto en caso de no existir la propiedad.
+        Por defecto se entenderá como String. Se facilita como parámetro opcional la posibilidad
+        de interpretar el tipo
+        """
+        return self.__config.getPropertyDefault(self.app_name, property_key, default, parseType=parseType)
 
     def getDirectoryTree(self, dirPath) -> dict:
+        """
+        Dada una ruta a un directorio del fileSystem, devuelve un diccionario con la información de su contenido,
+        incluyendo los directorios anidados
+        """
         return self.__utils.file_system_tools().getDirectoryTree(dirPath)
 
     """
@@ -167,9 +184,27 @@ class ArqToolsTemplate:
     --------------
     """
 
-    def modifyValuesOnDict(self, a_dict, key, key_value) -> dict:
-        return self.__utils().file_system_tools().modifyValuesOnDict(a_dict, key, key_value)
+    def modifyValuesOnDict(self, a_dict:dict, key:str, key_value_subst:dict) -> dict:
+        """
+        dado un diccionario 'referencia', una clave y un diccionario 'variables' (clave-valor), modifica, en todos los niveles
+        del diccionario base donde se encuentre la clave, su valor asociado en caso de que dicho valor contenga alguna de las
+        variables especificadas en el diccionario 'variables' con el formato {{variable}},siendo sustituída por el valor referenciado.
 
+        i.e.: {
+            "clave1":"valor1",
+            "clave2":
+                {
+                    "clave_buscada":"esta clave contiene {{variable}}"
+                }
+            }
+        """
+        return self.__utils().file_system_tools().modifyValuesOnDict(a_dict, key, key_value_subst)
+
+    def add_new_argument(self) -> None:
+        self.__utils.parse_args_tools().add_argument()
+
+    def show_help(self) -> None:
+        self.__utils.parse_args_tools().show_help()
     """
     --------------
     DATA
@@ -177,27 +212,52 @@ class ArqToolsTemplate:
     Cache
     --------------
     """
-    def getValFromCache(self, key:str, isFast:bool) -> any:
+
+    def getValFromCache(self, key: str, isFast: bool) -> any:
         """
-        obtiene de cache el valor asociado a la clave usada como parámetro.
+        CACHE - obtiene de cache el valor asociado a la clave usada como parámetro.
         En caso de que el flag booleano 'isFast' sea 'True' y se haya realizado la misma
         petición recientemente. Se ahorrará una consulta y devolverá el valor cacheado
         """
-        return (self.__cache.getVal(key),self.__cache.getValFast(key))[isFast]
-    
-    def setValOnCache(self, key:str, value:any) -> None:
+        return (self.__cache.getVal(key), self.__cache.getValFast(key))[isFast]
+
+    def setValOnCache(self, key: str, value: any, volatile=False, timeToExpire=60) -> None:
         """
-        Añade a la cache el par 'Clave-Valor' usado como parámetros de entrada
+        CACHE - Añade a la cache el par 'Clave-Valor' dada como parámetros de entrada
         """
-        self.__cache.setVal(key,value)
+        self.__cache.setVal(key, value, volatile=volatile,
+                            timeToExpire=timeToExpire)
+
+    def setDictOnCache(self, dictKey: str, myDict: dict, volatile=False, timeToExpire=60) -> None:
+        """
+        CACHE - Añade a la cache un objeto dict propio de python dado como parámetro de entrada
+        """
+        self.__cache.setDict(
+            dictKey, myDict, volatile=volatile, timeToExpire=timeToExpire)
+
+    def getDictFromCache(self, dictKey: str) -> dict:
+        """
+        CACHE - Recupera de cache un objeto dict propio de python referenciando su Key por parámetro
+        """
+        return self.__cache.getDict(dictKey)
+
+    def existKeyFromCache(self, key: str) -> bool:
+        """CACHE - Comprueba si existe la clave dada como parámetro"""
+        return self.__cache.existKey(key)
+
+    def deleteFromCache(self, keyList: []) -> None:
+        """CACHE - Borra una lista de claves de cache dada como parámetro"""
+        return self.__cache.deleteKeyList(keyList)
+
     """
     --------------
     TESTING
     --------------
     """
+
     def add_test(self, newTest: unittest.TestCase):
         """ Añade un test para la aplicación invocadora """
-        self.__add_test(self.app_name,newTest)
+        self.__add_test(self.app_name, newTest)
 
     def run_own_test(self):
         """ Ejecuta todos los test de la aplicación invocadora """
@@ -211,7 +271,8 @@ class ArqToolsTemplate:
             self.__logger_test.info(
                 "FIN - test asignados a la aplicación '%s'. Test limpiados de la memoria", self.app_name)
         else:
-            self.__logger_test.warn("No existen actualmente test para la aplicación %s. Para añadir uno utilice la función 'add_test'",self.app_name)
+            self.__logger_test.warn(
+                "No existen actualmente test para la aplicación %s. Para añadir uno utilice la función 'add_test'", self.app_name)
 
     def run_arq_test(self):
         """ Ejecuta todos los test asociados a la arquitectura """
@@ -221,20 +282,21 @@ class ArqToolsTemplate:
                                     arqTest.countTestCases()
                                     )
             unittest.TextTestRunner().run(arqTest)
+
             self.__logger_test.info(
                 "FIN - test asignados a la arquitectura. Test limpiados de la memoria")
             self.__flags["skip_run_arq_test"] = True
         else:
-            self.__logger_test.warn("Los test de arquitectura ya se han ejecutado. Reinicie la ejecución en caso de querer ejecutarlos de nuevo")
-
-
+            self.__logger_test.warn(
+                "Los test de arquitectura ya se han ejecutado. Reinicie la ejecución en caso de querer ejecutarlos de nuevo")
 
     """
     ------------------
     Arquitecture FLAG Actions
     ------------------
     """
-    def actions_on_init(self):
+
+    def __actions_on_init(self):
         if bool(self.__config.getProperty("flags", "init.test")):
             self.run_arq_test()
     """
@@ -243,7 +305,8 @@ class ArqToolsTemplate:
     respuesta esperada: "resultado obntenido","resultado esperado"
     ------------------
     """
-    def __add_test(self,context: str, newTest: unittest.TestCase):
+
+    def __add_test(self, context: str, newTest: unittest.TestCase):
         try:
             if not context in self.__saved_test:
                 testSuite = unittest.TestSuite()
@@ -272,19 +335,19 @@ class ArqToolsTemplate:
             result = "KO"
 
         assert result == expected
-    
+
     def __test_config(self):
         """TEST orientado a configuracion"""
         jumps = 2000
         before = datetime.now()
         for i in range(jumps):
-            self.__config.getPropertyVerbose("base","path.resources")
+            self.__config.getPropertyVerbose("base", "path.resources")
         after = datetime.now()
         usedTimeNoCache = (after-before).total_seconds() * 1000
 
         before = datetime.now()
         for i in range(jumps):
-            self.__config.getProperty("base","path.resources")
+            self.__config.getProperty("base", "path.resources")
         after = datetime.now()
         usedTimeCache = (after-before).total_seconds() * 1000
         self.__logger_test.info(
@@ -295,29 +358,16 @@ class ArqToolsTemplate:
         )
 
         assert usedTimeCache < usedTimeNoCache
-    
+
     def __test_cacheArq(self):
         """TEST orientado a cache"""
-        if bool(self.__config.getProperty("flags", "enable.redis")):
+        if self.__config.getProperty("flags", "enable.redis", parseType=bool):
             key = "testKey"
             value = "testValue"
-            obtainedValueFast = ""
-            obtainedValueNoFast = ""
-            jumps = 200
-            self.setValOnCache(key,value)
-            before = datetime.now()
-            for i in range(jumps):
-                obtainedValueNoFast = self.getValFromCache(key,False)
-            after = datetime.now()
-            usedTimeNoFast = (after-before).total_seconds() * 1000
+            self.setValOnCache(key, value, volatile=True, timeToExpire=5)
+            exist = self.existKeyFromCache(key)
+            assert exist
 
-            before = datetime.now()
-            for i in range(jumps):
-                obtainedValueFast = self.getValFromCache(key,True)
-            after = datetime.now()
-            usedTimeFast = (after-before).total_seconds() * 1000
-
-            assert (value == obtainedValueFast) and (value == obtainedValueNoFast) and (usedTimeNoFast > usedTimeFast)
     """
     ------------------
     Internal Functions
