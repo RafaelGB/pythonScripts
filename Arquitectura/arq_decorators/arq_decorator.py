@@ -70,7 +70,11 @@ def arq_decorator(Cls):
             else:
                 return x
 
-            x = self.wrapped.__getattribute__(attr)
+            try:
+                x = self.wrapped.__getattribute__(attr)
+            except:
+                return None
+                
             if type(x) == types.MethodType:
                 x = method_wrapper(x)
             return x

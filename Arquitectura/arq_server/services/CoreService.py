@@ -12,6 +12,8 @@ import sys
 import json
 # IoC
 from dependency_injector import containers, providers
+#own
+from arq_server.base.Constants import Const
 
 class Logger:
     """
@@ -67,16 +69,19 @@ class Configuration:
     -------------
     Servicio para ofrecer configuración centralizada al resto de servicios y aplicaciones
     """
-    def __init__(self,logger):
-        self.__init_services(logger)
-        self.logger.info("INI - servicio de Configuración")
+    __const:Const
+    __logger:logging.getLogger()
+
+    def __init__(self,logger,const):
+        self.__init_services(logger,const)
+        self.__logger.info("INI - servicio de Configuración")
 
         parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
-        self.__init_conf(parent_path,"arq_conf.cfg")
-        self.logger.debug("-"*20)
-        {section: self.logger.debug("Sección: %s",json.dumps(dict(self.confMap[section]))) for section in self.confMap.sections()}
-        self.logger.debug("-"*20)
-        self.logger.info("FIN - servicio de Configuración")
+        self.__init_conf(parent_path,self.__const.RESOURCE_ARQ_CONF_FILENAME)
+        self.__logger.debug("-"*20)
+        {section: self.__logger.debug("Sección %s: %s",section,json.dumps(dict(self.confMap[section]))) for section in self.confMap.sections()}
+        self.__logger.debug("-"*20)
+        self.__logger.info("FIN - servicio de Configuración")
     
     @cached(cache=TTLCache(maxsize=1024, ttl=600))
     def getProperty(self, group, key, parseType=str):
@@ -88,13 +93,13 @@ class Configuration:
                 try:
                     return parseType(self.confMap[group][key])
                 except:
-                    self.logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
+                    self.__logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
                     return None
             else:
-                self.logger.warn("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
+                self.__logger.warn("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
                 return None
         else:
-            self.logger.warn("El grupo '%s' no está definido en configuración", group)
+            self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
     
     def getPropertyVerbose(self, group, key, parseType=str):
@@ -106,13 +111,13 @@ class Configuration:
                 try:
                     return parseType(self.confMap[group][key])
                 except:
-                    self.logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
+                    self.__logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
                     return None
             else:
-                self.logger.warn("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
+                self.__logger.warn("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
                 return None
         else:
-            self.logger.warn("El grupo '%s' no está definido en configuración", group)
+            self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
 
     def getPropertyDefault(self, group, key, defaultValue,parseType=str):
@@ -131,7 +136,7 @@ class Configuration:
         if group_name in self.confMap:
             return self.confMap[group_name]
         else:
-            self.logger.error("El grupo '%s' no está definido en configuración", group_name)
+            self.__logger.error("El grupo '%s' no está definido en configuración", group_name)
             return None
 
     def getFilteredGroupOfProperties(self, group_name, callback):
@@ -141,18 +146,19 @@ class Configuration:
         if group_name in self.confMap:
             return self.__filterTheDict(self.confMap[group_name], callback)
         else:
-            self.logger.error("El grupo '%s' no está definido en configuración", group_name)
+            self.__logger.error("El grupo '%s' no está definido en configuración", group_name)
             return None
 
-    def __init_services(self,logger):
+    def __init_services(self,logger,const):
         # Servicio de logging
-        self.logger = logger.arqLogger()
-    
+        self.__logger = logger.arqLogger()
+        self.__const = const
+
     def __init_conf(self,basepath,filename):
         self.confMap = configparser.ConfigParser()
         resources_path = path.join(basepath, "resources/")
         conf_path = path.join(resources_path, filename)
-        self.logger.info("conf general obtenida de '%s'",conf_path)
+        self.__logger.info("conf general obtenida de '%s'",conf_path)
         
         if not path.exists(conf_path):
             generate_default_conf(resources_path,filename)
@@ -181,8 +187,11 @@ class CoreService(containers.DeclarativeContainer):
     # Services
     logger_service = providers.Singleton(Logger)
 
+    constants = providers.Singleton(Const)
+
     config_service = providers.Singleton(
         Configuration,
+        const=constants,
         logger=logger_service
     )
 
