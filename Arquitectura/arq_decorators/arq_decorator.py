@@ -101,7 +101,7 @@ def arq_decorator(Cls):
                 self.__logger_test = ArqContainer.core_service().logger_service().testingLogger()
                 self.__config = ArqContainer.core_service().config_service()
                 # SERVICES
-                self.__protocols = ArqContainer.protocols_service()
+                self.__protocols = ArqContainer.protocols_service
             except Exception as err:
                 self.__logger.error(
                     "Ha ocurrido un problema inicializando las funcionalidades de la arquitectura: %s", err)
@@ -115,9 +115,9 @@ def arq_decorator(Cls):
             if "config" not in kwargs:
                 kwargs['config'] = self.__config
             if "utils" not in kwargs:
-                kwargs['utils'] = ArqContainer.utils_service()
+                kwargs['utils'] = ArqContainer.utils_service
             if "cache" not in kwargs:
-                kwargs['cache'] = ArqContainer.data_service().cache_tools()
+                kwargs['cache'] = ArqContainer.data_service.cache_tools()
             return args, kwargs
     return NewApp
 
@@ -134,8 +134,8 @@ class ArqToolsTemplate:
     # TYPE HINTS TEMPLATE
     __logger: logging.getLogger()
     __config: Configuration
-    __protocols: ArqContainer.protocols_service()
-    __utils: ArqContainer.utils_service()
+    __protocols: ArqContainer.protocols_service
+    __utils: ArqContainer.utils_service
     __cache: RedisTools
     # TYPE HINTS APP
     logger: logging.getLogger()

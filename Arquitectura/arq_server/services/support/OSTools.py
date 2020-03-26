@@ -27,7 +27,7 @@ class FileSystemTools(object):
 
     def modifyValuesOnDict(self, a_dict:dict, k:str, subst_dict:dict) -> None:
         # -*- coding: utf-8 -*-
-        """Modifica de un diccionario (por referencia)valores de una clave en concreto en todos los niveles
+        """Modifica de un diccionario (por referencia) valores de una clave en concreto en todos los niveles
 
         Dado un diccionario a recorrer, la clave a buscar y una serie de clave-valor. Modifica
         posibles variables en los valores de la clave.

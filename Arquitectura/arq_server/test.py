@@ -21,13 +21,12 @@ class MiApp(ArqToolsTemplate):
         super().__init__(self.__class__.__name__, *args, **kwargs)
         self.__init_app_test()
 
+
     def getOwnDirTree(self):
         dirTree = self.getDirectoryTree(
             os.path.dirname(os.path.abspath(__file__)))
 
         self.setDictOnCache("myTree", dirTree,volatile=True,timeToExpire=10)
-        a = self.getDictFromCache("myTree")
-        print(a)
 
     def __test_own(self):
         assert "a" == "a"
@@ -62,7 +61,5 @@ if __name__ == "__main__":
     prueba = MiApp()
     prueba.run_own_test()
 
-    prueba.add_new_argument()
-    prueba.show_help()
     prueba2 = MiApp2()
     prueba2.run_own_test()

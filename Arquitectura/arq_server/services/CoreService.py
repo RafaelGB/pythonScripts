@@ -21,14 +21,10 @@ class Logger:
     """
     isCustomCOnf: bool
     def __init__(self):
-        self.parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
-        logger_path = path.join(self.parent_path, "resources/logger_conf.json")
+        self.parent_path = Path(__file__).parent
+        logger_path = (self.parent_path / "../resources/logger_conf.json").resolve()
         self.__setup_logging(default_path=logger_path)
         self.logger = logging.getLogger("arquitecture")
-        if self.isCustomCOnf:
-            self.logger.info("conf de logger obtenida de '%s'",logger_path)
-        else:
-            self.logger.warn("ruta '%s' para configuración de logging no existente. Cargada configuración básica por defecto")
         self.logger.info("¡servicio de logging levantado!")
 
     def arqLogger(self):
@@ -190,7 +186,6 @@ class CoreService(containers.DeclarativeContainer):
         logger=logger_service
     )
 
-
 def generate_default_conf(base_path:str, filename:str):
     config = configparser.ConfigParser()
     config['groups'] = {
@@ -219,7 +214,7 @@ def generate_default_conf(base_path:str, filename:str):
                          'enable.redis': False
                         }
                         
-    if not path.exists(conf_path):
+    if not path.exists(base_path):
         mkdir(base_path)
     conf_path = path.join(base_path, filename)
     with open(conf_path, 'w') as configfile:
