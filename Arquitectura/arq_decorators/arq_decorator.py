@@ -21,6 +21,8 @@ import types
 from datetime import datetime
 
 # own
+from arq_server.base.ArqErrors import ArqError
+from arq_server.base.Constants import Const
 from arq_server.containers.ArqContainer import ArqContainer
 from arq_server.services.CoreService import Configuration
 from arq_server.services.data_access.CacheTools import RedisTools
@@ -34,9 +36,12 @@ def method_wrapper(function):
         before = datetime.now()
         try:
             result = function(*args, **kwargs)
+        except ArqError as arq_e:
+            logger.error("Error controlado - función %s",function.__name__,arq_e.message())
+            arq_e.with_traceback
         except Exception as e:
             logger.error(
-                "Error no controlado por la arquitectura - funcion %s \n%s", function.__name__, e)
+                "Error no controlado por la arquitectura - función %s \n%s", function.__name__, e)
             raise e
         after = datetime.now()
         logger.debug("FIN - funcion '%s' - tiempo empleado: %s ms",
@@ -74,7 +79,7 @@ def arq_decorator(Cls):
                 x = self.wrapped.__getattribute__(attr)
             except:
                 return None
-                
+
             if type(x) == types.MethodType:
                 x = method_wrapper(x)
             return x
@@ -104,6 +109,7 @@ def arq_decorator(Cls):
                 self.__logger = ArqContainer.core_service().logger_service().arqLogger()
                 self.__logger_test = ArqContainer.core_service().logger_service().testingLogger()
                 self.__config = ArqContainer.core_service().config_service()
+                self.__const = ArqContainer.core_service().constants()
                 # SERVICES
                 self.__protocols = ArqContainer.protocols_service
             except Exception as err:
@@ -138,6 +144,7 @@ class ArqToolsTemplate:
     # TYPE HINTS TEMPLATE
     __logger: logging.getLogger()
     __config: Configuration
+    __const : Const
     __protocols: ArqContainer.protocols_service
     __utils: ArqContainer.utils_service
     __cache: RedisTools

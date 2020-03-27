@@ -13,7 +13,9 @@ import json
 # IoC
 from dependency_injector import containers, providers
 #own
+from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
+
 
 class Logger:
     """
@@ -38,6 +40,9 @@ class Logger:
     def testingLogger(self):
         return logging.getLogger("testing")
 
+    def __handlerExceptions(self,type, value, tb):
+        self.logger.exception("Uncaught exception: {0}".format(str(value)))
+
     def __fixup(self, a_dict:dict, k:str, subst_dict:dict) -> dict:
         for key in a_dict.keys():
             if key == k:
@@ -59,6 +64,8 @@ class Logger:
                 self.__fixup(config["logging_conf"],"filename",config["properties"])
                 logging.config.dictConfig(config["logging_conf"])
                 self.isCustomCOnf = True
+                # Las excepciones son capturadas por el logger
+                sys.excepthook = self.__handlerExceptions
         else:
             self.isCustomCOnf = False
             logging.basicConfig(level=default_level)
@@ -186,9 +193,8 @@ class CoreService(containers.DeclarativeContainer):
 
     # Services
     logger_service = providers.Singleton(Logger)
-
     constants = providers.Singleton(Const)
-
+    arq_exception = providers.Factory(ArqError)
     config_service = providers.Singleton(
         Configuration,
         const=constants,

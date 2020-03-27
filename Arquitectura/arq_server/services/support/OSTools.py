@@ -6,19 +6,19 @@ import logging
 from arq_server.services.CoreService import Configuration
 
 class FileSystemTools(object):
-    logger: logging.getLogger()
-    config: Configuration
+    __logger: logging.getLogger()
+    __config: Configuration
 
     def __init__(self,core, *args, **kwargs):
         self.__init_services(core)
-        self.logger.info("Herramientas sistema de fichero arrancado correctamente")
+        self.__logger.info("Herramientas sistema de fichero arrancado correctamente")
 
     def getDirectoryTree(self,dirPath) -> dict:
         """
         Dada una ruta, devuelve un diccionario con el arbol de archivos de dicha ruta
         """
         dirTree =  {}
-        self.logger.debug("Ruta a recorrer para obtener su información: %s",dirPath)
+        self.__logger.debug("Ruta a recorrer para obtener su información: %s",dirPath)
         for (path, dirs, files) in os.walk(dirPath):
             dirTree[path] = {}
             dirTree[path]["dirs"] = dirs
@@ -43,5 +43,6 @@ class FileSystemTools(object):
     
     def __init_services(self, core) -> None:
         # Servicio de logging
-        self.logger = core.logger_service().arqLogger()
-        self.config = core.config_service()
+        self.__core = core
+        self.__logger = core.logger_service().arqLogger()
+        self.__config = core.config_service()

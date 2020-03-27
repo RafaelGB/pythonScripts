@@ -60,6 +60,5 @@ class MiApp2(ArqToolsTemplate):
 if __name__ == "__main__":
     prueba = MiApp()
     prueba.run_own_test()
-
     prueba2 = MiApp2()
     prueba2.run_own_test()

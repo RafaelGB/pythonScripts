@@ -26,12 +26,13 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(),
     install_requires=[
-          'markdown',
+          'markdown==3.2.1',
           'dependency-injector==3.15.6',
           'flask',
-          'pylint',
-          'cachetools',
-          'redis'
+          'pylint==2.4.4',
+          'cachetools==4.0.0',
+          'redis==3.4.1',
+          'docker'
     ],
     python_requires='>=3.7',
     include_package_data=True,
