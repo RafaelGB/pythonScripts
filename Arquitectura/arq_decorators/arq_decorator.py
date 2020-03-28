@@ -25,8 +25,10 @@ from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 from arq_server.containers.ArqContainer import ArqContainer
 from arq_server.services.CoreService import Configuration
+# own tools
 from arq_server.services.data_access.CacheTools import RedisTools
-
+from arq_server.services.support.OSTools import FileSystemTools
+from arq_server.services.support.DockerTools import DockerTools
 
 def method_wrapper(function):
     @wraps(function)
@@ -37,8 +39,8 @@ def method_wrapper(function):
         try:
             result = function(*args, **kwargs)
         except ArqError as arq_e:
-            logger.error("Error controlado - función %s",function.__name__,arq_e.message())
-            arq_e.with_traceback
+            logger.error("Error controlado - función %s",function.__name__,arq_e.code_message())
+
         except Exception as e:
             logger.error(
                 "Error no controlado por la arquitectura - función %s \n%s", function.__name__, e)
@@ -118,16 +120,10 @@ def arq_decorator(Cls):
                 raise err
 
         def __set_arq_attributes(self, *args, **kwargs):
-            if "logger" not in kwargs:
-                kwargs['logger'] = self.__logger
             if "logger_test" not in kwargs:
                 kwargs['logger_test'] = self.__logger_test
             if "config" not in kwargs:
                 kwargs['config'] = self.__config
-            if "utils" not in kwargs:
-                kwargs['utils'] = ArqContainer.utils_service
-            if "cache" not in kwargs:
-                kwargs['cache'] = ArqContainer.data_service.cache_tools()
             return args, kwargs
     return NewApp
 
@@ -142,18 +138,22 @@ class ArqToolsTemplate:
     __saved_test = {}
 
     # TYPE HINTS TEMPLATE
-    __logger: logging.getLogger()
+    __logger_test: logging.getLogger()
     __config: Configuration
     __const : Const
     __protocols: ArqContainer.protocols_service
-    __utils: ArqContainer.utils_service
-    __cache: RedisTools
-    # TYPE HINTS APP
+
+    # TYPE HINTS logger
     logger: logging.getLogger()
+    # TYPE HINTS public Tools
+    dockerTools: DockerTools
+    osTools: FileSystemTools
+    cacheTools: RedisTools
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
         self.__init_kwargs_attrs(*args, **kwargs)
+        self.__init_public_tools()
         self.__init_arq_test()
         self.__actions_on_init()
 
@@ -179,86 +179,6 @@ class ArqToolsTemplate:
         de interpretar el tipo
         """
         return self.__config.getPropertyDefault(self.app_name, property_key, default, parseType=parseType)
-
-    def getDirectoryTree(self, dirPath) -> dict:
-        """
-        Dada una ruta a un directorio del fileSystem, devuelve un diccionario con la información de su contenido,
-        incluyendo los directorios anidados
-        """
-        return self.__utils.file_system_tools().getDirectoryTree(dirPath)
-
-    """
-    --------------
-    SUPPORT
-    -------
-    OS Tools
-    --------------
-    """
-
-    def modifyValuesOnDict(self, a_dict:dict, key:str, key_value_subst:dict) -> dict:
-        """
-        dado un diccionario 'referencia', una clave y un diccionario 'variables' (clave-valor), modifica, en todos los niveles
-        del diccionario base donde se encuentre la clave, su valor asociado en caso de que dicho valor contenga alguna de las
-        variables especificadas en el diccionario 'variables' con el formato {{variable}},siendo sustituída por el valor referenciado.
-
-        i.e.: {
-            "clave1":"valor1",
-            "clave2":
-                {
-                    "clave_buscada":"esta clave contiene {{variable}}"
-                }
-            }
-        """
-        return self.__utils().file_system_tools().modifyValuesOnDict(a_dict, key, key_value_subst)
-
-    def add_new_argument(self) -> None:
-        self.__utils.parse_args_tools().add_argument()
-
-    def show_help(self) -> None:
-        self.__utils.parse_args_tools().show_help()
-    """
-    --------------
-    DATA
-    ----
-    Cache
-    --------------
-    """
-
-    def getValFromCache(self, key: str, isFast: bool) -> any:
-        """
-        CACHE - obtiene de cache el valor asociado a la clave usada como parámetro.
-        En caso de que el flag booleano 'isFast' sea 'True' y se haya realizado la misma
-        petición recientemente. Se ahorrará una consulta y devolverá el valor cacheado
-        """
-        return (self.__cache.getVal(key), self.__cache.getValFast(key))[isFast]
-
-    def setValOnCache(self, key: str, value: any, volatile=False, timeToExpire=60) -> None:
-        """
-        CACHE - Añade a la cache el par 'Clave-Valor' dada como parámetros de entrada
-        """
-        self.__cache.setVal(key, value, volatile=volatile,
-                            timeToExpire=timeToExpire)
-
-    def setDictOnCache(self, dictKey: str, myDict: dict, volatile=False, timeToExpire=60) -> None:
-        """
-        CACHE - Añade a la cache un objeto dict propio de python dado como parámetro de entrada
-        """
-        self.__cache.setDict(
-            dictKey, myDict, volatile=volatile, timeToExpire=timeToExpire)
-
-    def getDictFromCache(self, dictKey: str) -> dict:
-        """
-        CACHE - Recupera de cache un objeto dict propio de python referenciando su Key por parámetro
-        """
-        return self.__cache.getDict(dictKey)
-
-    def existKeyFromCache(self, key: str) -> bool:
-        """CACHE - Comprueba si existe la clave dada como parámetro"""
-        return self.__cache.existKey(key)
-
-    def deleteFromCache(self, keyList: []) -> None:
-        """CACHE - Borra una lista de claves de cache dada como parámetro"""
-        return self.__cache.deleteKeyList(keyList)
 
     """
     --------------
@@ -326,7 +246,7 @@ class ArqToolsTemplate:
                 unittest.FunctionTestCase(newTest)
             )
         except Exception as err:
-            self.__logger.error(
+            self.logger.error(
                 "Ha habido un problema añadiendo el test '%s' - %s",
                 newTest.__name__,
                 err
@@ -334,18 +254,15 @@ class ArqToolsTemplate:
 
     def __test_logging(self):
         """TEST orientado a logging"""
-        result = ""
-        expected = "OK"
         try:
             self.__logger_test.info("Log nivel info")
             self.__logger_test.warn("Log nivel warn")
             self.__logger_test.error("Log nivel err")
             self.__logger_test.debug("Log nivel debug")
-            result = "OK"
         except:
-            result = "KO"
+            assert False
 
-        assert result == expected
+        assert True
 
     def __test_config(self):
         """TEST orientado a configuracion"""
@@ -370,15 +287,6 @@ class ArqToolsTemplate:
 
         assert usedTimeCache < usedTimeNoCache
 
-    def __test_cacheArq(self):
-        """TEST orientado a cache"""
-        if self.__config.getProperty("flags", "enable.redis", parseType=bool):
-            key = "testKey"
-            value = "testValue"
-            self.setValOnCache(key, value, volatile=True, timeToExpire=5)
-            exist = self.existKeyFromCache(key)
-            assert exist
-
     """
     ------------------
     Internal Functions
@@ -390,9 +298,18 @@ class ArqToolsTemplate:
             # Valores privados propios de la clase plantilla
             self.__dict__["_{}__{}".format(
                 self.__class__.__name__, key)] = value
-        # Valores privados añadidos a la aplicación
-        self.__dict__["{}".format("logger")] = ArqContainer.core_service(
+        # Valores visibles para la aplicación
+        
+    
+    def __init_public_tools(self):
+        #Core
+        self.logger = ArqContainer.core_service(
         ).logger_service().appLogger()
+        #Data
+        self.cacheTools = ArqContainer.data_service.cache_tools()
+        #Utils
+        self.dockerTools = ArqContainer.utils_service.docker_tools()
+        self.osTools = ArqContainer.utils_service.file_system_tools()
     # TESTING
 
     def __init_arq_test(self):

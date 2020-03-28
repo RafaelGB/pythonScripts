@@ -13,7 +13,6 @@ import json
 # IoC
 from dependency_injector import containers, providers
 #own
-from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 
 
@@ -25,11 +24,15 @@ class Logger:
     """
     isCustomCOnf: bool
     def __init__(self):
-        self.parent_path = Path(__file__).parent
-        logger_path = (self.parent_path / "../resources/logger_conf.json").resolve()
+        parent_path = Path(__file__).parent
+        logger_path = (parent_path / "../resources/logger_conf.json").resolve()
         self.__setup_logging(default_path=logger_path)
-        self.logger = logging.getLogger("arquitecture")
-        self.logger.info("¡servicio de logging levantado!")
+        self.__logger = logging.getLogger("arquitecture")
+        if(self.isCustomCOnf):
+            self.__logger.debug("Se detectó configuración de logging custom - Configuración utilizada:%s",self.file_path)
+        else:
+            self.__logger.debug("Cargada configuración de logging por defecto")
+        self.__logger.info("¡servicio de logging levantado!")
 
     def arqLogger(self):
         return logging.getLogger("arquitecture")
@@ -41,7 +44,7 @@ class Logger:
         return logging.getLogger("testing")
 
     def __handlerExceptions(self,type, value, tb):
-        self.logger.exception("Uncaught exception: {0}".format(str(value)))
+        self.__logger.exception("Uncaught exception: {0}".format(str(value)))
 
     def __fixup(self, a_dict:dict, k:str, subst_dict:dict) -> dict:
         for key in a_dict.keys():
@@ -52,23 +55,25 @@ class Logger:
                 self.__fixup(a_dict[key], k, subst_dict)
 
     def __setup_logging(self,
-    default_path='logging.json',
-    default_level=logging.INFO):
+    default_path='logging.json'):
         """
         Setup logging configuration
         """
-        file_path = default_path
-        if path.exists(file_path):
-            with open(file_path, 'rt') as f:
-                config = json.load(f)
-                self.__fixup(config["logging_conf"],"filename",config["properties"])
-                logging.config.dictConfig(config["logging_conf"])
-                self.isCustomCOnf = True
-                # Las excepciones son capturadas por el logger
-                sys.excepthook = self.__handlerExceptions
+        custom_path = Path((sys.modules['__main__'].__file__)).parent
+        custom_path = path.join(custom_path, "resources/").join("logger_conf.json")
+        if path.exists(custom_path):
+            self.file_path = custom_path
+            self.isCustomCOnf = True
         else:
+            self.file_path = default_path
             self.isCustomCOnf = False
-            logging.basicConfig(level=default_level)
+
+        with open(self.file_path, 'rt') as f:
+            config = json.load(f)
+            self.__fixup(config["logging_conf"],"filename",config["properties"])
+            logging.config.dictConfig(config["logging_conf"])
+        # Las excepciones son capturadas por el logger
+        sys.excepthook = self.__handlerExceptions
 
 class Configuration:
     """
@@ -194,7 +199,6 @@ class CoreService(containers.DeclarativeContainer):
     # Services
     logger_service = providers.Singleton(Logger)
     constants = providers.Singleton(Const)
-    arq_exception = providers.Factory(ArqError)
     config_service = providers.Singleton(
         Configuration,
         const=constants,

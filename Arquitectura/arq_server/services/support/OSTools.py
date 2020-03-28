@@ -15,7 +15,8 @@ class FileSystemTools(object):
 
     def getDirectoryTree(self,dirPath) -> dict:
         """
-        Dada una ruta, devuelve un diccionario con el arbol de archivos de dicha ruta
+        Dada una ruta a un directorio del fileSystem, devuelve un diccionario con la información de su contenido,
+        incluyendo los directorios anidados
         """
         dirTree =  {}
         self.__logger.debug("Ruta a recorrer para obtener su información: %s",dirPath)
@@ -26,13 +27,18 @@ class FileSystemTools(object):
         return dirTree
 
     def modifyValuesOnDict(self, a_dict:dict, k:str, subst_dict:dict) -> None:
-        # -*- coding: utf-8 -*-
-        """Modifica de un diccionario (por referencia) valores de una clave en concreto en todos los niveles
+        """
+        dado un diccionario 'referencia', una clave y un diccionario 'variables' (clave-valor), modifica, en todos los niveles
+        del diccionario base donde se encuentre la clave, su valor asociado en caso de que dicho valor contenga alguna de las
+        variables especificadas en el diccionario 'variables' con el formato {{variable}},siendo sustituída por el valor referenciado.
 
-        Dado un diccionario a recorrer, la clave a buscar y una serie de clave-valor. Modifica
-        posibles variables en los valores de la clave.
-
-        Las variables deben estar entree llaves del modo '{{variable}}'
+        i.e.: {
+            "clave1":"valor1",
+            "clave2":
+                {
+                    "clave_buscada":"esta clave contiene {{variable}}"
+                }
+            }
         """
         for key in a_dict.keys():
             if key == k:
