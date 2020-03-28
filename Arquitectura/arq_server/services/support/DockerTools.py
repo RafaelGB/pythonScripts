@@ -78,7 +78,9 @@ class DockerTools(object):
 
     def __streamContainerLogs(self, name, container):
         dateInfo = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-        f=open("{}\{}__{}.log".format(self.__dockerLogsPath,name,dateInfo),"wb")
+        logPath = "{}\{}__{}.log".format(self.__dockerLogsPath,name,dateInfo)
+        f=open(logPath,"wb")
+        self.__logger.debug("Generando un stream de logs para el contenedor %s en la ruta %s",name,logPath)
         try:
             for l in container.logs(stream=True):
                 f.write(l)
