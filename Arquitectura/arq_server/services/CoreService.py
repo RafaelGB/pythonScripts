@@ -1,6 +1,7 @@
 # Basic
 import configparser
 import logging
+import traceback
 from logging.config import fileConfig, dictConfig
 from cachetools import cached, TTLCache
 #Testing
@@ -43,8 +44,10 @@ class Logger:
     def testingLogger(self):
         return logging.getLogger("testing")
 
-    def __handlerExceptions(self,type, value, tb):
-        self.__logger.exception("Uncaught exception: {0}".format(str(value)))
+    def __handlerExceptions(self,Etype, value, tb):
+        self.__logger.error("Excepción capturada:%s - %s",Etype,value)
+        strTb = ''.join(traceback.format_tb(tb))
+        self.__logger.exception("Traceback: %s",strTb)
 
     def __fixup(self, a_dict:dict, k:str, subst_dict:dict) -> dict:
         for key in a_dict.keys():

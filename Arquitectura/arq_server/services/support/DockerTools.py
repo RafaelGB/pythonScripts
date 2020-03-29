@@ -93,7 +93,7 @@ class DockerTools(object):
 
 
     def __init_client(self):
-        self.__client = client = docker.from_env()
+        self.__client = docker.from_env()
     def __init_services(self, core) -> None:
         # Servicio de logging
         self.__core = core

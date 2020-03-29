@@ -149,7 +149,7 @@ class ArqToolsTemplate:
     dockerTools: DockerTools
     osTools: FileSystemTools
     cacheTools: RedisTools
-
+ 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
         self.__init_kwargs_attrs(*args, **kwargs)
@@ -208,11 +208,12 @@ class ArqToolsTemplate:
     def run_arq_test(self):
         """ Ejecuta todos los test asociados a la arquitectura """
         if '__arq__' in self.__saved_test:
-            arqTest = self.__saved_test.pop('__arq__')
+            arqTestSuite = self.__saved_test.pop('__arq__')
             self.__logger_test.info("INI - test asignados a la arquitectura. Número de tests a ejecutar: '%d",
-                                    arqTest.countTestCases()
+                                    arqTestSuite.countTestCases()
                                     )
-            unittest.TextTestRunner().run(arqTest)
+            runner = unittest.TextTestRunner(verbosity=3)
+            runner.run(arqTestSuite)
 
             self.__logger_test.info(
                 "FIN - test asignados a la arquitectura. Test limpiados de la memoria")
@@ -237,13 +238,15 @@ class ArqToolsTemplate:
     ------------------
     """
 
-    def __add_test(self, context: str, newTest: unittest.TestCase):
+    def __add_test(self, context: str, newTest):
         try:
             if not context in self.__saved_test:
-                testSuite = unittest.TestSuite()
                 self.__saved_test[context] = unittest.TestSuite()
             self.__saved_test[context].addTest(
-                unittest.FunctionTestCase(newTest)
+                unittest.FunctionTestCase(
+                    newTest,
+                    setUp=lambda: None,
+                    tearDown=lambda: None)
             )
         except Exception as err:
             self.logger.error(
