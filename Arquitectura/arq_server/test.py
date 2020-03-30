@@ -37,7 +37,7 @@ class MiApp(ArqToolsTemplate):
             exist = self.cacheTools.existKey(key)
             assert exist
         except Exception as e:
-            self.__logger_test.error("error en test de Cache: ",e)
+            self.logger.error("error en test de Cache: ",e)
             assert False
 
     def __init_app_test(self):

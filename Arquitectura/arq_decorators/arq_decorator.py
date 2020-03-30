@@ -30,6 +30,7 @@ from arq_server.services.data_access.CacheTools import RedisTools
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
 
+
 def method_wrapper(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
@@ -39,7 +40,8 @@ def method_wrapper(function):
         try:
             result = function(*args, **kwargs)
         except ArqError as arq_e:
-            logger.error("Error controlado - función %s",function.__name__,arq_e.code_message())
+            logger.error("Error controlado - función %s",
+                         function.__name__, arq_e.code_message())
 
         except Exception as e:
             logger.error(
@@ -58,11 +60,11 @@ def arq_decorator(Cls):
         def __init__(self, *args, **kwargs):
             self.__tools_init()
             self.__logger.info(
-                "INI - arranque decorador de la clase %a", Cls.__name__)
+                "Genenando nuevo aplicativo bajo la plantilla %s\n%s", "*"*20, Cls.__name__, "*"*30)
             args, kwargs = self.__set_arq_attributes(*args, **kwargs)
             self.wrapped = Cls(*args, **kwargs)
             self.__logger.info(
-                "FIN - arranque decorador de la clase %a", Cls.__name__)
+                "%s\nPlantilla %s generada correctamente", "*"*30, Cls.__name__)
 
         def __getattribute__(self, attr):
             """
@@ -140,7 +142,7 @@ class ArqToolsTemplate:
     # TYPE HINTS TEMPLATE
     __logger_test: logging.getLogger()
     __config: Configuration
-    __const : Const
+    __const: Const
     __protocols: ArqContainer.protocols_service
 
     # TYPE HINTS logger
@@ -149,7 +151,7 @@ class ArqToolsTemplate:
     dockerTools: DockerTools
     osTools: FileSystemTools
     cacheTools: RedisTools
- 
+
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
         self.__init_kwargs_attrs(*args, **kwargs)
@@ -212,7 +214,9 @@ class ArqToolsTemplate:
             self.__logger_test.info("INI - test asignados a la arquitectura. Número de tests a ejecutar: '%d",
                                     arqTestSuite.countTestCases()
                                     )
-            runner = unittest.TextTestRunner(verbosity=3)
+            verbosityLvl = self.__config.getPropertyDefault(
+                "testing", "verbosity", 1, parseType=int)
+            runner = unittest.TextTestRunner(verbosity=verbosityLvl)
             runner.run(arqTestSuite)
 
             self.__logger_test.info(
@@ -301,15 +305,14 @@ class ArqToolsTemplate:
             self.__dict__["_{}__{}".format(
                 self.__class__.__name__, key)] = value
         # Valores visibles para la aplicación
-        
-    
+
     def __init_public_tools(self):
-        #Core
+        # Core
         self.logger = ArqContainer.core_service(
         ).logger_service().appLogger()
-        #Data
+        # Data
         self.cacheTools = ArqContainer.data_service.cache_tools()
-        #Utils
+        # Utils
         self.dockerTools = ArqContainer.utils_service.docker_tools()
         self.osTools = ArqContainer.utils_service.file_system_tools()
     # TESTING
@@ -324,5 +327,4 @@ class ArqToolsTemplate:
                         '__arq__',
                         test
                     )
-
             self.__flags["skip_add_arq_test"] = True

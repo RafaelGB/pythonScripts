@@ -140,7 +140,7 @@ class Configuration:
         Obtener propiedad en función del grupo y la clave.
         En caso de no existir, define un valor por defecto
         """
-        propertyValue = self.getProperty(group,key,parseType)
+        propertyValue = self.getProperty(group,key,parseType=parseType)
         return (propertyValue, defaultValue)[propertyValue == None]
     
     def getGroupOfProperties(self,group_name):
