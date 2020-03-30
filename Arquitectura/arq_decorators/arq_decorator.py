@@ -264,7 +264,6 @@ class ArqToolsTemplate:
             self.__logger_test.debug("Log nivel debug")
         except:
             assert False
-
         assert True
 
     def __test_config(self):
@@ -323,8 +322,7 @@ class ArqToolsTemplate:
                         self.__class__.__name__, "test")) and callable(test):
                     self.__add_test(
                         '__arq__',
-                        unittest.FunctionTestCase(
-                            test
-                        )
+                        test
                     )
+
             self.__flags["skip_add_arq_test"] = True
