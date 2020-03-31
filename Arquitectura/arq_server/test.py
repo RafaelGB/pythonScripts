@@ -9,6 +9,9 @@ import os
 import pathlib
 import sys
 
+import random
+import time
+
 from arq_decorators.arq_decorator import ArqToolsTemplate, arq_decorator
 # own
 from arq_server.containers.ArqContainer import ArqContainer
@@ -28,6 +31,15 @@ class MiApp(ArqToolsTemplate):
 
         self.setDictOnCache("myTree", dirTree,volatile=True,timeToExpire=10)
 
+    def lanzaProcesoPesado(self):
+        for i in range(10):
+            self.concurrentTools.createProcess(self.__procesoPesado,"a","b","c")
+
+        self.logger.info("Lanzando los procesos en paralelo")
+    def __procesoPesado(self,arg):
+        time.sleep(random.randint(5, 20) * 0.1)
+        return arg
+
     def __test_cacheArq(self):
         """TEST orientado a cache"""
         key = "testKey"
@@ -37,7 +49,7 @@ class MiApp(ArqToolsTemplate):
             exist = self.cacheTools.existKey(key)
             assert exist
         except Exception as e:
-            self.logger.error("error en test de Cache: ",e)
+            self.logger.error("error en test de Cache: %s",e)
             assert False
 
     def __init_app_test(self):
@@ -68,6 +80,8 @@ class MiApp2(ArqToolsTemplate):
 
 if __name__ == "__main__":
     prueba = MiApp()
+    prueba.lanzaProcesoPesado()
+
     prueba.dockerTools.runContainer(
         "custom/redis:1.0.0",
         "my-redis",

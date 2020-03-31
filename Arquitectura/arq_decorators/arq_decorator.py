@@ -29,7 +29,7 @@ from arq_server.services.CoreService import Configuration
 from arq_server.services.data_access.CacheTools import RedisTools
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
-
+from arq_server.services.support.ConcurrentTools import ConcurrentTools
 
 def method_wrapper(function):
     @wraps(function)
@@ -60,7 +60,7 @@ def arq_decorator(Cls):
         def __init__(self, *args, **kwargs):
             self.__tools_init()
             self.__logger.info(
-                "Genenando nuevo aplicativo bajo la plantilla %s\n%s", "*"*20, Cls.__name__, "*"*30)
+                "Genenando nuevo aplicativo bajo la plantilla %s\n%s", Cls.__name__, "*"*30)
             args, kwargs = self.__set_arq_attributes(*args, **kwargs)
             self.wrapped = Cls(*args, **kwargs)
             self.__logger.info(
@@ -77,6 +77,8 @@ def arq_decorator(Cls):
             except (AttributeError, TypeError) as e:
                 pass
             else:
+                if type(x) == types.MethodType:
+                    x = method_wrapper(x)
                 return x
 
             try:
@@ -151,6 +153,7 @@ class ArqToolsTemplate:
     dockerTools: DockerTools
     osTools: FileSystemTools
     cacheTools: RedisTools
+    concurrentTools : ConcurrentTools
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
@@ -315,6 +318,7 @@ class ArqToolsTemplate:
         # Utils
         self.dockerTools = ArqContainer.utils_service.docker_tools()
         self.osTools = ArqContainer.utils_service.file_system_tools()
+        self.concurrentTools = ArqContainer.utils_service.concurrent_tools()
     # TESTING
 
     def __init_arq_test(self):
