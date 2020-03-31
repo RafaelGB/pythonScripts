@@ -12,7 +12,7 @@ setup(
     author="Rafael Gómez Bermejo",
     author_email="sernn2@gmail.com",
     name="architecture-tools-RafaelGB",
-    version='0.0.8',
+    version='0.0.9',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
