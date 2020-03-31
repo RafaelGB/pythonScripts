@@ -67,12 +67,12 @@ class CleanDirectoryTools(ArqToolsTemplate):
         self.logger.info ("-----------------------\nEliminación de los siguientes ficheros:\n-----------------------")
         environment = sys.argv[1].replace(".ignore","").replace("environmnets/","")
         self.logger.info ("Bajo el entorno de "+environment+" se deben borrar los siguientes archivos:\n***********************")
-        ignoreList = ""
+        printList = ""
         for ignore in ignoreList:
             
-            ignoreList = ignoreList+ ignore+"\n"
-        ignoreList = ignoreList+"-----------------------"
-        self.logger.info(ignoreList)
+            printList = printList+ ignore+"\n"
+        printList = printList+"-----------------------"
+        self.logger.info(printList)
         self.removeFiles(sys.argv[2])
 # Dado una ruta de fichero, devuelve una lista con su contenido por líneas
 

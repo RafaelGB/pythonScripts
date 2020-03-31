@@ -1,20 +1,18 @@
 {
-    "files.exclude": {
-        "**/Dockerfile": false,
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
-        "**/CVS": true,
-        "**/.DS_Store": true,
-        "**/*.pyc": true,
-        "**/__pycache__": true
-    },
+  "files.exclude": {
+    "**/Dockerfile": false,
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/*.pyc": true,
+    "**/__pycache__": true
+  },
 
-    "python.pythonPath": "C:\\Users\\sernn\\.virtualenvs\\Arquitectura-yCkMkwTs\\Scripts\\python.exe",
-    "python.linting.pylintArgs": [
-        "--load-plugins",
-        "pylint_flask"
-    ],
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": true
+  "python.pythonPath": "C:\\Users\\sernn\\.virtualenvs\\Arquitectura\\Scripts\\python.exe",
+  "python.linting.pylintPath": "C:\\Users\\sernn\\.virtualenvs\\Arquitectura\\Scripts\\pylint",
+  "python.linting.pylintArgs": ["--load-plugins"],
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true
 }

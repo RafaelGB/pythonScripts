@@ -23,8 +23,8 @@ class FlaskFunctions:
             )
         self.logger.info("INI - arranque funcionalidades de Flask")
         self.parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
-        self.local_conf_alias = self.config.getProperty("groups","flask")
-        self.local_conf=self.config.getGroupOfProperties(self.local_conf_alias)
+        self.flask_conf_alias = self.config.getProperty("groups","flask")
+        self.flask_conf=self.config.getGroupOfProperties(self.flask_conf_alias)
         self.__init_url_rules()
         self.__init_info_maps()
         self.logger.info("FIN - arranque funcionalidades de Flask")
@@ -33,7 +33,7 @@ class FlaskFunctions:
         self.server.run(debug=False)
 
     def stop_server(self):
-        func = request.environ.get(self.local_conf["shutdown"])
+        func = request.environ.get(self.flask_conf["shutdown"])
         if func is None:
             raise RuntimeError('Not running with the Werkzeug Server')
         func()
@@ -45,9 +45,9 @@ class FlaskFunctions:
     
     def __init_url_rules(self):
         callback = lambda elem :  elem.startswith("url.rule")
-        url_rules_cfg_list = self.config.getFilteredGroupOfProperties(self.local_conf_alias, callback)
+        url_rules_cfg_list = self.config.getFilteredGroupOfProperties(self.flask_conf_alias, callback)
         for url_rule_cfg in url_rules_cfg_list:
-            url_rule = self.local_conf[url_rule_cfg]
+            url_rule = self.flask_conf[url_rule_cfg]
             try:
                 url_rule_info = url_rule.split(';')
                 self.logger.info("Regla URL: '%s' con alias '%s'",url_rule_info[0],url_rule_info[1])
