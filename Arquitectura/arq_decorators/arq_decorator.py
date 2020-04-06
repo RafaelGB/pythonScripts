@@ -30,6 +30,7 @@ from arq_server.services.data_access.CacheTools import RedisTools
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
 from arq_server.services.support.ConcurrentTools import ConcurrentTools
+from arq_server.services.analytics.StadisticTools import StatisticsTools
 
 def method_wrapper(function):
     @wraps(function)
@@ -116,8 +117,7 @@ def arq_decorator(Cls):
                 self.__logger_test = ArqContainer.core_service().logger_service().testingLogger()
                 self.__config = ArqContainer.core_service().config_service()
                 self.__const = ArqContainer.core_service().constants()
-                # SERVICES
-                self.__protocols = ArqContainer.protocols_service
+
             except Exception as err:
                 self.__logger.error(
                     "Ha ocurrido un problema inicializando las funcionalidades de la arquitectura: %s", err)
@@ -141,19 +141,20 @@ class ArqToolsTemplate:
     # TEMPLATE VARS
     __saved_test = {}
 
-    # TYPE HINTS TEMPLATE
+    # TYPE HINTS private tools
     __logger_test: logging.getLogger()
     __config: Configuration
     __const: Const
-    __protocols: ArqContainer.protocols_service
 
     # TYPE HINTS logger
     logger: logging.getLogger()
+
     # TYPE HINTS public Tools
     dockerTools: DockerTools
     osTools: FileSystemTools
     cacheTools: RedisTools
     concurrentTools : ConcurrentTools
+    stadisticsTools : StatisticsTools
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
@@ -313,6 +314,8 @@ class ArqToolsTemplate:
         # Core
         self.logger = ArqContainer.core_service(
         ).logger_service().appLogger()
+        # Analytics
+        self.stadisticsTools = ArqContainer.analytic_service.stadistics_tools()
         # Data
         self.cacheTools = ArqContainer.data_service.cache_tools()
         # Utils

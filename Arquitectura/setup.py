@@ -32,7 +32,8 @@ setup(
           'pylint==2.4.4',
           'cachetools==4.0.0',
           'redis==3.4.1',
-          'docker'
+          'docker==4.2.0',
+          'Rx==3.1.0'
     ],
     python_requires='>=3.7',
     include_package_data=True,

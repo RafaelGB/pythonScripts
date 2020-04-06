@@ -24,22 +24,56 @@ class MiApp(ArqToolsTemplate):
         super().__init__(self.__class__.__name__, *args, **kwargs)
         self.__init_app_test()
 
-
     def getOwnDirTree(self):
         dirTree = self.getDirectoryTree(
             os.path.dirname(os.path.abspath(__file__)))
 
-        self.setDictOnCache("myTree", dirTree,volatile=True,timeToExpire=10)
+        self.setDictOnCache("myTree", dirTree, volatile=True, timeToExpire=10)
 
-    def lanzaProcesoPesado(self):
-        for i in range(10):
-            self.concurrentTools.createProcess(self.__procesoPesado,"a","b","c")
+    def lanzaProcesoPesado(self,iter):
+        self.centinel = 0
+        args = 1, 2, 3
+        self.dockerTools.runContainer(
+            "custom/redis:1.0.0",
+            "my-redis",
+            auto_remove=True,
+            detach=True,
+            command="redis-server --appendonly yes",
+            ports={"6379/tcp": "6379"},
+            volumes={'redis-persist': {'bind': '/data', 'mode': 'rw'}})
+
+        def __on_next(key, result):
+            self.cacheTools.setVal(key, result, volatile=True, timeToExpire=30)
+
+        def __on_complete(iter):
+            self.centinel = self.centinel+1
+            self.logger.info("procesos acabados %d de %d", self.centinel,iter)
+            if self.centinel >= iter:
+                self.logger.info("ejemplo en cache: %s",
+                                 self.cacheTools.getVal("9"))
+                self.dockerTools.removeContainer("my-redis")
+                del self.centinel
+
+        def __procesoPesado(arg):
+            time.sleep(2)
+            arg = arg*2
+            return arg
+
+        for i in range(iter):
+            self.concurrentTools.createProcess(
+                __procesoPesado,
+                *args,
+                on_next=lambda next: __on_next(str(i), next),
+                on_completed=lambda: __on_complete(iter)
+            )
 
         self.logger.info("Lanzando los procesos en paralelo")
-    def __procesoPesado(self,arg):
-        time.sleep(random.randint(5, 20) * 0.1)
-        return arg
 
+    def dashPrueba(self):
+        self.stadisticsTools.pruebas()
+    """
+    APARTADO DE TESTING
+    """
     def __test_cacheArq(self):
         """TEST orientado a cache"""
         key = "testKey"
@@ -49,7 +83,7 @@ class MiApp(ArqToolsTemplate):
             exist = self.cacheTools.existKey(key)
             assert exist
         except Exception as e:
-            self.logger.error("error en test de Cache: %s",e)
+            self.logger.error("error en test de Cache: %s", e)
             assert False
 
     def __init_app_test(self):
@@ -80,18 +114,7 @@ class MiApp2(ArqToolsTemplate):
 
 if __name__ == "__main__":
     prueba = MiApp()
-    prueba.lanzaProcesoPesado()
-
-    prueba.dockerTools.runContainer(
-        "custom/redis:1.0.0",
-        "my-redis",
-        auto_remove=True,
-        detach=True,
-        command="redis-server --appendonly yes",
-        ports={"6379/tcp":"6379"},
-        volumes={'redis-persist': {'bind': '/data', 'mode': 'rw'}})
-
-    prueba.run_own_test()
-    prueba.dockerTools.removeContainer("my-redis")
+    #prueba.lanzaProcesoPesado(12)
+    prueba.dashPrueba()
     prueba2 = MiApp2()
     prueba2.run_own_test()
