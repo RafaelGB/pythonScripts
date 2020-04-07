@@ -5,15 +5,20 @@ import sqlite3
 from dependency_injector import containers, providers
 # own
 from arq_server.services.CoreService import CoreService
+# Support
 from arq_server.services.support.UtilsService import UtilsService
-# from arq_server.services.protocols.ProtocolsService import ProtocolsService
+# data access
 from arq_server.services.data_access.DataService import DataService
-from arq_server.services.analytics.AnalyticService import AnalyticService
+# Analytics
+from arq_server.services.analytics.AnalyticService import AnalyticService,AnalyticServerFactory
 
 class ArqContainer(object):
-    # Services
+    # Base
     core_service = providers.Singleton(CoreService)
-    analytic_service = AnalyticService(core=core_service)
+    # Factories
+    analytic_factories = AnalyticServerFactory(core=core_service)
+    # Services
+    analytic_service = AnalyticService(core=core_service,factories=analytic_factories)
     data_service = DataService(core=core_service)
     # protocols_service = ProtocolsService(core=core_service)
     utils_service = UtilsService(core=core_service)

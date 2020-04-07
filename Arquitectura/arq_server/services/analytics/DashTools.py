@@ -18,53 +18,83 @@ from arq_server.base.ArqErrors import ArqError
 
 
 class DashTools(Thread):
-    __app = dash.Dash()
+    __app = dash.Dash(__name__, external_stylesheets=[
+                      'https://codepen.io/chriddyp/pen/bWLwgP.css'])
     __host = 'localhost'
     __port = 8050
     __debug = False
     # Services TIPS
     __logger: logging.getLogger()
     __config: Configuration
-    
-    # function using _stop function 
-    def stop(self,force=False):
-        self.__logger.debug("parando el servidor DASH")
-        self._stop.set()
-
-    def stopped(self): 
-        return self._stop.isSet() 
-  
-    def __raise_exc(self, exctype):
-        """raises the given exception type in the context of this thread"""
-        _async_raise(self._get_my_tid(), exctype)
-    
-    def terminate(self):
-        """raises SystemExit in the context of the given thread, which should 
-        cause the thread to exit silently (unless caught)"""
-        self.__raise_exc(SystemExit)
-
-    def run(self): 
-        self.__startServer()
-
-    def modifyLayout(self, fig):
-        self.__app.layout = html.Div([
-            dcc.Graph(id='plot', figure=fig)
-        ])
 
     def __init__(self, core, *args, **kwargs):
-        super(DashTools, self).__init__(*args, **kwargs) 
+        super(DashTools, self).__init__(*args, **kwargs)
         self.__init_services(core)
+    """
+    ----------
+    Interacciones con el servidor
+    ----------
+    """
+
+    def run(self):
+        """
+        Arranque del servidor junto con el arranque del hilo
+        """
+        try:
+            self.__startServer()
+        except self.ThreadStopped:
+            pass
+        finally:
+            self.__logger.debug(
+                "El servidor dash se ha detenido correctamente")
+
+    def generateLayout(self, figure=None,components:list=None):
+        
+        layoutComponents = []
+        if components != None:
+            layoutComponents.extend(components)
+
+        if figure != None:
+            layoutComponents.append(dcc.Graph(id='plot', figure=figure))
+            
+        self.__app.layout = html.Div(children=layoutComponents)
 
         # Local configuration
         self.__dash_conf_alias = self.__config.getProperty("groups", "dash")
         self.__dash_conf = self.__config.getGroupOfProperties(
             self.__dash_conf_alias)
         # server configuration
-        self._stop = threading.Event() 
         self.__config__dash_server()
-        
+
         self.__logger.info(
             "Servicios asociados a servidor Dash declarados correctamente")
+
+    def stop_server(self):
+        """Detiene el servidor forzando una excepción"""
+        self.__raise_exc()
+
+    """
+    ----------
+    Generador de componentes
+    ----------
+    """
+
+    def generate_table(self, dataframe, max_rows=10):
+        return html.Table([
+            html.Thead(
+                html.Tr([html.Th(col) for col in dataframe.columns])
+            ),
+            html.Tbody([
+                html.Tr([
+                    html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+                ]) for i in range(min(len(dataframe), max_rows))
+            ])
+        ])
+    """
+    ----------
+    Funciones privadas
+    ----------
+    """
 
     def __config__dash_server(self):
         self.__host = self.__config.getPropertyDefault(
@@ -92,9 +122,9 @@ class DashTools(Thread):
             host=self.__host,
             port=self.__port,
             debug=self.__debug)
-            # Flask properties
-            #processes=4,
-            #threaded=False)
+        # Flask properties
+        # processes=4,
+        # threaded=False)
 
     def __init_services(self, core) -> None:
         # Servicio de logging
@@ -102,36 +132,13 @@ class DashTools(Thread):
         self.__logger = core.logger_service().arqLogger()
         self.__config = core.config_service()
 
-    def _get_my_tid(self):
-        """determines this (self's) thread id
+    class ThreadStopped(Exception):
+        pass
 
-        CAREFUL : this function is executed in the context of the caller
-        thread, to get the identity of the thread represented by this
-        instance.
-        """
-        if not self.isAlive():
-            raise threading.ThreadError("the thread is not active")
-
-        # do we have it cached?
-        if hasattr(self, "_thread_id"):
-            return self._thread_id
-
-        # no, look for it in the _active dict
-        for tid, tobj in threading._active.items():
-            if tobj is self:
-                self._thread_id = tid
-                return tid
-
-def _async_raise(tid, exctype):
-    '''Raises an exception in the threads with id tid'''
-    if not inspect.isclass(exctype):
-        raise TypeError("Only types can be raised (not instances)")
-    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid),
-                                                     ctypes.py_object(exctype))
-    if res == 0:
-        raise ValueError("invalid thread id")
-    elif res != 1:
-        # "if it returns a number greater than one, you're in trouble,
-        # and you should call it again with exc=NULL to revert the effect"
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), None)
-        raise SystemError("PyThreadState_SetAsyncExc failed")
+    def __raise_exc(self):
+        thread_id = self.ident
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id,
+                                                         ctypes.py_object(self.ThreadStopped))
+        if res > 1:
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
+            print('Exception raise failure')

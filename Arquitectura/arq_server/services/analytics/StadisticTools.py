@@ -16,14 +16,14 @@ class StatisticsTools(object):
     # Services TIPS
     __logger: logging.getLogger()
     __config: Configuration
-    __dash: DashTools
 
-    def __init__(self, core, dash):
-        self.__init_services(core, dash)
+    def __init__(self, core, factories):
+        self.__init_services(core, factories)
         self.__logger.info("Servicios de estadística arrancados correctamente")
 
     def pruebas(self):
-        self.__dash.start()
+        dash_thread: DashTools = self.__factories.dash_factory()
+        dash_thread.start()
         # Step 2. Import the dataset
         df = pd.read_csv(
             "C:/Users/sernn/OneDrive/Desktop/Proyectos/pythonScripts/Arquitectura/arq_server/services/analytics/finance-charts-apple.csv")
@@ -38,16 +38,18 @@ class StatisticsTools(object):
                            hovermode='closest')
 
         fig = go.Figure(data=[trace_1], layout=layout)
+        components = []
 
-        self.__dash.modifyLayout(fig)
-        time.sleep(20)
-        self.__dash.terminate()
-        self.__dash.join()
-        print(self.__dash.isAlive())
+        components.append(dash_thread.generate_table(df,max_rows=50))
+        dash_thread.generateLayout(figure=fig,components=components)
+        time.sleep(30)
+        dash_thread.stop_server()
+        dash_thread.join()
+        print(dash_thread.is_alive())
 
-    def __init_services(self, core, dash) -> None:
+    def __init_services(self, core, factories) -> None:
         # Servicio de logging
         self.__core = core
         self.__logger = core.logger_service().arqLogger()
         self.__config = core.config_service()
-        self.__dash = dash
+        self.__factories = factories
