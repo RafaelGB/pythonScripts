@@ -21,6 +21,7 @@ class AnalyticServerFactory(containers.DeclarativeContainer):
 class AnalyticService(containers.DeclarativeContainer):
     """Application IoC container."""
     core = providers.Dependency()
+    # Factories
     factories = providers.Dependency()
     # Services
     stadistics_tools = providers.Singleton(

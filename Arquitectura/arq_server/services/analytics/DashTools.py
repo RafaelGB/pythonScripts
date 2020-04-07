@@ -30,6 +30,14 @@ class DashTools(Thread):
     def __init__(self, core, *args, **kwargs):
         super(DashTools, self).__init__(*args, **kwargs)
         self.__init_services(core)
+         # Local configuration
+        self.__dash_conf_alias = self.__config.getProperty("groups", "dash")
+        self.__dash_conf = self.__config.getGroupOfProperties(
+            self.__dash_conf_alias)
+        # server configuration
+        self.__config__dash_server()
+        self.__logger.info(
+            "Servicios asociados a servidor Dash declarados correctamente")
     """
     ----------
     Interacciones con el servidor
@@ -50,24 +58,22 @@ class DashTools(Thread):
 
     def generateLayout(self, figure=None,components:list=None):
         
-        layoutComponents = []
+        layoutComponents = [
+            html.Button(id='submit-button-state', n_clicks=0, children='Cerrar servidor'),
+            html.Div(id='output-state')
+        ]
+
         if components != None:
             layoutComponents.extend(components)
 
         if figure != None:
             layoutComponents.append(dcc.Graph(id='plot', figure=figure))
-            
+
         self.__app.layout = html.Div(children=layoutComponents)
-
-        # Local configuration
-        self.__dash_conf_alias = self.__config.getProperty("groups", "dash")
-        self.__dash_conf = self.__config.getGroupOfProperties(
-            self.__dash_conf_alias)
-        # server configuration
-        self.__config__dash_server()
-
-        self.__logger.info(
-            "Servicios asociados a servidor Dash declarados correctamente")
+        self.__logger.debug("Nuevo layout inicializado para servidor Dash")
+        self.__callbacks()
+        self.__logger.debug("Inicializando callbacks")
+       
 
     def stop_server(self):
         """Detiene el servidor forzando una excepción"""
@@ -78,8 +84,8 @@ class DashTools(Thread):
     Generador de componentes
     ----------
     """
-
     def generate_table(self, dataframe, max_rows=10):
+        """Genera un componente tabla a partir de un dataframe"""
         return html.Table([
             html.Thead(
                 html.Tr([html.Th(col) for col in dataframe.columns])
@@ -90,6 +96,19 @@ class DashTools(Thread):
                 ]) for i in range(min(len(dataframe), max_rows))
             ])
         ])
+    
+    """
+    """
+    def __callbacks(self):
+        @self.__app.callback(
+            Output('output-state', 'children'),
+            [Input('submit-button-state', 'n_clicks')])
+        def __button_cerrar_servidor(n_clicks):
+            if(n_clicks > 0):
+                self.__logger.debug("cerrando servidor desde botón web")
+                self.__raise_exc()
+                return "Cerrando servidor..."
+            return None
     """
     ----------
     Funciones privadas
@@ -117,14 +136,10 @@ class DashTools(Thread):
         """
 
     def __startServer(self):
-        #self.__app.scripts.config.serve_locally = True
         self.__app.run_server(
             host=self.__host,
             port=self.__port,
             debug=self.__debug)
-        # Flask properties
-        # processes=4,
-        # threaded=False)
 
     def __init_services(self, core) -> None:
         # Servicio de logging

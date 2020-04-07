@@ -42,10 +42,7 @@ class StatisticsTools(object):
 
         components.append(dash_thread.generate_table(df,max_rows=50))
         dash_thread.generateLayout(figure=fig,components=components)
-        time.sleep(30)
-        dash_thread.stop_server()
         dash_thread.join()
-        print(dash_thread.is_alive())
 
     def __init_services(self, core, factories) -> None:
         # Servicio de logging
