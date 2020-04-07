@@ -21,7 +21,7 @@ class StatisticsTools(object):
         self.__init_services(core, factories)
         self.__logger.info("Servicios de estadística arrancados correctamente")
 
-    def pruebas(self):
+    def showLayout(self):
         dash_thread: DashTools = self.__factories.dash_factory()
         dash_thread.start()
         # Step 2. Import the dataset
