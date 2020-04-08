@@ -6,7 +6,7 @@ import logging
 # IoC
 from dependency_injector import containers, providers
 # Own
-from arq_server.services.analytics.DashTools import DashTools
+from arq_server.services.analytics.DashTools import DashServer, DashTools
 from arq_server.services.analytics.StadisticTools import StatisticsTools
 
 class AnalyticServerFactory(containers.DeclarativeContainer):
@@ -14,7 +14,7 @@ class AnalyticServerFactory(containers.DeclarativeContainer):
     core = providers.Dependency()
     # Factories
     dash_factory = providers.Factory(
-        DashTools,
+        DashServer,
         core=core
     )
 
@@ -23,7 +23,13 @@ class AnalyticService(containers.DeclarativeContainer):
     core = providers.Dependency()
     # Factories
     factories = providers.Dependency()
+
     # Services
+    dash_tools = providers.Singleton(
+        DashTools,
+        core=core
+    )
+    
     stadistics_tools = providers.Singleton(
         StatisticsTools,
         core=core,

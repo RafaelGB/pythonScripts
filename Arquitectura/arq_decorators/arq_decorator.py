@@ -25,12 +25,16 @@ from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 from arq_server.containers.ArqContainer import ArqContainer
 from arq_server.services.CoreService import Configuration
-# own tools
+# Analytics
+from arq_server.services.analytics.StadisticTools import StatisticsTools
+from arq_server.services.analytics.DashTools import DashTools
+# Data
 from arq_server.services.data_access.CacheTools import RedisTools
+# Support
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
 from arq_server.services.support.ConcurrentTools import ConcurrentTools
-from arq_server.services.analytics.StadisticTools import StatisticsTools
+
 
 def method_wrapper(function):
     @wraps(function)
@@ -155,6 +159,7 @@ class ArqToolsTemplate:
     cacheTools: RedisTools
     concurrentTools : ConcurrentTools
     stadisticsTools : StatisticsTools
+    dashTools : DashTools
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
@@ -316,6 +321,7 @@ class ArqToolsTemplate:
         ).logger_service().appLogger()
         # Analytics
         self.stadisticsTools = ArqContainer.analytic_service.stadistics_tools()
+        self.dashTools = ArqContainer.analytic_service.dash_tools()
         # Data
         self.cacheTools = ArqContainer.data_service.cache_tools()
         # Utils
