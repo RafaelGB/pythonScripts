@@ -20,7 +20,6 @@ class ArqContainer(object):
     # Services
     analytic_service = AnalyticService(core=core_service,factories=analytic_factories)
     data_service = DataService(core=core_service)
-    # protocols_service = ProtocolsService(core=core_service)
     utils_service = UtilsService(core=core_service)
     
     

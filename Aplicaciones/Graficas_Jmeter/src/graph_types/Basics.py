@@ -172,7 +172,7 @@ class Template_graphs():
       # Inicialización de parámetros
       choosenHeader = self.bu.obtainOptionalParameter(self.properties["GRAPHIC_PLOTLY"]["optional_parameter"],**kwargs)
       traceName = self.filename
-      mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']     
+      mode = self.properties['GRAPHIC_PLOTLY']['scatter_mode']
       mainTrace = self.__customTrace(self.df[self.date_label],
                                         self.df[choosenHeader],
                                         mode = mode,

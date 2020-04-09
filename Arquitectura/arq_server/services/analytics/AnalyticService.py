@@ -12,10 +12,17 @@ from arq_server.services.analytics.StadisticTools import StatisticsTools
 class AnalyticServerFactory(containers.DeclarativeContainer):
     """Application IoC container."""
     core = providers.Dependency()
+
+    # Services
+    dash_tools = providers.Singleton(
+        DashTools,
+        core=core
+    )
     # Factories
     dash_factory = providers.Factory(
         DashServer,
-        core=core
+        core=core,
+        tools=dash_tools
     )
 
 class AnalyticService(containers.DeclarativeContainer):
@@ -24,12 +31,7 @@ class AnalyticService(containers.DeclarativeContainer):
     # Factories
     factories = providers.Dependency()
 
-    # Services
-    dash_tools = providers.Singleton(
-        DashTools,
-        core=core
-    )
-    
+    # Services    
     stadistics_tools = providers.Singleton(
         StatisticsTools,
         core=core,

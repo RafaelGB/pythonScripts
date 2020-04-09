@@ -33,13 +33,15 @@ class MiApp(ArqToolsTemplate):
 
 
     def dashPrueba(self):
+        """
         components = []
         alert = self.dashTools.alert("alerta desde megocio","nuevo-id",color="primary", is_open=True, dismissable=True)
         components.append(alert)
         figure = self.stadisticsTools.generate_figure()
         dashFigure = self.dashTools.plotly_graph(figure)
         components.append(dashFigure)
-        self.stadisticsTools.createDashLayout(components=components)
+        """
+        self.stadisticsTools.createDashLayout()
     """
     APARTADO DE TESTING
     """

@@ -321,7 +321,7 @@ class ArqToolsTemplate:
         ).logger_service().appLogger()
         # Analytics
         self.stadisticsTools = ArqContainer.analytic_service.stadistics_tools()
-        self.dashTools = ArqContainer.analytic_service.dash_tools()
+        self.dashTools = ArqContainer.analytic_factories.dash_tools()
         # Data
         self.cacheTools = ArqContainer.data_service.cache_tools()
         # Utils

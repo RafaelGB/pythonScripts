@@ -12,13 +12,101 @@ import ctypes
 
 # filesystem
 import logging
+import base64
+import io
+
+# dataframe
+import pandas as pd
 
 # Own
 from arq_server.services.CoreService import Configuration
 from arq_server.base.ArqErrors import ArqError
 
+#Temp
+import plotly.graph_objs as go
+
+class DashTools(object):
+    # Services TIPS
+    __logger: logging.getLogger()
+    __config: Configuration
+
+    def __init__(self, core):
+        self.__init_services(core)
+        # Local configuration
+        self.__dash_conf_alias = self.__config.getProperty("groups", "dash.tools")
+        self.__dash_conf = self.__config.getGroupOfProperties(
+            self.__dash_conf_alias)
+        self.__logger.info(
+            "Servicios asociados a Herramientas Dash declarados correctamente")
+    
+    def __init_services(self, core) -> None:
+        # Servicio de logging
+        self.__core = core
+        self.__logger = core.logger_service().arqLogger()
+        self.__config = core.config_service()
+
+    """
+    ----------
+    Generador de componentes bootstrap
+    ----------
+    """
+    def alert(self,message:str,id:str,**kwargs):
+        """
+        Genera un objeto de tipo alerta propio de bootstrap. Mensaje e id son campos obligatorios.
+
+        https://dash-bootstrap-components.opensource.faculty.ai/docs/components/alert/
+        """
+        self.__logger.debug("Argumentos para formar un objeto 'alert': %s",kwargs)
+        if "id" not in kwargs:
+            kwargs['id'] = id
+        return dbc.Alert(message,**kwargs)
+    
+    """
+    ----------
+    Generador de componentes html
+    ----------
+    """
+    def upload_file_component(self,id='upload-data',multiple=True):
+        return dcc.Upload(
+                id=id,
+                children=html.Div([
+                    'Arrastrar aquí o ',
+                    html.A('selecciona un fichero')
+                ]),
+                style={
+                    'width': '100%',
+                    'height': '60px',
+                    'lineHeight': '60px',
+                    'borderWidth': '1px',
+                    'borderStyle': 'dashed',
+                    'borderRadius': '5px',
+                    'textAlign': 'center',
+                    'margin': '10px'
+                },
+                # Permite subir múltiples ficheros
+                multiple=multiple
+            )
+
+    def dataframe_table_component(self, dataframe, max_rows=10):
+        """Genera un componente tabla a partir de un dataframe"""
+        return html.Table([
+            html.Thead(
+                html.Tr([html.Th(col) for col in dataframe.columns])
+            ),
+            html.Tbody([
+                html.Tr([
+                    html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+                ]) for i in range(min(len(dataframe), max_rows))
+            ])
+        ])
+
+    def graph_component(self, figure,id_graph='main-graph'):
+        """Genera una gráfica a partir de una figura propia de plotly"""
+        return dcc.Graph(id=id_graph, figure=figure)
+
 
 class DashServer(Thread):
+    # Default server conf
     __app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     __host = 'localhost'
     __port = 8050
@@ -26,10 +114,13 @@ class DashServer(Thread):
     # Services TIPS
     __logger: logging.getLogger()
     __config: Configuration
+    __tools: DashTools
+    # figure elements
+    __main_figure = dcc.Graph(id='main-graph')
 
-    def __init__(self, core, *args, **kwargs):
+    def __init__(self, core, tools, *args, **kwargs):
         super(DashServer, self).__init__(*args, **kwargs)
-        self.__init_services(core)
+        self.__init_services(core,tools)
         # Local configuration
         self.__dash_conf_alias = self.__config.getProperty("groups", "dash.server")
         self.__dash_conf = self.__config.getGroupOfProperties(
@@ -55,14 +146,26 @@ class DashServer(Thread):
         finally:
             self.__logger.debug(
                 "El servidor dash se ha detenido correctamente")
-
-    def generateLayout(self, 
+    
+    def generateLayout(self,
+        figure=None, 
         components: list = None, 
         extra_callbacks = None):
+        if figure == None:
+            figure = dcc.Graph(id='main-graph')
         # Componentes insertados por la arquitectura
         layoutComponents = [
             arq_navbar,
-            arq_alert_shutdown
+            self.__tools.alert(
+                "¡El servidor ha sido cerrado!",
+                "alert-shutdown",
+                dismissable=False,
+                fade=True,
+                is_open=False,
+                color="danger"
+                ),
+            self.__tools.upload_file_component(),
+            figure
         ]
 
         if components != None:
@@ -97,6 +200,26 @@ class DashServer(Thread):
                 self.__raise_exc()
                 return not is_down
             return is_down
+        
+        @self.__app.callback(Output('main-graph', 'figure'),
+            [
+                Input('upload-data', 'contents'),
+                Input('upload-data', 'filename')
+            ])
+        def __update_graph(contents, filename):
+
+            if contents:
+                contents = contents[0]
+                filename = filename[0]
+                df = self.__parse_data(contents, filename)
+                #df = df.set_index(df.columns[0])
+                trace = go.Scatter(
+                    x = df['Date'], y = df['AAPL.Open'],
+                    mode = "lines",
+                    name = "prueba"
+                    )
+                self.__main_figure = go.Figure(data=[trace])
+            return self.__main_figure
     """
     ----------
     Funciones privadas
@@ -129,11 +252,12 @@ class DashServer(Thread):
             port=self.__port,
             debug=self.__debug)
 
-    def __init_services(self, core) -> None:
+    def __init_services(self, core,tools) -> None:
         # Servicio de logging
         self.__core = core
         self.__logger = core.logger_service().arqLogger()
         self.__config = core.config_service()
+        self.__tools = tools
 
     class ThreadStopped(Exception):
         pass
@@ -145,77 +269,38 @@ class DashServer(Thread):
         if res > 1:
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
             print('Exception raise failure')
+    
+    def __parse_data(self,contents, filename):
+        content_type, content_string = contents.split(',')
 
+        decoded = base64.b64decode(content_string)
+        try:
+            if 'csv' in filename:
+                # Assume that the user uploaded a CSV or TXT file
+                df = pd.read_csv(
+                    io.StringIO(decoded.decode('utf-8')))
+            elif 'xls' in filename:
+                # Assume that the user uploaded an excel file
+                df = pd.read_excel(io.BytesIO(decoded))
+            elif 'txt' or 'tsv' in filename:
+                # Assume that the user upl, delimiter = r'\s+'oaded an excel file
+                df = pd.read_csv(
+                    io.StringIO(decoded.decode('utf-8')), delimiter = r'\s+')
+        except Exception as e:
+            print(e)
+            return html.Div([
+                'There was an error processing this file.'
+            ])
+
+        return df
 # NavBars
 # --------------------
 arq_navbar = dbc.Navbar(
     [
         dbc.Col(dbc.NavbarBrand("Dashboard", href="#"), sm=3, md=2),
         dbc.Col(dbc.Input(type="search", placeholder="Search here")),
-        dbc.Col(dbc.Button("Parar servidor", id="stop-server", color="danger", className="mr-1"),
-                ),
+        dbc.Col(dbc.Button("Parar servidor", id="stop-server", color="danger", className="mr-1"))
     ],
     color="dark",
-    dark=True,
+    dark=True
 )
-
-# Alerts
-# --------------------
-arq_alert_shutdown = dbc.Alert(
-    "¡El servidor ha sido cerrado!",
-    id="alert-shutdown",
-    dismissable=False,
-    fade=True,
-    is_open=False,
-    color="danger",
-)
-
-class DashTools(object):
-    # Services TIPS
-    __logger: logging.getLogger()
-    __config: Configuration
-
-    def __init__(self, core):
-        self.__init_services(core)
-        # Local configuration
-        self.__dash_conf_alias = self.__config.getProperty("groups", "dash.tools")
-        self.__dash_conf = self.__config.getGroupOfProperties(
-            self.__dash_conf_alias)
-        self.__logger.info(
-            "Servicios asociados a Herramientas Dash declarados correctamente")
-    
-    def __init_services(self, core) -> None:
-        # Servicio de logging
-        self.__core = core
-        self.__logger = core.logger_service().arqLogger()
-        self.__config = core.config_service()
-    
-    def alert(self,message:str,id:str,**kwargs):
-        """https://dash-bootstrap-components.opensource.faculty.ai/docs/components/alert/"""
-        self.__logger.debug("Argumentos para formar un objeto 'alert': %s",kwargs)
-        if "id" not in kwargs:
-            kwargs['id'] = id
-        return dbc.Alert(message,**kwargs)
-    
-    """
-    ----------
-    Generador de componentes plantilla
-    ----------
-    """
-
-    def dataframe_table(self, dataframe, max_rows=10):
-        """Genera un componente tabla a partir de un dataframe"""
-        return html.Table([
-            html.Thead(
-                html.Tr([html.Th(col) for col in dataframe.columns])
-            ),
-            html.Tbody([
-                html.Tr([
-                    html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-                ]) for i in range(min(len(dataframe), max_rows))
-            ])
-        ])
-
-    def plotly_graph(self, plotly_figure,id_graph='plot'):
-        """Genera una gráfica a partir de una figura propia de plotly"""
-        return dcc.Graph(id=id_graph, figure=plotly_figure)
