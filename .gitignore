@@ -110,7 +110,10 @@ venv.bak/
 *.json
 
 # custom folders
- resources/
+resources/
+cache-directory/
+
+# custom file types
 *.html
 *.csv
 *.CSV
