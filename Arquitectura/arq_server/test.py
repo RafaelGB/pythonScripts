@@ -41,7 +41,7 @@ class MiApp(ArqToolsTemplate):
         dashFigure = self.dashTools.plotly_graph(figure)
         components.append(dashFigure)
         """
-        self.stadisticsTools.createDashLayout()
+        self.stadisticsTools.createDashServer(None,None)
     """
     APARTADO DE TESTING
     """

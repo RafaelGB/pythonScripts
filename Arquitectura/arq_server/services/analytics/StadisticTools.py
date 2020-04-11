@@ -23,14 +23,11 @@ class StatisticsTools(object):
         self.__init_services(core, factories)
         self.__logger.info("Servicios de estadística arrancados correctamente")
 
-
     def generate_figure(self, data=None, layout=None, frames=None, skip_invalid=False, **kwargs):
         """
         Genera una figura plotly bajo el layout de la arquitectura por defecto.
         """
-        if layout == None:
-            layout = default_layout
-        fig = None
+        fig = {}
         try:
             fig = go.Figure(data=data, layout=layout, frames=frames,
                             skip_invalid=skip_invalid, **kwargs)
@@ -41,13 +38,26 @@ class StatisticsTools(object):
         finally:
             return fig
 
-    def createDashLayout(self, figure=None, components=None, extra_callbacks=None, is_async=False):
+    def createDashServer(self, layout, treatment_callback, components=None, extra_callbacks=None, is_async=False):
         """
         Genera un panel Dash con los componentes propios de un servidor Dash
         """
         dash_thread: DashServer = self.__factories.dash_factory()
         dash_thread.start()
-        dash_thread.generateLayout(figure=figure, components=components)
+        # INI temp
+        def prueba(df):
+            trace = go.Scatter(
+                x=df['Date'], y=df['AAPL.Open'],
+                mode="lines",
+                name="prueba"
+            )
+            return [trace]
+        treatment_callback = prueba
+        layout = None
+        # FIN temp
+        dash_thread.config_treatment_data(layout, treatment_callback)
+        dash_thread.generateLayout(
+            components=components, extra_callbacks=extra_callbacks)
         if not is_async:
             dash_thread.join()
 
@@ -68,28 +78,3 @@ class StatisticsTools(object):
             timeStamp = timeStamp // granularity
             timeStamp = timeStamp * granularity
             return timeStamp
-
-
-#
-default_layout = go.Layout(
-    title='Points Scored by the Top 9 Scoring NBA Players in 2012',
-    yaxis=dict(
-        autorange=True,
-        showgrid=True,
-        zeroline=True,
-        dtick=5,
-        gridcolor='rgb(255, 255, 255)',
-        gridwidth=1,
-        zerolinecolor='rgb(255, 255, 255)',
-        zerolinewidth=2,
-    ),
-    margin=dict(
-        l=40,
-        r=30,
-        b=80,
-        t=100,
-    ),
-    paper_bgcolor='rgb(243, 243, 243)',
-    plot_bgcolor='rgb(243, 243, 243)',
-    showlegend=False
-)
