@@ -1,5 +1,6 @@
 # Server
 import dash
+import dash_table
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
@@ -82,7 +83,7 @@ class DashTools(object):
                 html.A('selecciona un fichero')
             ]),
             style={
-                'width': '100%',
+                'width': '50%',
                 'height': '60px',
                 'lineHeight': '60px',
                 'borderWidth': '1px',
@@ -193,7 +194,14 @@ class DashServer(Thread):
                 color="danger"
             ),
             self.__tools.upload_file_component(),
-            self.__tools.table_component(pd.DataFrame({'dataframe': []})),
+            html.Div(
+                dash_table.DataTable(
+                        id='main_table'
+                ),
+                 style={
+                    'width': '50%'
+                 }
+            ),
             dash_figure,
             html.Div(
                 id='processing_data',
@@ -245,15 +253,18 @@ class DashServer(Thread):
         @self.__app.callback(Output('processing_data', 'children'),
                              [
             Input('upload-data', 'contents'),
-            Input('upload-data', 'filename'),
             Input('session-id', 'children')
-        ])
-        def __process_upload_data(contents, filename, session_id):
+        ],
+            [
+            State("upload-data", "filename"),
+            State("upload-data", "last_modified")])
+        def __process_upload_data(contents, session_id, filename, last_modified):
             if contents:
                 contents = contents[0]
                 filename = filename[0]
-                df = self.__obtain_dataframe(
-                    session_id, filename, contents=contents)
+                last_modified = last_modified[0]
+                self.__obtain_dataframe(
+                    session_id, filename, contents=contents)  # Save on cache
                 return filename
             else:
                 return None
@@ -265,23 +276,55 @@ class DashServer(Thread):
         )
         def __update_graph(filename, session_id):
             if filename != None:
+                self.__logger.debug(
+                    "llamada callback: actualización de gráfico principal")
                 df = self.__obtain_dataframe(session_id, filename)  # Cached
                 data = self.__df_treatment_callback(df)
                 return {'data': data, 'layout': self.__main_layout}
+            return {}
+
+        @self.__app.callback(
+            [Output('main_table', 'data'),
+               Output('main_table', 'columns')],
+            [
+             Input('processing_data', 'children'),
+             Input('session-id', 'children'),
+             Input('main_table', "page_current")
+             ],
+             [State('main_table', "page_size")]
+        )
+        def __update_data_table(filename, session_id, page_current, page_size):
+            if filename != None:
+                self.__logger.debug(
+                    "llamada callback: actualización de dataframe principal - datos")
+                df = self.__obtain_dataframe(session_id, filename)  # Cached
+                """
+                return df.iloc[
+                    page_current*page_size:(page_current + 1)*page_size
+                ].to_dict('records')
+                """
+                return df.to_dict('records'), [{"name": i, "id": i} for i in df.columns]
+                
             else:
-                return {}
+                return [{}], []
         """
         @self.__app.callback(
-            Output('main_table', 'children'),
-            [Input('processing_data', 'children'),
-             Input('session-id', 'children')]
+            Output("main_table", "columns"),
+            [
+             Input('processing_data', 'children'),
+             Input('session-id', 'children')
+             ]
         )
-        def __update_table(is_df_uploaded, session_id):
-            #df = pd.read_json(jsonified_dataframe, orient='split')
-            if is_df_uploaded:
-                df = self.__parse_data(session_id)
-                return self.__tools.table_component(df)
-            pass
+        def __update_columns_table(filename, session_id):
+            if filename != None:
+                self.__logger.debug(
+                    "llamada callback: actualización de dataframe principal - columnas")
+                df = self.__obtain_dataframe(session_id, filename)  # Cached
+                columns = [{"name": i, "id": i} for i in sorted(df.columns)]
+               
+                return columns
+            else:
+                return {}
         """
     """
     ----------
@@ -334,13 +377,12 @@ class DashServer(Thread):
             print('Exception raise failure')
 
     def __obtain_dataframe(self, session_id, filename, contents=None):
-        self.__logger.debug(
-            "Obteniendo dataframe desde fichero subido al servidor. filename:'%s' id_session:'%s'",
-            filename,
-            session_id)
-
         @self.__cache.memoize(timeout=60)
         def cached_parse(filename, session_id):
+            self.__logger.debug(
+                "INI - caching dataframe. fichero:'%s' id_session:'%s'",
+                filename,
+                session_id)
             content_type, content_string = contents.split(',')
 
             decoded = base64.b64decode(content_string)
@@ -357,11 +399,13 @@ class DashServer(Thread):
                     df = pd.read_csv(
                         io.StringIO(decoded.decode('utf-8')), delimiter=r'\s+')
             except Exception as e:
-                print(e)
-                return html.Div([
-                    'There was an error processing this file.'
-                ])
-            return df
+                raise e
+            else:
+                self.__logger.debug(
+                    "FIN - cached dataframe. fichero:'%s' id_session:'%s'",
+                    filename,
+                    session_id)
+                return df
         return cached_parse(filename, session_id)
 
 
