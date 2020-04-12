@@ -121,6 +121,7 @@ class DashServer(Thread):
     __logger: logging.getLogger()
     __config: Configuration
     __tools: DashTools
+    __cache: Cache
     # figure elements
     __main_layout = None
     __df_treatment_callback = None
@@ -196,10 +197,23 @@ class DashServer(Thread):
             self.__tools.upload_file_component(),
             html.Div(
                 dash_table.DataTable(
-                        id='main_table'
+                        id='main_table',
+                        page_current=0,
+                        page_size=self.__config.getProperty(self.__dash_conf_alias,"table.page.size",parseType=int),
+                        page_action='custom',
+
+                        filter_action='custom',
+                        filter_query='',
+
+                        sort_action='custom',
+                        sort_mode='multi',
+                        sort_by=[]
                 ),
                  style={
-                    'width': '50%'
+                    'width': '80%',
+                    'height': 300,
+                    'overflowY': 'scroll',
+                    'margin-left': 30
                  }
             ),
             dash_figure,
@@ -246,6 +260,7 @@ class DashServer(Thread):
         def __button_cerrar_servidor(n_clicks, is_down):
             if(n_clicks):
                 self.__logger.debug("Servidor dash cerrado desde botón web")
+                self.__cache.clear()
                 self.__raise_exc()
                 return not is_down
             return is_down
@@ -270,62 +285,41 @@ class DashServer(Thread):
                 return None
 
         @self.__app.callback(
-            Output('main-graph', 'figure'),
-            [Input('processing_data', 'children'),
-             Input('session-id', 'children')]
-        )
-        def __update_graph(filename, session_id):
-            if filename != None:
-                self.__logger.debug(
-                    "llamada callback: actualización de gráfico principal")
-                df = self.__obtain_dataframe(session_id, filename)  # Cached
-                data = self.__df_treatment_callback(df)
-                return {'data': data, 'layout': self.__main_layout}
-            return {}
-
-        @self.__app.callback(
             [Output('main_table', 'data'),
                Output('main_table', 'columns')],
             [
              Input('processing_data', 'children'),
              Input('session-id', 'children'),
-             Input('main_table', "page_current")
-             ],
-             [State('main_table', "page_size")]
+             Input('main_table', "page_current"),
+             Input('main_table', "page_size")
+             ]
         )
         def __update_data_table(filename, session_id, page_current, page_size):
             if filename != None:
                 self.__logger.debug(
                     "llamada callback: actualización de dataframe principal - datos")
                 df = self.__obtain_dataframe(session_id, filename)  # Cached
-                """
-                return df.iloc[
+
+                data = df.iloc[
                     page_current*page_size:(page_current + 1)*page_size
                 ].to_dict('records')
-                """
-                return df.to_dict('records'), [{"name": i, "id": i} for i in df.columns]
-                
-            else:
-                return [{}], []
-        """
+
+                return data, [{"name": i, "id": i} for i in df.columns]
+            return [{}], []
+        
         @self.__app.callback(
-            Output("main_table", "columns"),
-            [
-             Input('processing_data', 'children'),
-             Input('session-id', 'children')
-             ]
+            Output('main-graph', 'figure'),
+            [Input('main_table', "data")]
         )
-        def __update_columns_table(filename, session_id):
-            if filename != None:
-                self.__logger.debug(
-                    "llamada callback: actualización de dataframe principal - columnas")
-                df = self.__obtain_dataframe(session_id, filename)  # Cached
-                columns = [{"name": i, "id": i} for i in sorted(df.columns)]
-               
-                return columns
-            else:
-                return {}
-        """
+        def __update_graph(rows):
+            if rows != None:
+                if rows[0]:
+                    self.__logger.debug(
+                        "llamada callback: actualización de gráfico principal")
+                    df = pd.DataFrame(rows)
+                    data = self.__df_treatment_callback(df)
+                    return {'data': data, 'layout': self.__main_layout}
+            return {}
     """
     ----------
     Funciones privadas
@@ -377,7 +371,7 @@ class DashServer(Thread):
             print('Exception raise failure')
 
     def __obtain_dataframe(self, session_id, filename, contents=None):
-        @self.__cache.memoize(timeout=60)
+        @self.__cache.memoize()
         def cached_parse(filename, session_id):
             self.__logger.debug(
                 "INI - caching dataframe. fichero:'%s' id_session:'%s'",
