@@ -84,13 +84,14 @@ class DashTools(object):
             ]),
             style={
                 'width': '50%',
-                'height': '60px',
-                'lineHeight': '60px',
+                'height': '30px',
+                'lineHeight': '30px',
                 'borderWidth': '1px',
                 'borderStyle': 'dashed',
-                'borderRadius': '5px',
+                'borderRadius': '2px',
                 'textAlign': 'center',
-                'margin': '10px'
+                'margin': '5px',
+                'background-color': 'white'
             },
             # Permite subir múltiples ficheros
             multiple=multiple
@@ -188,12 +189,10 @@ class DashServer(Thread):
         components: list = None,
         extra_callbacks=None
     ):
-
-        dash_figure = dcc.Graph(id='main-graph')
         session_id = str(uuid.uuid4())
         # Componentes insertados por la arquitectura
         layoutComponents = [
-            arq_navbar,
+            self.__arq_menu(),
             self.__tools.alert(
                 "¡El servidor ha sido cerrado!",
                 "alert-shutdown",
@@ -202,38 +201,9 @@ class DashServer(Thread):
                 is_open=False,
                 color="danger"
             ),
-            self.__tools.upload_file_component(),
-            html.Div(
-                dash_table.DataTable(
-                    id='main_table',
-                    page_current=0,
-                    page_size=self.__config.getProperty(
-                        self.__dash_conf_alias, "table.page.size", parseType=int),
-                    page_action='custom',
-
-                    filter_action='custom',
-                    filter_query='',
-
-                    sort_action='custom',
-                    sort_mode='multi',
-                    sort_by=[]
-                ),
-                style={
-                    'width': '95%',
-                    'height': 350,
-                    'overflowY': 'scroll',
-                    'margin-left': 30,
-                    'margin-right': 30
-                }
-            ),
-            dbc.Checklist(
-                id="df_options",
-                options=[
-                    {"label": "Aplicar filtros a la gráfica", "value": "graph_filter"}
-                ],
-                labelCheckedStyle={"color": "green"},
-            ),
-            dash_figure,
+            self.__arq_table(),
+            html.Hr(),
+            self.__arq_graph(),
             html.Div(
                 id='processing_data',
                 style={'display': 'none'}
@@ -475,16 +445,85 @@ class DashServer(Thread):
                     return name, operator_type[0].strip(), value
         return [None] * 3
 
+    """
+    ----------
+    Componentes visuales añadidos por la arquitectura
+    ----------
+    """
+    def __arq_menu(self):
+        """
+        Menú base desde arquitectura para elergir todas las opciones
+        """
+        return dbc.Navbar(
+            [
+                dbc.Col(dbc.NavbarBrand("Dashboard", href="#"), sm=3, md=2),
+                dbc.Col(self.__tools.upload_file_component()),
+                dbc.Col(dbc.Button("Parar servidor", id="stop-server",
+                                color="danger", className="mr-1"))
+            ],
+            color="dark",
+            dark=True
+        )
+    
+    def __arq_table(self):
+        """
+        Componentes visuales que interactuan con la tabla principal
+        """
+        table = html.Div(
+                dash_table.DataTable(
+                    id='main_table',
+                    page_current=0,
+                    page_size=self.__config.getProperty(
+                        self.__dash_conf_alias, "table.page.size", parseType=int),
+                    page_action='custom',
 
-# NavBars
-# --------------------
-arq_navbar = dbc.Navbar(
-    [
-        dbc.Col(dbc.NavbarBrand("Dashboard", href="#"), sm=3, md=2),
-        dbc.Col(dbc.Input(type="search", placeholder="Search here")),
-        dbc.Col(dbc.Button("Parar servidor", id="stop-server",
-                           color="danger", className="mr-1"))
-    ],
-    color="dark",
-    dark=True
-)
+                    filter_action='custom',
+                    filter_query='',
+
+                    sort_action='custom',
+                    sort_mode='multi',
+                    sort_by=[]
+                ),
+                style={
+                    'height': 350,
+                    'overflowY': 'scroll',
+                    'margin-left': 30,
+                    'margin-right': 30
+                }
+            )
+        max_rows = dbc.FormGroup(
+                    [
+                        dbc.Label("lineas/pagina", html_for="lineas"),
+                        dbc.Col(
+                            dbc.Input(type="integer", id="max_rows_per_page", placeholder="Introduce un número"),
+                            width=6
+                        )
+                    ],
+                    row=True)
+        form = dbc.Form([max_rows])
+        return dbc.Row(
+            [
+                dbc.Col(table,width=9),
+                dbc.Col(form)
+            ]
+        )
+
+    def __arq_graph(self):
+        """
+        Componentes visuales que interactuan con la gráfica principal
+        """
+        return dbc.Row(
+            [
+                dbc.Col(dcc.Graph(id='main-graph'),width=8),
+                dbc.Col(
+                        dbc.Checklist(
+                            id="df_options",
+                            options=[
+                                {"label": "Aplicar filtros a la gráfica", "value": "graph_filter"}
+                            ],
+                            labelCheckedStyle={"color": "green"},
+                        ),
+                        width=3
+                    ),
+            ]
+        )
