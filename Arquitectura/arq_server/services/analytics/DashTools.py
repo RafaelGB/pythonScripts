@@ -125,6 +125,14 @@ class DashServer(Thread):
     # figure elements
     __main_layout = None
     __df_treatment_callback = None
+    __operators = [['ge ', '>='],
+                   ['le ', '<='],
+                   ['lt ', '<'],
+                   ['gt ', '>'],
+                   ['ne ', '!='],
+                   ['eq ', '='],
+                   ['contains '],
+                   ['datestartswith ']]
     # Memory
 
     def __init__(self, core, tools, *args, **kwargs):
@@ -197,24 +205,32 @@ class DashServer(Thread):
             self.__tools.upload_file_component(),
             html.Div(
                 dash_table.DataTable(
-                        id='main_table',
-                        page_current=0,
-                        page_size=self.__config.getProperty(self.__dash_conf_alias,"table.page.size",parseType=int),
-                        page_action='custom',
+                    id='main_table',
+                    page_current=0,
+                    page_size=self.__config.getProperty(
+                        self.__dash_conf_alias, "table.page.size", parseType=int),
+                    page_action='custom',
 
-                        filter_action='custom',
-                        filter_query='',
+                    filter_action='custom',
+                    filter_query='',
 
-                        sort_action='custom',
-                        sort_mode='multi',
-                        sort_by=[]
+                    sort_action='custom',
+                    sort_mode='multi',
+                    sort_by=[]
                 ),
-                 style={
-                    'width': '80%',
-                    'height': 300,
+                style={
+                    'width': '100%',
+                    'height': 350,
                     'overflowY': 'scroll',
                     'margin-left': 30
-                 }
+                }
+            ),
+            dbc.Checklist(
+                id="df_options",
+                options=[
+                    {"label": "Aplicar filtros a la gráfica", "value": "graph_filter"}
+                ],
+                labelCheckedStyle={"color": "green"},
             ),
             dash_figure,
             html.Div(
@@ -286,19 +302,47 @@ class DashServer(Thread):
 
         @self.__app.callback(
             [Output('main_table', 'data'),
-               Output('main_table', 'columns')],
+             Output('main_table', 'columns')],
             [
-             Input('processing_data', 'children'),
-             Input('session-id', 'children'),
-             Input('main_table', "page_current"),
-             Input('main_table', "page_size")
-             ]
+                Input('processing_data', 'children'),
+                Input('session-id', 'children'),
+                Input('main_table', "page_current"),
+                Input('main_table', "page_size"),
+                Input('main_table', 'sort_by'),
+                Input('main_table', 'filter_query')
+            ]
         )
-        def __update_data_table(filename, session_id, page_current, page_size):
+        def __update_data_table(filename, session_id, page_current, page_size, sort_by, filter):
             if filename != None:
                 self.__logger.debug(
                     "llamada callback: actualización de dataframe principal - datos")
                 df = self.__obtain_dataframe(session_id, filename)  # Cached
+
+                filtering_expressions = filter.split(' && ')
+                for filter_part in filtering_expressions:
+                    col_name, operator, filter_value = self.__split_filter_part(
+                        filter_part)
+
+                    if operator in ('eq', 'ne', 'lt', 'le', 'gt', 'ge'):
+                        # Los operadores son aquellos válidos para series en dataframes de Pandas
+                        df = df.loc[getattr(
+                            df[col_name], operator)(filter_value)]
+                    elif operator == 'contains':
+                        df = df.loc[df[col_name].str.contains(filter_value)]
+                    elif operator == 'datestartswith':
+                        # this is a simplification of the front-end filtering logic,
+                        # only works with complete fields in standard format
+                        df = df.loc[df[col_name].str.startswith(filter_value)]
+
+                if len(sort_by):
+                    df = df.sort_values(
+                        [col['column_id'] for col in sort_by],
+                        ascending=[
+                            col['direction'] == 'asc'
+                            for col in sort_by
+                        ],
+                        inplace=False
+                    )
 
                 data = df.iloc[
                     page_current*page_size:(page_current + 1)*page_size
@@ -306,16 +350,31 @@ class DashServer(Thread):
 
                 return data, [{"name": i, "id": i} for i in df.columns]
             return [{}], []
-        
+
         @self.__app.callback(
             Output('main-graph', 'figure'),
-            [Input('main_table', "data")]
+            [
+                Input('main_table', 'data'),
+                Input('df_options', 'value')],
+            [
+                State('session-id', 'children'),
+                State("upload-data", "filename")
+
+            ]
         )
-        def __update_graph(rows):
+        def __update_graph(rows, df_options, session_id, filename):
+            if df_options:
+                if "graph_filter" in df_options:
+                    self.__logger.debug(
+                            "llamada callback: actualización de gráfico principal - todo el dataframe")
+                    df = self.__obtain_dataframe(session_id, filename[0])  # Cached
+                    data = self.__df_treatment_callback(df)
+                return {'data': data, 'layout': self.__main_layout}
+            
             if rows != None:
                 if rows[0]:
                     self.__logger.debug(
-                        "llamada callback: actualización de gráfico principal")
+                        "llamada callback: actualización de gráfico principal - asociado a tabla")
                     df = pd.DataFrame(rows)
                     data = self.__df_treatment_callback(df)
                     return {'data': data, 'layout': self.__main_layout}
@@ -333,18 +392,6 @@ class DashServer(Thread):
             self.__dash_conf_alias, "port", self.__port, parseType=int)
         self.__debug = self.__config.getPropertyDefault(
             self.__dash_conf_alias, "debug", self.__debug, parseType=eval)
-        """
-        dev_tools_ui = None,
-        dev_tools_props_check = None,
-        dev_tools_serve_dev_bundles = None,
-        dev_tools_hot_reload = None,
-        dev_tools_hot_reload_interval = None,
-        dev_tools_hot_reload_watch_interval = None,
-        dev_tools_hot_reload_max_retry = None,
-        dev_tools_silence_routes_logging = None,
-        dev_tools_prune_errors = None,
-        **flask_run_options
-        """
 
     def __startServer(self):
         self.__app.run_server(
@@ -401,6 +448,32 @@ class DashServer(Thread):
                     session_id)
                 return df
         return cached_parse(filename, session_id)
+
+    def __split_filter_part(self, filter_part):
+        """Determina el tipo de filtro devolviendo nombre,operador y valor"""
+        for operator_type in self.__operators:
+            name = None
+            value = None
+            for operator in operator_type:
+                if operator in filter_part:
+                    name_part, value_part = filter_part.split(operator, 1)
+                    name = name_part[name_part.find(
+                        '{') + 1: name_part.rfind('}')]
+
+                    value_part = value_part.strip()
+                    v0 = value_part[0]
+                    if (v0 == value_part[-1] and v0 in ("'", '"', '`')):
+                        value = value_part[1: -1].replace('\\' + v0, v0)
+                    else:
+                        try:
+                            value = float(value_part)
+                        except ValueError:
+                            value = value_part
+
+                    # word operators need spaces after them in the filter string,
+                    # but we don't want these later
+                    return name, operator_type[0].strip(), value
+        return [None] * 3
 
 
 # NavBars
