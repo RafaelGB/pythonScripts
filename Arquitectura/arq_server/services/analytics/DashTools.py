@@ -219,10 +219,11 @@ class DashServer(Thread):
                     sort_by=[]
                 ),
                 style={
-                    'width': '100%',
+                    'width': '95%',
                     'height': 350,
                     'overflowY': 'scroll',
-                    'margin-left': 30
+                    'margin-left': 30,
+                    'margin-right': 30
                 }
             ),
             dbc.Checklist(
@@ -363,21 +364,20 @@ class DashServer(Thread):
             ]
         )
         def __update_graph(rows, df_options, session_id, filename):
-            if df_options:
-                if "graph_filter" in df_options:
+            if df_options and rows:
+                if "graph_filter" in df_options and rows[0]:
                     self.__logger.debug(
-                            "llamada callback: actualización de gráfico principal - todo el dataframe")
-                    df = self.__obtain_dataframe(session_id, filename[0])  # Cached
+                        "llamada callback: actualización de gráfico principal - filtros asociados a la tabla")
+                    df = pd.DataFrame(rows)
                     data = self.__df_treatment_callback(df)
                 return {'data': data, 'layout': self.__main_layout}
             
-            if rows != None:
-                if rows[0]:
-                    self.__logger.debug(
-                        "llamada callback: actualización de gráfico principal - asociado a tabla")
-                    df = pd.DataFrame(rows)
-                    data = self.__df_treatment_callback(df)
-                    return {'data': data, 'layout': self.__main_layout}
+            if filename:
+                self.__logger.debug(
+                            "llamada callback: actualización de gráfico principal - todo el dataframe")
+                df = self.__obtain_dataframe(session_id, filename[0])  # Cached
+                data = self.__df_treatment_callback(df)
+                return {'data': data, 'layout': self.__main_layout}
             return {}
     """
     ----------
