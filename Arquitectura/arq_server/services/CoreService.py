@@ -25,8 +25,10 @@ class Logger:
     """
     isCustomCOnf: bool
     def __init__(self):
-        parent_path = Path(__file__).parent
-        logger_path = (parent_path / "../resources/logger_conf.json").resolve()
+        main_path = path.realpath(sys.argv[0]) if sys.argv[0] else None
+        parent_path = Path(main_path).parent
+        logger_path = (parent_path / "resources/logger_conf.json").resolve()
+        print("\n\nruta padre de la configuracion:\n" + str(parent_path)+"\n"+str(main_path)+"\n"+str(logger_path))
         self.__setup_logging(default_path=logger_path)
         self.__logger = logging.getLogger("arquitecture")
         if(self.isCustomCOnf):

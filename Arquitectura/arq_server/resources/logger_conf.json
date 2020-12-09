@@ -1,6 +1,6 @@
 {
   "properties": {
-    "base.path": "C:\\Users\\sernn\\OneDrive\\Desktop\\Proyectos\\pythonScripts\\Arquitectura",
+    "base.path": "/Users/rafaelgomezbermejo/Trazabilidad/pythonScripts",
     "base.path.logs": "logs"
   },
   "logging_conf": {
@@ -27,9 +27,9 @@
         "class": "logging.handlers.RotatingFileHandler",
         "level": "DEBUG",
         "formatter": "debugging",
-        "filename": "{{base.path}}\\{{base.path.logs}}\\arq.log",
-        "maxBytes": 16384,
-        "backupCount": 10,
+        "filename": "{{base.path}}/{{base.path.logs}}/arq.log",
+        "maxBytes": 10485760,
+        "backupCount": 20,
         "encoding": "utf8"
       },
 
@@ -37,9 +37,9 @@
         "class": "logging.handlers.RotatingFileHandler",
         "level": "DEBUG",
         "formatter": "debugging",
-        "filename": "{{base.path}}\\{{base.path.logs}}\\apps.log",
-        "maxBytes": 16384,
-        "backupCount": 10,
+        "filename": "{{base.path}}/{{base.path.logs}}/apps.log",
+        "maxBytes": 10485760,
+        "backupCount": 20,
         "encoding": "utf8"
       },
 
@@ -47,9 +47,9 @@
         "class": "logging.handlers.RotatingFileHandler",
         "level": "DEBUG",
         "formatter": "debugging",
-        "filename": "{{base.path}}\\{{base.path.logs}}\\testing.log",
-        "maxBytes": 16384,
-        "backupCount": 10,
+        "filename": "{{base.path}}/{{base.path.logs}}/testing.log",
+        "maxBytes": 10485760,
+        "backupCount": 20,
         "encoding": "utf8"
       },
 
@@ -57,9 +57,9 @@
         "class": "logging.handlers.RotatingFileHandler",
         "level": "ERROR",
         "formatter": "debugging",
-        "filename": "{{base.path}}\\{{base.path.logs}}\\errors.log",
-        "maxBytes": 16384,
-        "backupCount": 10,
+        "filename": "{{base.path}}/{{base.path.logs}}/errors.log",
+        "maxBytes": 10485760,
+        "backupCount": 20,
         "encoding": "utf8"
       }
     },
