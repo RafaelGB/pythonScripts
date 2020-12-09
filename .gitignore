@@ -117,8 +117,9 @@ venv.bak/
 *.txt
 *.zip
 *.bat
+*.DS_Store
 
 #Excepciones
 !Arquitectura/arq_server/resources/*
 !Arquitectura/arq_server/resources/*/*
-!Arquitectura/.vscode/*
+
