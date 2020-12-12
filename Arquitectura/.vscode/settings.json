@@ -1,18 +1,36 @@
 {
-  "files.exclude": {
-    "**/Dockerfile": false,
-    "**/.git": true,
-    "**/.svn": true,
-    "**/.hg": true,
-    "**/CVS": true,
-    "**/.DS_Store": true,
-    "**/*.pyc": true,
-    "**/__pycache__": true
-  },
-
-  "python.pythonPath": "C:\\Users\\sernn\\.virtualenvs\\Arquitectura\\Scripts\\python.exe",
-  "python.linting.pylintPath": "C:\\Users\\sernn\\.virtualenvs\\Arquitectura\\Scripts\\pylint",
-  "python.linting.pylintArgs": ["--load-plugins"],
-  "python.linting.enabled": true,
-  "python.linting.pylintEnabled": true
+    "files.exclude": {
+        "**/Dockerfile": false,
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/*.pyc": true,
+        "**/__pycache__": true
+    },
+    "python.pythonPath": "/Users/rafaelgomezbermejo/Environments/arq/bin/python3.8",
+    "python.linting.pylintPath": "/Users/rafaelgomezbermejo/Environments/arq/bin/pylint",
+    "python.linting.pylintArgs": [
+        "--load-plugins"
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "dash.fileNameToDocsetMap": {
+        "[dD]ocker*": [
+            "docker"
+        ],
+        "Vagrantfile": [
+            "vagrant"
+        ],
+        "gruntfile.js": [
+            "grunt"
+        ],
+        "gulpfile.js": [
+            "gulp"
+        ],
+        "*.ino": [
+            "arduino"
+        ]
+    }
 }

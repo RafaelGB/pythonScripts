@@ -8,7 +8,8 @@ from dependency_injector import containers, providers
 # Own
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
-    
+from arq_server.services.support.ConcurrentTools import ConcurrentTools
+
 class UtilsService(containers.DeclarativeContainer):
     """Application IoC container."""
     # Dependencies
@@ -23,3 +24,8 @@ class UtilsService(containers.DeclarativeContainer):
         DockerTools,
         core=core
     )
+
+    concurrent_tools = providers.Singleton(
+        ConcurrentTools,
+        core=core
+    ) 

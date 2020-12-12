@@ -25,10 +25,15 @@ from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 from arq_server.containers.ArqContainer import ArqContainer
 from arq_server.services.CoreService import Configuration
-# own tools
+# Analytics
+from arq_server.services.analytics.StadisticTools import StatisticsTools
+from arq_server.services.analytics.DashTools import DashTools
+# Data
 from arq_server.services.data_access.CacheTools import RedisTools
+# Support
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
+from arq_server.services.support.ConcurrentTools import ConcurrentTools
 
 
 def method_wrapper(function):
@@ -60,7 +65,7 @@ def arq_decorator(Cls):
         def __init__(self, *args, **kwargs):
             self.__tools_init()
             self.__logger.info(
-                "Genenando nuevo aplicativo bajo la plantilla %s\n%s", "*"*20, Cls.__name__, "*"*30)
+                "Genenando nuevo aplicativo bajo la plantilla %s\n%s", Cls.__name__, "*"*30)
             args, kwargs = self.__set_arq_attributes(*args, **kwargs)
             self.wrapped = Cls(*args, **kwargs)
             self.__logger.info(
@@ -77,6 +82,8 @@ def arq_decorator(Cls):
             except (AttributeError, TypeError) as e:
                 pass
             else:
+                if type(x) == types.MethodType:
+                    x = method_wrapper(x)
                 return x
 
             try:
@@ -114,8 +121,7 @@ def arq_decorator(Cls):
                 self.__logger_test = ArqContainer.core_service().logger_service().testingLogger()
                 self.__config = ArqContainer.core_service().config_service()
                 self.__const = ArqContainer.core_service().constants()
-                # SERVICES
-                self.__protocols = ArqContainer.protocols_service
+
             except Exception as err:
                 self.__logger.error(
                     "Ha ocurrido un problema inicializando las funcionalidades de la arquitectura: %s", err)
@@ -139,18 +145,21 @@ class ArqToolsTemplate:
     # TEMPLATE VARS
     __saved_test = {}
 
-    # TYPE HINTS TEMPLATE
+    # TYPE HINTS private tools
     __logger_test: logging.getLogger()
     __config: Configuration
     __const: Const
-    __protocols: ArqContainer.protocols_service
 
     # TYPE HINTS logger
     logger: logging.getLogger()
+
     # TYPE HINTS public Tools
     dockerTools: DockerTools
     osTools: FileSystemTools
     cacheTools: RedisTools
+    concurrentTools : ConcurrentTools
+    stadisticsTools : StatisticsTools
+    dashTools : DashTools
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
@@ -310,11 +319,15 @@ class ArqToolsTemplate:
         # Core
         self.logger = ArqContainer.core_service(
         ).logger_service().appLogger()
+        # Analytics
+        self.stadisticsTools = ArqContainer.analytic_service.stadistics_tools()
+        self.dashTools = ArqContainer.analytic_factories.dash_tools()
         # Data
         self.cacheTools = ArqContainer.data_service.cache_tools()
         # Utils
         self.dockerTools = ArqContainer.utils_service.docker_tools()
         self.osTools = ArqContainer.utils_service.file_system_tools()
+        self.concurrentTools = ArqContainer.utils_service.concurrent_tools()
     # TESTING
 
     def __init_arq_test(self):

@@ -28,11 +28,16 @@ setup(
     install_requires=[
           'markdown==3.2.1',
           'dependency-injector==3.15.6',
-          'flask',
+          'Flask==1.1.1',
+          'Flask-Caching==1.9.0',
           'pylint==2.4.4',
           'cachetools==4.0.0',
           'redis==3.4.1',
-          'docker'
+          'docker==4.2.0',
+          'Rx==3.1.0',
+          'dash==1.10.0',
+          'dash-bootstrap-components==0.9.2',
+          'pandas==1.1.5'
     ],
     python_requires='>=3.7',
     include_package_data=True,

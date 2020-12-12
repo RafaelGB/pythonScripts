@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+class ArqErrorMock(Exception):
+   pass
 # define Python user-defined exceptions
 class ArqError(Exception):
    """Base class for other exceptions"""
@@ -16,6 +18,6 @@ class ArqError(Exception):
 
 ArqErrorInfo = {
    101:{
-      "message","Error de prueba: ¡algo malo ocurrió!"
+      "message","Error por defecto: ¡algo malo ocurrió!"
    }
 }

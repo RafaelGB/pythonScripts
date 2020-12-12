@@ -54,6 +54,7 @@ coverage.xml
 
 # Django stuff:
 *.log
+*.log.*
 local_settings.py
 db.sqlite3
 
@@ -110,15 +111,21 @@ venv.bak/
 *.json
 
 # custom folders
- resources/
+resources/
+cache-directory/
+
+# custom file types
 *.html
 *.csv
 *.CSV
 *.txt
 *.zip
 *.bat
+*.DS_Store
+*.sh
 
 #Excepciones
 !Arquitectura/arq_server/resources/*
 !Arquitectura/arq_server/resources/*/*
-!Arquitectura/.vscode/*
+!Arquitectura/playground/*
+!Arquitectura/playground/*/*

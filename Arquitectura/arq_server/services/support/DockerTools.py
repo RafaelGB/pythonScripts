@@ -8,20 +8,23 @@ from datetime import datetime
 # MultiThreading
 from threading import Thread
 # Own
+from arq_decorators.service_decorator import enableFunction
 from arq_server.services.CoreService import Configuration
 from arq_server.base.ArqErrors import ArqError
-
+from arq_server.base.Metadata import Metadata
 
 class DockerTools(object):
+    __isEnabled:bool = bool(Metadata.info()['enabled.modules']['docker'])
     __logger: logging.getLogger()
     __config: Configuration
 
     def __init__(self, core, *args, **kwargs):
-        self.__init_client()
         self.__init_services(core)
+        self.__init_client()
         self.__dockerLogsPath = self.__config.getProperty("docker","path.docker.logs")
         self.__logger.info("API herramientas Docker cargada correctamente")
     
+    @enableFunction(__isEnabled)
     def runContainer(
         self, image, name:str, auto_remove:bool=False, detach:bool=False, 
         command:str=None, ports:dict=None, volumes:dict=None
@@ -56,7 +59,7 @@ class DockerTools(object):
         streamLogsThread = Thread(target = self.__streamContainerLogs, args = (name,c, ))
         streamLogsThread.start()
         
-
+    @enableFunction(__isEnabled)
     def stopContainer(self,name) -> bool:
         try:
             container = self.__client.containers.get(name)
@@ -65,6 +68,7 @@ class DockerTools(object):
         except NotFound as not_found_e:
             raise ArqError(101)
 
+    @enableFunction(__isEnabled)
     def removeContainer(self, name) -> bool:
         try:
             container = self.__client.containers.get(name)
@@ -91,9 +95,10 @@ class DockerTools(object):
         finally:
             f.close()
 
-
+    @enableFunction(__isEnabled)
     def __init_client(self):
         self.__client = docker.from_env()
+        
     def __init_services(self, core) -> None:
         # Servicio de logging
         self.__core = core
