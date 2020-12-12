@@ -122,8 +122,10 @@ cache-directory/
 *.zip
 *.bat
 *.DS_Store
+*.sh
 
 #Excepciones
 !Arquitectura/arq_server/resources/*
 !Arquitectura/arq_server/resources/*/*
-
+!Arquitectura/playground/*
+!Arquitectura/playground/*/*
