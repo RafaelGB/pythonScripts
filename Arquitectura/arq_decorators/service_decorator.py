@@ -1,5 +1,6 @@
 import types
 from arq_server.base.ArqErrors import ArqError, ArqErrorMock
+from functools import wraps
 
 def method_wrapper(function):
     code_error = 101
@@ -32,3 +33,21 @@ class ServiceBase(object):
                 return attr_val
         except:
             raise AttributeError(attr)
+
+def enableFunction(isEnabled:bool=True):
+    '''
+    Decorator to active/deactivate functions
+    '''
+    def inner_function(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            function(*args, **kwargs)
+        return wrapper
+    # Empty function
+    def empty_func(*args,**kargs):
+        print("Funcion desactivada. Active en configuración el módulo utilizado")
+    # If is enabled, returns complete func, otherwise an empty one
+    if isEnabled:
+        return inner_function
+    else:
+        return empty_func

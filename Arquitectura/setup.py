@@ -29,6 +29,7 @@ setup(
           'markdown==3.2.1',
           'dependency-injector==3.15.6',
           'Flask==1.1.1',
+          'Flask-Caching==1.9.0',
           'pylint==2.4.4',
           'cachetools==4.0.0',
           'redis==3.4.1',
