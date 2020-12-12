@@ -134,8 +134,7 @@ class DashServer(Thread):
                    ['eq ', '='],
                    ['contains '],
                    ['datestartswith ']]
-    # Memory
-
+ 
     def __init__(self, core, tools, *args, **kwargs):
         super(DashServer, self).__init__(*args, **kwargs)
         self.__init_services(core, tools)

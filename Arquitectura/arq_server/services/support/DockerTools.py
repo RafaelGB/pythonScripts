@@ -14,17 +14,18 @@ from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Metadata import Metadata
 
 class DockerTools(object):
-    __isEnabled:bool = bool(Metadata.getInfo()['enabled.modules']['docker'])
+    __isEnabled:bool = eval(Metadata.getInfo()['enabled.modules']['docker'])
     __logger: logging.Logger
     __config: Configuration
 
     def __init__(self, core, *args, **kwargs):
         self.__init_services(core)
+        self.__logger.debug("Módulo DockerTools isEnabled:%s",str(self.__isEnabled))
         self.__init_client()
         self.__dockerLogsPath = self.__config.getProperty("docker","path.docker.logs")
 
     
-    @enableFunction(__isEnabled)
+    @enableFunction(__isEnabled,className='DockerTools')
     def runContainer(
         self, image, name:str, auto_remove:bool=False, detach:bool=False, 
         command:str=None, ports:dict=None, volumes:dict=None
@@ -59,7 +60,7 @@ class DockerTools(object):
         streamLogsThread = Thread(target = self.__streamContainerLogs, args = (name,c, ))
         streamLogsThread.start()
         
-    @enableFunction(__isEnabled)
+    @enableFunction(__isEnabled,className='DockerTools')
     def stopContainer(self,name) -> bool:
         isStoped:bool=False
         try:
@@ -72,7 +73,7 @@ class DockerTools(object):
         finally:
             return isStoped
 
-    @enableFunction(__isEnabled)
+    @enableFunction(__isEnabled,className='DockerTools')
     def removeContainer(self, name) -> bool:
         isRemoved:bool = False
         try:
@@ -103,7 +104,7 @@ class DockerTools(object):
         finally:
             f.close()
 
-    @enableFunction(__isEnabled)
+    @enableFunction(__isEnabled,className='DockerTools')
     def __init_client(self):
         self.__client = docker.from_env()
         self.__logger.info("API herramientas Docker cargada correctamente")

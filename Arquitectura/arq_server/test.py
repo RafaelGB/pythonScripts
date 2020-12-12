@@ -140,8 +140,8 @@ class MiApp2(ArqToolsTemplate):
 
 if __name__ == "__main__":
     prueba = MiApp()
-    prueba.dashPrueba()
-    #prueba.run_own_test()
+    #prueba.dashPrueba()
+    prueba.run_own_test()
     
 
     prueba2 = MiApp2()
