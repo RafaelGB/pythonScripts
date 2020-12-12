@@ -145,4 +145,4 @@ if __name__ == "__main__":
     
 
     prueba2 = MiApp2()
-    prueba2.run_own_test()
+    #prueba2.run_own_test()

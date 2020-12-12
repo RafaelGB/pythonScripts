@@ -4,6 +4,7 @@ import logging
 import traceback
 from logging.config import fileConfig, dictConfig
 from cachetools import cached, TTLCache
+from typing import Any
 #Testing
 import unittest
 # Filesystem
@@ -25,7 +26,7 @@ class Logger:
     """
     isCustomCOnf: bool
     def __init__(self):
-        main_path = path.realpath(sys.argv[0]) if sys.argv[0] else None
+        main_path = path.realpath(sys.argv[0]) if sys.argv[0] else '.'
         parent_path = Path(main_path).parent
         logger_path = (parent_path / "resources/logger_conf.json").resolve()
         print("\n\nruta padre de la configuracion:\n" + str(parent_path)+"\n"+str(main_path)+"\n"+str(logger_path))
@@ -51,7 +52,7 @@ class Logger:
         strTb = ''.join(traceback.format_tb(tb))
         self.__logger.exception("Traceback: %s",strTb)
 
-    def __fixup(self, a_dict:dict, k:str, subst_dict:dict) -> dict:
+    def __fixup(self, a_dict:dict, k:str, subst_dict:dict):
         for key in a_dict.keys():
             if key == k:
                 for s_k, s_v in subst_dict.items():
@@ -76,7 +77,7 @@ class Logger:
         with open(self.file_path, 'rt') as f:
             config = json.load(f)
             self.__fixup(config["logging_conf"],"filename",config["properties"])
-            logging.config.dictConfig(config["logging_conf"])
+            dictConfig(config["logging_conf"])
         # Las excepciones son capturadas por el logger
         sys.excepthook = self.__handlerExceptions
 
@@ -87,7 +88,7 @@ class Configuration:
     Servicio para ofrecer configuración centralizada al resto de servicios y aplicaciones
     """
     __const:Const
-    __logger:logging.getLogger()
+    __logger:logging.Logger
 
     def __init__(self,logger,const):
         self.__init_services(logger,const)
@@ -137,7 +138,7 @@ class Configuration:
             self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
 
-    def getPropertyDefault(self, group, key, defaultValue,parseType=str):
+    def getPropertyDefault(self, group, key, defaultValue:Any,parseType=str) -> Any:
         """
         Obtener propiedad en función del grupo y la clave.
         En caso de no existir, define un valor por defecto
@@ -234,8 +235,8 @@ def generate_default_conf(base_path:str, filename:str):
                         }
     
     config['flags'] = {
-                         'init.test': True,
-                         'enable.redis': False
+                         'init.test': 'True',
+                         'enable.redis': 'False'
                         }
                         
     if not path.exists(base_path):

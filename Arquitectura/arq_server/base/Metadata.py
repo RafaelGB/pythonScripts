@@ -5,10 +5,10 @@ from pathlib import Path
 import sys
 
 class Metadata:
-    __info = None
+    __info: configparser.ConfigParser()
 
     @staticmethod
-    def info():
+    def info() -> configparser.ConfigParser(): 
         if Metadata.__info is None:  # Read only once, lazy.
             print("inicialización de metadatos custom")
             Metadata.__info = configparser.ConfigParser()

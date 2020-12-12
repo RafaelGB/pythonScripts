@@ -1,6 +1,13 @@
+# Librerias nativas
 import types
-from arq_server.base.ArqErrors import ArqError, ArqErrorMock
+
+# filesystem
 from functools import wraps
+import logging
+
+# own
+from arq_server.base.ArqErrors import ArqError, ArqErrorMock
+from arq_server.containers.ArqContainer import ArqContainer
 
 def method_wrapper(function):
     code_error = 101
@@ -8,6 +15,8 @@ def method_wrapper(function):
 
     @wraps(function)
     def wrapper(*args, **kwargs):
+        code_error=None
+        error_type=None
         if 'code_error' in kwargs:
             code_error = int(kwargs['code_error'])
 
@@ -38,6 +47,7 @@ def enableFunction(isEnabled:bool=True):
     '''
     Decorator to active/deactivate functions
     '''
+    logger = ArqContainer.core_service().logger_service().arqLogger()
     def inner_function(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
@@ -45,7 +55,7 @@ def enableFunction(isEnabled:bool=True):
         return wrapper
     # Empty function
     def empty_func(*args,**kargs):
-        print("Funcion desactivada. Active en configuración el módulo utilizado")
+        logger.warn("Funcion desactivada. Active en configuración el módulo utilizado")
     # If is enabled, returns complete func, otherwise an empty one
     if isEnabled:
         return inner_function

@@ -10,12 +10,6 @@
         "**/__pycache__": true
     },
     "python.pythonPath": "/Users/rafaelgomezbermejo/Environments/arq/bin/python3.8",
-    "python.linting.pylintPath": "/Users/rafaelgomezbermejo/Environments/arq/bin/pylint",
-    "python.linting.pylintArgs": [
-        "--load-plugins"
-    ],
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": true,
     "dash.fileNameToDocsetMap": {
         "[dD]ocker*": [
             "docker"

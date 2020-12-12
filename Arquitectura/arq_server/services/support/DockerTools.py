@@ -22,7 +22,7 @@ class DockerTools(object):
         self.__init_services(core)
         self.__init_client()
         self.__dockerLogsPath = self.__config.getProperty("docker","path.docker.logs")
-        self.__logger.info("API herramientas Docker cargada correctamente")
+
     
     @enableFunction(__isEnabled)
     def runContainer(
@@ -98,6 +98,7 @@ class DockerTools(object):
     @enableFunction(__isEnabled)
     def __init_client(self):
         self.__client = docker.from_env()
+        self.__logger.info("API herramientas Docker cargada correctamente")
         
     def __init_services(self, core) -> None:
         # Servicio de logging
