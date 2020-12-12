@@ -14,7 +14,7 @@ import logging
 import sys
 
 # metadata
-from typing import TypeVar
+from typing import TypeVar,Any
 import types
 
 # metrics
@@ -39,9 +39,10 @@ from arq_server.services.support.ConcurrentTools import ConcurrentTools
 def method_wrapper(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
-        logger: logging.getLogger() = ArqContainer.core_service().logger_service().arqLogger()
+        logger: logging.Logger = ArqContainer.core_service().logger_service().arqLogger()
         logger.debug("INI - funcion '%s'", function.__name__)
         before = datetime.now()
+        result = None
         try:
             result = function(*args, **kwargs)
         except ArqError as arq_e:
@@ -52,10 +53,11 @@ def method_wrapper(function):
             logger.error(
                 "Error no controlado por la arquitectura - función %s \n%s", function.__name__, e)
             raise e
-        after = datetime.now()
-        logger.debug("FIN - funcion '%s' - tiempo empleado: %s ms",
+        finally:
+            after = datetime.now()
+            logger.debug("FIN - funcion '%s' - tiempo empleado: %s ms",
                      function.__name__, (after-before).total_seconds() * 1000)
-        return result
+            return result
     return wrapper
 
 
@@ -146,12 +148,12 @@ class ArqToolsTemplate:
     __saved_test = {}
 
     # TYPE HINTS private tools
-    __logger_test: logging.getLogger()
+    __logger_test: logging.Logger
     __config: Configuration
     __const: Const
 
     # TYPE HINTS logger
-    logger: logging.getLogger()
+    logger: logging.Logger
 
     # TYPE HINTS public Tools
     dockerTools: DockerTools
@@ -174,7 +176,7 @@ class ArqToolsTemplate:
     --------------
     """
 
-    def getProperty(self, property_key, parseType=str) -> any:
+    def getProperty(self, property_key, parseType=str) -> Any:
         """
         Recupera de la configuración de aplicación la propiedad solicitada por parámetro.
         Por defecto se entenderá como String. Se facilita como parámetro opcional la posibilidad
@@ -182,7 +184,7 @@ class ArqToolsTemplate:
         """
         return self.__config.getProperty(self.app_name, property_key, parseType=parseType)
 
-    def getPropertyDefault(self, property_key: str, default: str, parseType=str) -> any:
+    def getPropertyDefault(self, property_key: str, default: str, parseType=str) -> Any:
         """
         Recupera de la configuración de aplicación la propiedad solicitada por parámetro. Añade
         la posibilidad de incluir uin valor por defecto en caso de no existir la propiedad.

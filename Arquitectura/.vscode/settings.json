@@ -26,5 +26,14 @@
         "*.ino": [
             "arduino"
         ]
-    }
+    },
+    "python.linting.pylintArgs": [
+        "--load-plugins",
+        "pylint_flask_sqlalchemy, pylint_flask",
+        "--init-hook",
+        "import sys; sys.path.insert(0, '/Users/rafaelgomezbermejo/Repositorios/pythonScripts/Arquitectura')"
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintUseMinimalCheckers": false
 }

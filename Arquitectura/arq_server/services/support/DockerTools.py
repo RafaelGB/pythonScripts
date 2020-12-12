@@ -15,7 +15,7 @@ from arq_server.base.Metadata import Metadata
 
 class DockerTools(object):
     __isEnabled:bool = bool(Metadata.info()['enabled.modules']['docker'])
-    __logger: logging.getLogger()
+    __logger: logging.Logger
     __config: Configuration
 
     def __init__(self, core, *args, **kwargs):
@@ -61,28 +61,36 @@ class DockerTools(object):
         
     @enableFunction(__isEnabled)
     def stopContainer(self,name) -> bool:
+        isStoped:bool=False
         try:
             container = self.__client.containers.get(name)
             container.stop()
             self.__logger.debug("el contenedor %s fué detenido",name)
+            isStoped=True
         except NotFound as not_found_e:
-            raise ArqError(101)
+            raise ArqError(not_found_e.response,101)
+        finally:
+            return isStoped
 
     @enableFunction(__isEnabled)
     def removeContainer(self, name) -> bool:
+        isRemoved:bool = False
         try:
             container = self.__client.containers.get(name)
             if container.status == "running":
                 self.stopContainer(name)
                 container = self.__client.containers.get(name)
             container.remove()
+            isRemoved=True
             self.__logger.debug("el contenedor %s fué eliminado", name)
         except NotFound as not_found_e:
             self.__logger.error("El contenedor %s no se encuentra o ya ha sido eliminado", name)
+        finally:
+            return isRemoved
 
     def __streamContainerLogs(self, name, container):
         dateInfo = datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-        logPath = "{}\{}__{}.log".format(self.__dockerLogsPath,name,dateInfo)
+        logPath = "{}\\{}__{}.log".format(self.__dockerLogsPath,name,dateInfo)
         f=open(logPath,"wb")
         self.__logger.debug("Generando un stream de logs para el contenedor %s en la ruta %s",name,logPath)
         try:
@@ -104,17 +112,4 @@ class DockerTools(object):
         # Servicio de logging
         self.__core = core
         self.__logger = core.logger_service().arqLogger()
-        self.__config = core.config_service()
-
-
-if __name__ == "__main__":
-    docker_api = DockerTools()
-    docker_api.runContainer(
-        "custom/redis:1.0.0",
-        "my-redis",
-        auto_remove=True,
-        detach=True,
-        command="redis-server --appendonly yes",
-        ports={"6379/tcp":"6379"},
-        volumes={'redis-persist': {'bind': '/data', 'mode': 'rw'}})
-    docker_api.removeContainer("my-redis")        
+        self.__config = core.config_service()      

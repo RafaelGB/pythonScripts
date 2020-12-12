@@ -32,7 +32,7 @@ import plotly.graph_objs as go
 
 class DashTools(object):
     # Services TIPS
-    __logger: logging.getLogger()
+    __logger: logging.Logger
     __config: Configuration
 
     def __init__(self, core):
@@ -119,7 +119,7 @@ class DashServer(Thread):
     __port = 8050
     __debug = False
     # Services TIPS
-    __logger: logging.getLogger()
+    __logger: logging.Logger
     __config: Configuration
     __tools: DashTools
     __cache: Cache
@@ -296,8 +296,12 @@ class DashServer(Thread):
 
                     if operator in ('eq', 'ne', 'lt', 'le', 'gt', 'ge'):
                         # Los operadores son aquellos válidos para series en dataframes de Pandas
-                        df = df.loc[getattr(
-                            df[col_name], operator)(filter_value)]
+                        df = df.loc[
+                            getattr(
+                                df[col_name],
+                                operator
+                                )(filter_value)
+                        ]
                     elif operator == 'contains':
                         df = df.loc[df[col_name].str.contains(filter_value)]
                     elif operator == 'datestartswith':
@@ -334,6 +338,7 @@ class DashServer(Thread):
             ]
         )
         def __update_graph(rows, df_options, session_id, filename):
+            data = None
             if df_options and rows:
                 if "graph_filter" in df_options and rows[0]:
                     self.__logger.debug(
@@ -341,10 +346,10 @@ class DashServer(Thread):
                     df = pd.DataFrame(rows)
                     data = self.__df_treatment_callback(df)
                 return {'data': data, 'layout': self.__main_layout}
-            
+
             if filename:
                 self.__logger.debug(
-                            "llamada callback: actualización de gráfico principal - todo el dataframe")
+                    "llamada callback: actualización de gráfico principal - todo el dataframe")
                 df = self.__obtain_dataframe(session_id, filename[0])  # Cached
                 data = self.__df_treatment_callback(df)
                 return {'data': data, 'layout': self.__main_layout}
@@ -394,6 +399,7 @@ class DashServer(Thread):
                 "INI - caching dataframe. fichero:'%s' id_session:'%s'",
                 filename,
                 session_id)
+            df = None
             content_type, content_string = contents.split(',')
 
             decoded = base64.b64decode(content_string)
@@ -443,13 +449,14 @@ class DashServer(Thread):
                     # word operators need spaces after them in the filter string,
                     # but we don't want these later
                     return name, operator_type[0].strip(), value
-        return [None] * 3
+        return ['!ERROR'] * 3
 
     """
     ----------
     Componentes visuales añadidos por la arquitectura
     ----------
     """
+
     def __arq_menu(self):
         """
         Menú base desde arquitectura para elergir todas las opciones
@@ -459,51 +466,52 @@ class DashServer(Thread):
                 dbc.Col(dbc.NavbarBrand("Dashboard", href="#"), sm=3, md=2),
                 dbc.Col(self.__tools.upload_file_component()),
                 dbc.Col(dbc.Button("Parar servidor", id="stop-server",
-                                color="danger", className="mr-1"))
+                                   color="danger", className="mr-1"))
             ],
             color="dark",
             dark=True
         )
-    
+
     def __arq_table(self):
         """
         Componentes visuales que interactuan con la tabla principal
         """
         table = html.Div(
-                dash_table.DataTable(
-                    id='main_table',
-                    page_current=0,
-                    page_size=self.__config.getProperty(
-                        self.__dash_conf_alias, "table.page.size", parseType=int),
-                    page_action='custom',
+            dash_table.DataTable(
+                id='main_table',
+                page_current=0,
+                page_size=self.__config.getProperty(
+                    self.__dash_conf_alias, "table.page.size", parseType=int),
+                page_action='custom',
 
-                    filter_action='custom',
-                    filter_query='',
+                filter_action='custom',
+                filter_query='',
 
-                    sort_action='custom',
-                    sort_mode='multi',
-                    sort_by=[]
-                ),
-                style={
-                    'height': 350,
-                    'overflowY': 'scroll',
-                    'margin-left': 30,
-                    'margin-right': 30
-                }
-            )
+                sort_action='custom',
+                sort_mode='multi',
+                sort_by=[]
+            ),
+            style={
+                'height': 350,
+                'overflowY': 'scroll',
+                'margin-left': 30,
+                'margin-right': 30
+            }
+        )
         max_rows = dbc.FormGroup(
-                    [
-                        dbc.Label("lineas/pagina", html_for="lineas"),
-                        dbc.Col(
-                            dbc.Input(type="integer", id="max_rows_per_page", placeholder="Introduce un número"),
-                            width=6
-                        )
-                    ],
-                    row=True)
+            [
+                dbc.Label("lineas/pagina", html_for="lineas"),
+                dbc.Col(
+                    dbc.Input(type="integer", id="max_rows_per_page",
+                              placeholder="Introduce un número"),
+                    width=6
+                )
+            ],
+            row=True)
         form = dbc.Form([max_rows])
         return dbc.Row(
             [
-                dbc.Col(table,width=9),
+                dbc.Col(table, width=9),
                 dbc.Col(form)
             ]
         )
@@ -514,16 +522,17 @@ class DashServer(Thread):
         """
         return dbc.Row(
             [
-                dbc.Col(dcc.Graph(id='main-graph'),width=8),
+                dbc.Col(dcc.Graph(id='main-graph'), width=8),
                 dbc.Col(
-                        dbc.Checklist(
-                            id="df_options",
-                            options=[
-                                {"label": "Aplicar filtros a la gráfica", "value": "graph_filter"}
-                            ],
-                            labelCheckedStyle={"color": "green"},
-                        ),
-                        width=3
+                    dbc.Checklist(
+                        id="df_options",
+                        options=[
+                            {"label": "Aplicar filtros a la gráfica",
+                             "value": "graph_filter"}
+                        ],
+                        labelCheckedStyle={"color": "green"},
                     ),
+                    width=3
+                ),
             ]
         )
