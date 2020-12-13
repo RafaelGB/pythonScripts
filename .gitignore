@@ -114,6 +114,7 @@ venv.bak/
 resources/
 cache-directory/
 Arquitectura/playground*
+Aplicaciones/AWS-Manager/playground*
 
 # custom file types
 *.html
