@@ -34,7 +34,8 @@ from arq_server.services.data_access.CacheTools import RedisTools
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
 from arq_server.services.support.ConcurrentTools import ConcurrentTools
-
+# Protocols
+from arq_server.services.protocols.rest.RestService import APIRestTools
 
 def method_wrapper(function):
     @wraps(function)
@@ -162,6 +163,7 @@ class ArqToolsTemplate:
     concurrentTools : ConcurrentTools
     stadisticsTools : StatisticsTools
     dashTools : DashTools
+    restTools : APIRestTools
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
@@ -244,7 +246,7 @@ class ArqToolsTemplate:
     """
 
     def __actions_on_init(self):
-        if bool(self.__config.getProperty("flags", "init.test")):
+        if self.__config.getProperty("flags", "init.test",parseType=eval):
             self.run_arq_test()
     """
     ------------------
@@ -326,6 +328,8 @@ class ArqToolsTemplate:
         self.dashTools = ArqContainer.analytic_factories.dash_tools()
         # Data
         self.cacheTools = ArqContainer.data_service.cache_tools()
+        # Protocols
+        self.restTools = ArqContainer.protocols_service.rest_protocol_tools()
         # Utils
         self.dockerTools = ArqContainer.utils_service.docker_tools()
         self.osTools = ArqContainer.utils_service.file_system_tools()

@@ -102,7 +102,7 @@ class Configuration:
         self.__logger.info("FIN - servicio de Configuración")
     
     @cached(cache=TTLCache(maxsize=1024, ttl=600))
-    def getProperty(self, group, key, parseType=str):
+    def getProperty(self, group, key, parseType=str) -> Any:
         """
         Obtener propiedad en función del grupo y la clave ( usando cache )
         """
@@ -120,7 +120,7 @@ class Configuration:
             self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
     
-    def getPropertyVerbose(self, group, key, parseType=str):
+    def getPropertyVerbose(self, group, key, parseType=str) -> Any:
         """
         Obtener propiedad en función del grupo y la clave ( sin usar cache )
         """

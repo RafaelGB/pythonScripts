@@ -28,12 +28,10 @@
         ]
     },
     "python.linting.pylintArgs": [
-        "--load-plugins",
-        "pylint_flask_sqlalchemy, pylint_flask",
-        "--init-hook",
-        "import sys; sys.path.insert(0, '/Users/rafaelgomezbermejo/Repositorios/pythonScripts/Arquitectura')"
+        "--load-plugins"
     ],
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
-    "python.linting.pylintUseMinimalCheckers": false
+    "python.linting.pylintUseMinimalCheckers": false,
+    "python.venvPath": "/Users/rafaelgomezbermejo/Environments"
 }

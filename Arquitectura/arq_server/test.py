@@ -137,12 +137,14 @@ class MiApp2(ArqToolsTemplate):
                     self.__class__.__name__, "test")) and callable(test):
                 self.add_test(test)
 
+class RestApp(ArqToolsTemplate):
+    # declaro servicios propios del decorador para evitar que el lint indique error
+    def __init__(self, *args, **kwargs):
+        super().__init__(self.__class__.__name__, *args, **kwargs)
+
+    def initRestAPI(self):
+        self.restTools.start_server()
 
 if __name__ == "__main__":
-    prueba = MiApp()
-    #prueba.dashPrueba()
-    prueba.run_own_test()
-    
-
-    prueba2 = MiApp2()
-    #prueba2.run_own_test()
+    prueba = RestApp()
+    prueba.initRestAPI()
