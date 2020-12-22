@@ -1,20 +1,11 @@
 #!/usr/bin/env python
-"""
-import sys, os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
-import json
-"""
-import json
+
 import os
-import pathlib
-import sys
-
-import random
 import time
-import copy
 
+from flask import make_response, jsonify
+# Own
 from arq_decorators.arq_decorator import ArqToolsTemplate, arq_decorator
-# own
 from arq_server.containers.ArqContainer import ArqContainer
 
 
@@ -137,12 +128,16 @@ class MiApp2(ArqToolsTemplate):
                     self.__class__.__name__, "test")) and callable(test):
                 self.add_test(test)
 
+def responsePrueba():
+    return make_response(jsonify("esto es una prueba"),200)
+
 class RestApp(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
     def __init__(self, *args, **kwargs):
         super().__init__(self.__class__.__name__, *args, **kwargs)
 
     def initRestAPI(self):
+        self.restTools.addUrlRule("/ruta/programatica",customFunc=responsePrueba)
         self.restTools.start_server()
 
 if __name__ == "__main__":
