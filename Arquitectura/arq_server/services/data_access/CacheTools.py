@@ -69,7 +69,7 @@ class RedisTools(object):
         # Local configuration
         self.__redis_conf_alias = self.__config.getProperty("groups", "redis")
         self.__redis_conf = self.__config.getGroupOfProperties(
-            self.__redis_conf_alias)
+            self.__redis_conf_alias,confKey=self.__redis_conf_alias)
         # Server configuration
         self.__conf_redis_client()
         redis.StrictRedis()
@@ -141,57 +141,57 @@ class RedisTools(object):
 
     def __conf_redis_client(self):
         self.__host = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "host", self.__host)
+            self.__redis_conf_alias, "host", self.__host,confKey=self.__redis_conf_alias)
         self.__port = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "port", self.__port, parseType=int)
+            self.__redis_conf_alias, "port", self.__port, parseType=int,confKey=self.__redis_conf_alias)
         self.__db = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "db", self.__db, parseType=int)
+            self.__redis_conf_alias, "db", self.__db, parseType=int,confKey=self.__redis_conf_alias)
         self.__password = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "password", self.__password)
+            self.__redis_conf_alias, "password", self.__password,confKey=self.__redis_conf_alias)
         self.__socket_timeout = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "socket_timeout", self.__socket_timeout, parseType=int)
+            self.__redis_conf_alias, "socket_timeout", self.__socket_timeout, parseType=int,confKey=self.__redis_conf_alias)
         self.__socket_connect_timeout = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "socket_connect_timeout", self.__socket_connect_timeout, parseType=int)
+            self.__redis_conf_alias, "socket_connect_timeout", self.__socket_connect_timeout, parseType=int,confKey=self.__redis_conf_alias)
         self.__socket_keepalive = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "socket_keepalive", self.__socket_keepalive, parseType=int)
+            self.__redis_conf_alias, "socket_keepalive", self.__socket_keepalive, parseType=int,confKey=self.__redis_conf_alias)
         self.__socket_keepalive_options = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "socket_keepalive_options", self.__socket_keepalive_options, parseType=dict)
+            self.__redis_conf_alias, "socket_keepalive_options", self.__socket_keepalive_options, parseType=dict,confKey=self.__redis_conf_alias)
         self.__connection_pool = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "connection_pool", self.__connection_pool, parseType=dict)
+            self.__redis_conf_alias, "connection_pool", self.__connection_pool, parseType=dict,confKey=self.__redis_conf_alias)
         self.__unix_socket_path = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "unix_socket_path", self.__unix_socket_path)
+            self.__redis_conf_alias, "unix_socket_path", self.__unix_socket_path,confKey=self.__redis_conf_alias)
         self.__encoding_errors = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "encoding_errors", self.__encoding_errors)
+            self.__redis_conf_alias, "encoding_errors", self.__encoding_errors,confKey=self.__redis_conf_alias)
         self.__charset = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "charset", self.__charset)
+            self.__redis_conf_alias, "charset", self.__charset,confKey=self.__redis_conf_alias)
         self.__errors = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "errors", self.__errors)
+            self.__redis_conf_alias, "errors", self.__errors,confKey=self.__redis_conf_alias)
         self.__decode_responses = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "decode_responses", self.__decode_responses, parseType=eval)
+            self.__redis_conf_alias, "decode_responses", self.__decode_responses, parseType=eval,confKey=self.__redis_conf_alias)
         self.__retry_on_timeout = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "retry_on_timeout", self.__retry_on_timeout, parseType=eval)
+            self.__redis_conf_alias, "retry_on_timeout", self.__retry_on_timeout, parseType=eval,confKey=self.__redis_conf_alias)
         self.__ssl = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "ssl", self.__ssl, parseType=eval)
+            self.__redis_conf_alias, "ssl", self.__ssl, parseType=eval,confKey=self.__redis_conf_alias)
         self.__ssl_keyfile = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "ssl_keyfile", self.__ssl_keyfile)
+            self.__redis_conf_alias, "ssl_keyfile", self.__ssl_keyfile,confKey=self.__redis_conf_alias)
         self.__ssl_certfile = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "ssl_certfile", self.__ssl_certfile)
+            self.__redis_conf_alias, "ssl_certfile", self.__ssl_certfile,confKey=self.__redis_conf_alias)
         self.__ssl_cert_reqs = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "ssl_cert_reqs", self.__ssl_cert_reqs)
+            self.__redis_conf_alias, "ssl_cert_reqs", self.__ssl_cert_reqs,confKey=self.__redis_conf_alias)
         self.__ssl_ca_certs = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "ssl_ca_certs", self.__ssl_ca_certs)
+            self.__redis_conf_alias, "ssl_ca_certs", self.__ssl_ca_certs,confKey=self.__redis_conf_alias)
         self.__ssl_check_hostname = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "ssl_check_hostname", self.__ssl_check_hostname, parseType=eval)
+            self.__redis_conf_alias, "ssl_check_hostname", self.__ssl_check_hostname, parseType=eval,confKey=self.__redis_conf_alias)
         self.__max_connections = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "max_connections", self.__max_connections, parseType=int)
+            self.__redis_conf_alias, "max_connections", self.__max_connections, parseType=int,confKey=self.__redis_conf_alias)
         self.__single_connection_client = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "single_connection_client", self.__single_connection_client, parseType=eval)
+            self.__redis_conf_alias, "single_connection_client", self.__single_connection_client, parseType=eval,confKey=self.__redis_conf_alias)
         self.__health_check_interval = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "health_check_interval", self.__health_check_interval, parseType=int)
+            self.__redis_conf_alias, "health_check_interval", self.__health_check_interval, parseType=int,confKey=self.__redis_conf_alias)
         self.__client_name = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "client_name", self.__client_name)
+            self.__redis_conf_alias, "client_name", self.__client_name,confKey=self.__redis_conf_alias)
         self.__username = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "username", self.__username)
+            self.__redis_conf_alias, "username", self.__username,confKey=self.__redis_conf_alias)
 
     def __getattribute__(self, attr):
         try:

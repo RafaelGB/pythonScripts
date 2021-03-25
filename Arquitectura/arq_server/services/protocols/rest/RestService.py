@@ -31,7 +31,7 @@ class APIRestTools:
             path.abspath(sys.modules['__main__'].__file__)))
         self.flask_conf_alias = self.__config.getProperty("groups", "flask")
         self.flask_conf = self.__config.getGroupOfProperties(
-            self.flask_conf_alias)
+            self.flask_conf_alias,confKey=self.flask_conf_alias)
         self.__init_info_maps()
         self.__init_arq_url_rules()
         self.__logger.info(
@@ -87,7 +87,7 @@ class APIRestTools:
         def callback(elem): return elem.startswith("url.rule")
         # Recupera configuración utilizando el filtro
         url_rules_cfg_list = self.__config.getFilteredGroupOfProperties(
-            self.flask_conf_alias, callback)
+            self.flask_conf_alias, callback,confKey=self.flask_conf_alias)
         for url_rule_cfg in url_rules_cfg_list:
             url_rule = self.flask_conf[url_rule_cfg]
             try:

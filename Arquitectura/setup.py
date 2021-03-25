@@ -37,7 +37,7 @@ setup(
           'Rx==3.1.0',
           'dash==1.10.0',
           'dash-bootstrap-components==0.9.2',
-          'pandas==1.1.5'
+          'pandas==1.2.3'
     ],
     python_requires='>=3.7',
     include_package_data=True,

@@ -18,6 +18,10 @@ class ArqError(Exception):
 
 ArqErrorInfo = {
    101:{
-      "message","Error por defecto: ¡algo malo ocurrió!"
+      "esp","Error no controlado: ¡algo malo ocurrió!"
+   },
+   # Errores relacionados con ficheros
+   201:{
+      "esp","Credenciales no encontradas"
    }
 }

@@ -1,8 +1,11 @@
 from copy import deepcopy
 
 class baseConst(object):
-    # Resources
-    RESOURCE_ARQ_CONF_FILENAME = "arq.cfg"
+    # config keys
+    ARQ_CONF_KEY = "arq"
+    DOCKER_CONF_KEY = "docker"
+    # resources
+    RESOURCE_CREDENTIALS = "credentials"
     
     # Inmutable Logic
     def __setattr__(self, name, value):

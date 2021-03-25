@@ -129,3 +129,4 @@ Aplicaciones/AWS-Manager/playground*
 #Excepciones
 !Arquitectura/arq_server/resources/*
 !Arquitectura/arq_server/resources/*/*
+/Arquitectura/arq_server/test.py

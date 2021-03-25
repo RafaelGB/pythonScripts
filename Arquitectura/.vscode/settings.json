@@ -9,7 +9,7 @@
         "**/*.pyc": true,
         "**/__pycache__": true
     },
-    "python.pythonPath": "/Users/rafaelgomezbermejo/Environments/arq/bin/python3.8",
+    "python.pythonPath": "/Users/rafaelgomezbermejo/Environments/arq/bin/python",
     "dash.fileNameToDocsetMap": {
         "[dD]ocker*": [
             "docker"
