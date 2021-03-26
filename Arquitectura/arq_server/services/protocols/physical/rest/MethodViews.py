@@ -3,7 +3,7 @@ from dependency_injector import containers, providers
 from flask import make_response, jsonify, current_app, request
 from flask.views import MethodView
 # Own
-from arq_server.services.protocols.Common import arqCache
+from arq_server.services.protocols.physical.Common import arqCache
 from arq_server.services.CoreService import CoreService
 
 class ApplicationsApi(MethodView):
@@ -41,7 +41,7 @@ class ArchitectureApi(MethodView):
     API RESTful interfaz para la arquitectura
     """
     def __init__(self, view_name, *args, **kwargs):
-        self.confPrueba=CoreService.config_service()
+        self.confPrueba=current_app.containerConfig
         super(ArchitectureApi, self).__init__(*args, **kwargs)
         self.logger = current_app.logger
         self.view_name = view_name

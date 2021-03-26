@@ -5,13 +5,14 @@ from typing import Any
 # Filesystem
 from os import path
 from pathlib import Path
+from threading import Thread
 import sys
 import json
 import logging
 # Own
-from arq_server.services.protocols.Common import arqCache
+from arq_server.services.protocols.physical.Common import arqCache
 from arq_server.services.CoreService import Configuration
-from arq_server.services.protocols.rest.MethodViews import ApplicationsApi , ArchitectureApi
+from arq_server.services.protocols.physical.rest.MethodViews import ApplicationsApi , ArchitectureApi
 
 
 class APIRestTools:
@@ -39,10 +40,10 @@ class APIRestTools:
 
         self.__init_info_maps()
         self.__init_arq_url_rules()
-        self.__logger.info(
-            "Herramientas de protocolo REST cargadas correctamente")
-
-        self.__start_server()
+        self.__logger.info("Herramientas de protocolo REST cargadas correctamente")
+        Thread(target=self.__start_server).start()
+        self.__logger.info("Protocolo REST lanzado en segundo plano")
+        
 
     def stop_server(self):
         func = request.environ.get(self.flask_conf["shutdown"])
@@ -73,6 +74,7 @@ class APIRestTools:
     MÉTODOS PRIVADOS
     """
     def __start_server(self):
+        self.server.containerConfig=self.__config
         self.server.run(debug=False)
 
     def __selectMethod(self, alias):
