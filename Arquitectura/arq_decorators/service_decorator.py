@@ -1,13 +1,22 @@
+# Librerias nativas
 import types
-from arq_server.base.ArqErrors import ArqError, ArqErrorMock
-from functools import wraps
 
+# filesystem
+from functools import wraps
+import logging
+
+# own
+from arq_server.base.ArqErrors import ArqError, ArqErrorMock
+
+deco_logger = logging.getLogger()
 def method_wrapper(function):
     code_error = 101
     error_type = ArqErrorMock
 
     @wraps(function)
     def wrapper(*args, **kwargs):
+        code_error=None
+        error_type=None
         if 'code_error' in kwargs:
             code_error = int(kwargs['code_error'])
 
@@ -34,18 +43,21 @@ class ServiceBase(object):
         except:
             raise AttributeError(attr)
 
-def enableFunction(isEnabled:bool=True):
+def enableFunction(isEnabled:bool=True,className="not defined"):
     '''
     Decorator to active/deactivate functions
     '''
+    global deco_logger
     def inner_function(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
             function(*args, **kwargs)
         return wrapper
     # Empty function
-    def empty_func(*args,**kargs):
-        print("Funcion desactivada. Active en configuración el módulo utilizado")
+    def empty_func(function,*args,**kargs):
+        deco_logger.warn("Clase:'%s' - Funcion '%s' deshabilitada",className,function.__name__)
+        # En caso de usarse la función como runnable, se invoca una lambda vacía
+        return lambda *_, **__: None
     # If is enabled, returns complete func, otherwise an empty one
     if isEnabled:
         return inner_function

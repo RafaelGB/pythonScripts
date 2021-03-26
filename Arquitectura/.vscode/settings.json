@@ -9,13 +9,7 @@
         "**/*.pyc": true,
         "**/__pycache__": true
     },
-    "python.pythonPath": "/Users/rafaelgomezbermejo/Environments/arq/bin/python3.8",
-    "python.linting.pylintPath": "/Users/rafaelgomezbermejo/Environments/arq/bin/pylint",
-    "python.linting.pylintArgs": [
-        "--load-plugins"
-    ],
-    "python.linting.enabled": true,
-    "python.linting.pylintEnabled": true,
+    "python.pythonPath": "/Users/rafaelgomezbermejo/Environments/arq/bin/python",
     "dash.fileNameToDocsetMap": {
         "[dD]ocker*": [
             "docker"
@@ -32,5 +26,12 @@
         "*.ino": [
             "arduino"
         ]
-    }
+    },
+    "python.linting.pylintArgs": [
+        "--load-plugins"
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintUseMinimalCheckers": false,
+    "python.venvPath": "/Users/rafaelgomezbermejo/Environments"
 }

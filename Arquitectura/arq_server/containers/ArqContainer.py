@@ -11,6 +11,8 @@ from arq_server.services.support.UtilsService import UtilsService
 from arq_server.services.data_access.DataService import DataService
 # Analytics
 from arq_server.services.analytics.AnalyticService import AnalyticService,AnalyticServerFactory
+# Protocols
+from arq_server.services.protocols.ProtocolsService import ProtocolsService
 
 class ArqContainer(object):
     # Base
@@ -21,6 +23,8 @@ class ArqContainer(object):
     analytic_service = AnalyticService(core=core_service,factories=analytic_factories)
     data_service = DataService(core=core_service)
     utils_service = UtilsService(core=core_service)
+    # Protocols
+    protocols_service = ProtocolsService(core=core_service)
     
     
 

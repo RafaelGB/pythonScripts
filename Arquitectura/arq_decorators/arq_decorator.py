@@ -14,7 +14,7 @@ import logging
 import sys
 
 # metadata
-from typing import TypeVar
+from typing import TypeVar,Any
 import types
 
 # metrics
@@ -34,14 +34,16 @@ from arq_server.services.data_access.CacheTools import RedisTools
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
 from arq_server.services.support.ConcurrentTools import ConcurrentTools
-
+# Protocols
+from arq_server.services.protocols.rest.RestService import APIRestTools
 
 def method_wrapper(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
-        logger: logging.getLogger() = ArqContainer.core_service().logger_service().arqLogger()
+        logger: logging.Logger = ArqContainer.core_service().logger_service().arqLogger()
         logger.debug("INI - funcion '%s'", function.__name__)
         before = datetime.now()
+        result = None
         try:
             result = function(*args, **kwargs)
         except ArqError as arq_e:
@@ -52,10 +54,11 @@ def method_wrapper(function):
             logger.error(
                 "Error no controlado por la arquitectura - función %s \n%s", function.__name__, e)
             raise e
-        after = datetime.now()
-        logger.debug("FIN - funcion '%s' - tiempo empleado: %s ms",
+        finally:
+            after = datetime.now()
+            logger.debug("FIN - funcion '%s' - tiempo empleado: %s ms",
                      function.__name__, (after-before).total_seconds() * 1000)
-        return result
+            return result
     return wrapper
 
 
@@ -146,12 +149,12 @@ class ArqToolsTemplate:
     __saved_test = {}
 
     # TYPE HINTS private tools
-    __logger_test: logging.getLogger()
+    __logger_test: logging.Logger
     __config: Configuration
     __const: Const
 
     # TYPE HINTS logger
-    logger: logging.getLogger()
+    logger: logging.Logger
 
     # TYPE HINTS public Tools
     dockerTools: DockerTools
@@ -160,6 +163,7 @@ class ArqToolsTemplate:
     concurrentTools : ConcurrentTools
     stadisticsTools : StatisticsTools
     dashTools : DashTools
+    restTools : APIRestTools
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
@@ -174,7 +178,7 @@ class ArqToolsTemplate:
     --------------
     """
 
-    def getProperty(self, property_key, parseType=str) -> any:
+    def getProperty(self, property_key, parseType=str) -> Any:
         """
         Recupera de la configuración de aplicación la propiedad solicitada por parámetro.
         Por defecto se entenderá como String. Se facilita como parámetro opcional la posibilidad
@@ -182,7 +186,7 @@ class ArqToolsTemplate:
         """
         return self.__config.getProperty(self.app_name, property_key, parseType=parseType)
 
-    def getPropertyDefault(self, property_key: str, default: str, parseType=str) -> any:
+    def getPropertyDefault(self, property_key: str, default: str, parseType=str) -> Any:
         """
         Recupera de la configuración de aplicación la propiedad solicitada por parámetro. Añade
         la posibilidad de incluir uin valor por defecto en caso de no existir la propiedad.
@@ -242,7 +246,7 @@ class ArqToolsTemplate:
     """
 
     def __actions_on_init(self):
-        if bool(self.__config.getProperty("flags", "init.test")):
+        if self.__config.getProperty("flags", "init.test",parseType=eval):
             self.run_arq_test()
     """
     ------------------
@@ -324,6 +328,8 @@ class ArqToolsTemplate:
         self.dashTools = ArqContainer.analytic_factories.dash_tools()
         # Data
         self.cacheTools = ArqContainer.data_service.cache_tools()
+        # Protocols
+        self.restTools = ArqContainer.protocols_service.rest_protocol_tools()
         # Utils
         self.dockerTools = ArqContainer.utils_service.docker_tools()
         self.osTools = ArqContainer.utils_service.file_system_tools()

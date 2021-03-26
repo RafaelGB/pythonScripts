@@ -6,7 +6,7 @@ import logging
 from arq_server.services.CoreService import Configuration
 
 class FileSystemTools(object):
-    __logger: logging.getLogger()
+    __logger: logging.Logger
     __config: Configuration
 
     def __init__(self,core, *args, **kwargs):

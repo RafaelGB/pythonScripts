@@ -113,6 +113,8 @@ venv.bak/
 # custom folders
 resources/
 cache-directory/
+Arquitectura/playground*
+Aplicaciones/AWS-Manager/playground*
 
 # custom file types
 *.html
@@ -127,5 +129,4 @@ cache-directory/
 #Excepciones
 !Arquitectura/arq_server/resources/*
 !Arquitectura/arq_server/resources/*/*
-!Arquitectura/playground/*
-!Arquitectura/playground/*/*
+/Arquitectura/arq_server/test.py

@@ -17,7 +17,7 @@ from rx import Observable, operators as ops
 from arq_server.services.CoreService import Configuration
     
 class ConcurrentTools(object):
-    __logger: logging.getLogger()
+    __logger: logging.Logger
     __config: Configuration
     __streamManager:dict = {}
     def __init__(self, core, *args, **kwargs):
@@ -31,10 +31,10 @@ class ConcurrentTools(object):
             )
 
     def createProcess(
-        self,func,*args: any,
+        self,func,*args,
         on_next=None,
         on_error=None,
-        on_completed=None) -> str:
+        on_completed=None):
         """
         Genera un proceso en un hilo a parte para la función pasada como parámetro. 
         Ejecutará secuencialmente los argumentos *args. Existe una lógica de logging
@@ -57,7 +57,7 @@ class ConcurrentTools(object):
             self.__logger.debug("Resultado obtenido:'%s'",nextArg)
         
         def on_error_default(error):
-            strTb = ''.join(traceback.format_tb())
+            strTb = ''.join(traceback.format_tb(error))
             self.__logger.exception("Traceback: %s",strTb)
         
         def on_complete_default():

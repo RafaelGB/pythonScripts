@@ -16,7 +16,7 @@ from arq_decorators.service_decorator import ServiceBase
 
 class StatisticsTools(object):
     # Services TIPS
-    __logger: logging.getLogger()
+    __logger: logging.Logger
     __config: Configuration
 
     def __init__(self, core, factories):
@@ -75,6 +75,6 @@ class StatisticsTools(object):
             """
             if str(colValue) == "nan":
                 return np.nan
-            timeStamp = timeStamp // granularity
-            timeStamp = timeStamp * granularity
-            return timeStamp
+            granulatedValue = colValue // granularity
+            granulatedValue = granulatedValue * granularity
+            return granulatedValue

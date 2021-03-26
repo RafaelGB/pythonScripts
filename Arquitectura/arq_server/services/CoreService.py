@@ -1,9 +1,11 @@
 # Basic
+import requests
 import configparser
 import logging
 import traceback
 from logging.config import fileConfig, dictConfig
 from cachetools import cached, TTLCache
+from typing import Any, Dict
 #Testing
 import unittest
 # Filesystem
@@ -14,6 +16,7 @@ import json
 # IoC
 from dependency_injector import containers, providers
 #own
+from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 
 
@@ -25,7 +28,7 @@ class Logger:
     """
     isCustomCOnf: bool
     def __init__(self):
-        main_path = path.realpath(sys.argv[0]) if sys.argv[0] else None
+        main_path = path.realpath(sys.argv[0]) if sys.argv[0] else '.'
         parent_path = Path(main_path).parent
         logger_path = (parent_path / "resources/logger_conf.json").resolve()
         print("\n\nruta padre de la configuracion:\n" + str(parent_path)+"\n"+str(main_path)+"\n"+str(logger_path))
@@ -51,7 +54,7 @@ class Logger:
         strTb = ''.join(traceback.format_tb(tb))
         self.__logger.exception("Traceback: %s",strTb)
 
-    def __fixup(self, a_dict:dict, k:str, subst_dict:dict) -> dict:
+    def __fixup(self, a_dict:dict, k:str, subst_dict:dict):
         for key in a_dict.keys():
             if key == k:
                 for s_k, s_v in subst_dict.items():
@@ -76,7 +79,7 @@ class Logger:
         with open(self.file_path, 'rt') as f:
             config = json.load(f)
             self.__fixup(config["logging_conf"],"filename",config["properties"])
-            logging.config.dictConfig(config["logging_conf"])
+            dictConfig(config["logging_conf"])
         # Las excepciones son capturadas por el logger
         sys.excepthook = self.__handlerExceptions
 
@@ -87,28 +90,25 @@ class Configuration:
     Servicio para ofrecer configuración centralizada al resto de servicios y aplicaciones
     """
     __const:Const
-    __logger:logging.getLogger()
-
+    __logger:logging.Logger
+    __allModulesConfDict : Dict
     def __init__(self,logger,const):
         self.__init_services(logger,const)
         self.__logger.info("INI - servicio de Configuración")
 
         parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
-        self.__init_conf(parent_path,self.__const.RESOURCE_ARQ_CONF_FILENAME)
-        self.__logger.debug("-"*20)
-        {section: self.__logger.debug("Sección %s: %s",section,json.dumps(dict(self.confMap[section]))) for section in self.confMap.sections()}
-        self.__logger.debug("-"*20)
+        self.__init_conf(parent_path,"credentials.cfg")
         self.__logger.info("FIN - servicio de Configuración")
     
     @cached(cache=TTLCache(maxsize=1024, ttl=600))
-    def getProperty(self, group, key, parseType=str):
+    def getProperty(self, group, key, parseType=str,confKey="arq") -> Any:
         """
         Obtener propiedad en función del grupo y la clave ( usando cache )
         """
-        if group in self.confMap:
-            if key in self.confMap[group]:
+        if group in self.__allModulesConfDict[confKey]:
+            if key in self.__allModulesConfDict[confKey][group]:
                 try:
-                    return parseType(self.confMap[group][key])
+                    return parseType(self.__allModulesConfDict[confKey][group][key])
                 except:
                     self.__logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
                     return None
@@ -119,14 +119,14 @@ class Configuration:
             self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
     
-    def getPropertyVerbose(self, group, key, parseType=str):
+    def getPropertyVerbose(self, group, key, parseType=str,confKey="arq") -> Any:
         """
         Obtener propiedad en función del grupo y la clave ( sin usar cache )
         """
-        if group in self.confMap:
-            if key in self.confMap[group]:
+        if group in self.__allModulesConfDict[confKey]:
+            if key in self.__allModulesConfDict[confKey][group]:
                 try:
-                    return parseType(self.confMap[group][key])
+                    return parseType(self.__allModulesConfDict[confKey][group][key])
                 except:
                     self.__logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
                     return None
@@ -137,31 +137,31 @@ class Configuration:
             self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
 
-    def getPropertyDefault(self, group, key, defaultValue,parseType=str):
+    def getPropertyDefault(self, group, key, defaultValue:Any,parseType=str,confKey="arq") -> Any:
         """
         Obtener propiedad en función del grupo y la clave.
         En caso de no existir, define un valor por defecto
         """
-        propertyValue = self.getProperty(group,key,parseType=parseType)
+        propertyValue = self.getProperty(group,key,parseType=parseType,confKey=confKey)
         return (propertyValue, defaultValue)[propertyValue == None]
     
-    def getGroupOfProperties(self,group_name):
+    def getGroupOfProperties(self,group_name,confKey="arq"):
         """
         Devuelve un grupo de propiedades.
         En caso de no existir devuelve 'None'
         """
-        if group_name in self.confMap:
-            return self.confMap[group_name]
+        if group_name in self.__allModulesConfDict[confKey]:
+            return self.__allModulesConfDict[confKey][group_name]
         else:
             self.__logger.error("El grupo '%s' no está definido en configuración", group_name)
             return None
 
-    def getFilteredGroupOfProperties(self, group_name, callback):
+    def getFilteredGroupOfProperties(self, group_name, callback,confKey="arq"):
         """
         Devuelve un grupo de propiedades filtradas en función de la condición impuesta por parámetro
         """
-        if group_name in self.confMap:
-            return self.__filterTheDict(self.confMap[group_name], callback)
+        if group_name in self.__allModulesConfDict[confKey]:
+            return self.__filterTheDict(self.__allModulesConfDict[confKey][group_name], callback)
         else:
             self.__logger.error("El grupo '%s' no está definido en configuración", group_name)
             return None
@@ -170,17 +170,53 @@ class Configuration:
         # Servicio de logging
         self.__logger = logger.arqLogger()
         self.__const = const
-
-    def __init_conf(self,basepath,filename):
-        self.confMap = configparser.ConfigParser()
+    
+    def __init_conf(self,basepath,credentialsPath):
+        """
+        Dado un fichero de credenciales, recupera configuración de un repositorio git
+        """
+        credentialsMap = configparser.ConfigParser()
         resources_path = path.join(basepath, "resources/")
-        conf_path = path.join(resources_path, filename)
-        self.__logger.info("conf general obtenida de '%s'",conf_path)
+        credentials_path = path.join(resources_path, credentialsPath)
+        self.__logger.info("conf general obtenida de '%s'",credentials_path)
         
-        if not path.exists(conf_path):
-            generate_default_conf(resources_path,filename)
-        self.confMap.read(conf_path)
+        if not path.exists(credentials_path):
+            self.__logger.error("La ruta '%s' no existe! Parando el arranque",credentials_path)
+            raise ArqError("Fichero de credenciales no existe",201)
+        else:
+            credentialsMap.read(credentials_path)
+            self.__allModulesConfDict = self.__getConfFromGit(credentialsMap)
 
+    def __getConfFromGit(self,credentials) -> dict:
+        """
+        Recupera configuración de un repositorio git
+        """ 
+        self.__logger.info("Obteniendo configuracion con perfil %s en git",credentials['github']['profile'])
+        confDict={}
+        content= credentials['github']['content_url']+credentials['github']['profile']
+        filelist=request(content,headers={'Authorization':'Token '+credentials['github']['config_token']})
+        for hit in json.loads(filelist.text):
+            self.__logger.info("Fichero '%s' obtenido",hit["name"])
+            funcConf=configparser.ConfigParser()
+            urlFile=self.__generate_git_file_url(
+                credentials['github']['user'],
+                credentials['github']['repo'],
+                credentials['github']['branch'],
+                hit['path'])
+            response=request(urlFile,headers={'Authorization':'Token '+credentials['github']['config_token']})
+            funcConf.read_string(response.text)
+            confDict[hit["name"][:hit["name"].index(".")]]=funcConf
+        return confDict
+    
+    def __generate_git_file_url(self,user,repo,branch,path):
+        separator='/'
+        url="https://raw.githubusercontent.com"
+        url = url+separator+user
+        url = url+separator+repo
+        url = url+separator+branch
+        url = url+separator+path
+        return url
+        
     def __filterTheDict(self, dictObj, callback):
         newDict = dict()
         # Itera sobnrte todos los elementos del diccionario
@@ -210,36 +246,5 @@ class CoreService(containers.DeclarativeContainer):
         logger=logger_service
     )
 
-def generate_default_conf(base_path:str, filename:str):
-    config = configparser.ConfigParser()
-    config['groups'] = {
-                         'environment': 'environment',
-                         'applications': 'applications',
-                         'flask': 'flask',
-                         'flags': 'flags',
-                         'redis': 'redis'
-                        }
-    config['base'] = {
-                         'path.resources': 'resources/'
-                        }    
-
-    config['applications'] = {
-                         'filename.method_views': 'methodViews.json',
-                         'path.app.repository': 'apps/'
-                        }
-
-    config['flask'] = {
-                         'shutdown': 'werkzeug.server.shutdown',
-                         'url.rule.applications': '/api/applications/<app_name>;applications_api'
-                        }
-    
-    config['flags'] = {
-                         'init.test': True,
-                         'enable.redis': False
-                        }
-                        
-    if not path.exists(base_path):
-        mkdir(base_path)
-    conf_path = path.join(base_path, filename)
-    with open(conf_path, 'w') as configfile:
-        config.write(configfile)
+def request(url: str, params:dict = {},headers:dict = {}):
+    return requests.get(url,params=params, headers=headers)
