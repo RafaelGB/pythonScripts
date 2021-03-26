@@ -82,7 +82,5 @@ class AWSPrueba(ArqToolsTemplate):
     def __init__(self, *args, **kwargs):
         super().__init__(self.__class__.__name__, *args, **kwargs)
 
-        self.restTools.start_server()
-
 if __name__ == "__main__":
     prueba = AWSPrueba()

@@ -1,7 +1,4 @@
-
 """Example of dependency injection in Python."""
-import logging
-import sqlite3
 from dependency_injector import containers, providers
 # own
 from arq_server.services.CoreService import CoreService
@@ -14,7 +11,7 @@ from arq_server.services.analytics.AnalyticService import AnalyticService,Analyt
 # Protocols
 from arq_server.services.protocols.ProtocolsService import ProtocolsService
 
-class ArqContainer(object):
+class ArqContainer(containers.DeclarativeContainer):
     # Base
     core_service = providers.Singleton(CoreService)
     # Factories

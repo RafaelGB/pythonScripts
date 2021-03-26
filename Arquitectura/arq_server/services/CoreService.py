@@ -19,7 +19,6 @@ from dependency_injector import containers, providers
 from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 
-
 class Logger:
     """
     LOGGER
@@ -83,7 +82,52 @@ class Logger:
         # Las excepciones son capturadas por el logger
         sys.excepthook = self.__handlerExceptions
 
-class Configuration:
+"""
+{
+    'service'
+    'action'
+    'args'
+}
+{
+    'action'
+    'args'
+    'metadata':
+        {
+                pf_origin:
+                pf_dest:
+                timestamp_ini:
+        }
+}
+"""
+class Base:
+    """
+    BASE
+    ------
+    Funciones cross a todos los servicios
+    """
+    __const:Const
+    __logger:logging.Logger
+    def __init__(self,logger,const) -> None:
+        self.__init_services(logger,const)
+    
+    def __init_services(self,logger,const):
+        # Servicio de logging
+        self.__logger = logger.arqLogger()
+        self.__const = const
+
+    def read_input_instruccions(self,instructions:dict)->dict:
+        try:
+            result = getattr(self,instructions.pop("action"))(*instructions.pop("args"))
+        except AttributeError as attError:
+            self.__logger.error("La acción "+instructions["action"]+" no está contemplada")
+            raise attError
+        except TypeError as tpError:
+            self.__logger.error("Los argumentos de entrada no son correctos (sobran o faltan)")
+            raise tpError
+        instructions["response"]=result
+        return instructions
+
+class Configuration(Base):
     """
     CONFIGURACION
     -------------
@@ -240,6 +284,12 @@ class CoreService(containers.DeclarativeContainer):
     # Services
     logger_service = providers.Singleton(Logger)
     constants = providers.Singleton(Const)
+
+    base_service = providers.Singleton(
+        Base,
+        const=constants,
+        logger=logger_service
+    )
     config_service = providers.Singleton(
         Configuration,
         const=constants,

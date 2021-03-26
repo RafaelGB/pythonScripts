@@ -11,7 +11,7 @@ import logging
 # Own
 from arq_server.services.protocols.Common import arqCache
 from arq_server.services.CoreService import Configuration
-from arq_server.services.protocols.rest.MethodViews import ApplicationsApi
+from arq_server.services.protocols.rest.MethodViews import ApplicationsApi , ArchitectureApi
 
 
 class APIRestTools:
@@ -29,16 +29,20 @@ class APIRestTools:
         )
         self.parent_path = Path(path.dirname(
             path.abspath(sys.modules['__main__'].__file__)))
+
         self.flask_conf_alias = self.__config.getProperty("groups", "flask")
+
         self.flask_conf = self.__config.getGroupOfProperties(
-            self.flask_conf_alias,confKey=self.flask_conf_alias)
+            self.flask_conf_alias,
+            confKey=self.flask_conf_alias
+        )
+
         self.__init_info_maps()
         self.__init_arq_url_rules()
         self.__logger.info(
             "Herramientas de protocolo REST cargadas correctamente")
 
-    def start_server(self):
-        self.server.run(debug=False)
+        self.__start_server()
 
     def stop_server(self):
         func = request.environ.get(self.flask_conf["shutdown"])
@@ -48,7 +52,7 @@ class APIRestTools:
 
     def addUrlRule(self, URL: str, customMethodView=None, customFunc=lambda *args: None):
         """
-        Añade un nuevo endpoint al servidor, el cual ejecutará la función que se detemine.
+        Añade un nuevo endpoint al servidor, el cual ejecutará la función que se determine.
         En caso de declarar un MethodView, se utilizará como salida del endpoint
         """
         self.__logger.debug("Añadiendo regla. URL:%s,  evento de llamada: %s",
@@ -68,6 +72,8 @@ class APIRestTools:
     """
     MÉTODOS PRIVADOS
     """
+    def __start_server(self):
+        self.server.run(debug=False)
 
     def __selectMethod(self, alias):
         if alias in self.__methodViewDict:
@@ -87,7 +93,11 @@ class APIRestTools:
         def callback(elem): return elem.startswith("url.rule")
         # Recupera configuración utilizando el filtro
         url_rules_cfg_list = self.__config.getFilteredGroupOfProperties(
-            self.flask_conf_alias, callback,confKey=self.flask_conf_alias)
+                                self.flask_conf_alias, 
+                                callback,
+                                confKey=self.flask_conf_alias
+                            )
+            
         for url_rule_cfg in url_rules_cfg_list:
             url_rule = self.flask_conf[url_rule_cfg]
             try:
@@ -109,6 +119,7 @@ class APIRestTools:
     def __init_info_maps(self):
 
         self.__methodViewDict['applications_api'] = ApplicationsApi
+        self.__methodViewDict['architecture_api'] = ArchitectureApi
 
         app_info_path = path.join(
             self.parent_path,
