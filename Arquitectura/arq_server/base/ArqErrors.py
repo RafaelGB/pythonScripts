@@ -6,7 +6,7 @@ class ArqErrorMock(Exception):
 # define Python user-defined exceptions
 class ArqError(Exception):
    """Base class for other exceptions"""
-   def __init__(self,message, code):
+   def __init__(self,message, code,traceback=None):
         super().__init__(message)
         self.code:int = code
 

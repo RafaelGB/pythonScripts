@@ -19,6 +19,13 @@ from dependency_injector import containers, providers
 from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 
+# Switch selección de parseo
+parserDict={
+    'int':int,
+    'eval':eval,
+    'str': str
+}
+
 class Logger:
     """
     LOGGER
@@ -82,23 +89,6 @@ class Logger:
         # Las excepciones son capturadas por el logger
         sys.excepthook = self.__handlerExceptions
 
-"""
-{
-    'service'
-    'action'
-    'args'
-}
-{
-    'action'
-    'args'
-    'metadata':
-        {
-                pf_origin:
-                pf_dest:
-                timestamp_ini:
-        }
-}
-"""
 class Base:
     """
     BASE
@@ -117,15 +107,25 @@ class Base:
 
     def read_input_instruccions(self,instructions:dict)->dict:
         try:
-            result = getattr(self,instructions.pop("action"))(*instructions.pop("args"))
+            result = getattr(
+                self,
+                instructions.pop("action")
+            )(
+                *instructions.pop("args"),
+                **self.__parse_kwargs_instructions(instructions.pop('kwargs'))
+            )
         except AttributeError as attError:
-            self.__logger.error("La acción "+instructions["action"]+" no está contemplada")
-            raise attError
+            raise ArqError("La acción "+instructions["action"]+" no está contemplada",102,traceback=attError)
         except TypeError as tpError:
-            self.__logger.error("Los argumentos de entrada no son correctos (sobran o faltan)")
-            raise tpError
+            raise ArqError("Los argumentos de entrada no son correctos (sobran o faltan)",103,traceback=tpError)
         instructions["response"]=result
         return instructions
+
+    def __parse_kwargs_instructions(self,kwargs_instructions:list):
+        parsed_kwargs={}
+        for hit in kwargs_instructions:
+            parsed_kwargs[hit['key']]=parserDict[hit['type']](hit['value'])
+        return parsed_kwargs
 
 class Configuration(Base):
     """
