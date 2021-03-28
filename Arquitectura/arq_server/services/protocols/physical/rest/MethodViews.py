@@ -41,6 +41,8 @@ class ArchitectureApi(MethodView):
     API RESTful interfaz para la arquitectura
     """
     normalizer:NormalizeSelector
+    OK_CODE=200
+    ARQ_ERROR_CODE=503
 
     def __init__(self, view_name, *args, **kwargs):
         self.normalizer=current_app.normalizer
@@ -56,7 +58,7 @@ class ArchitectureApi(MethodView):
         """ run app """
         form = self.__obtain_request()
         response_raw = self.normalizer.processInput(form)
-        return make_response(jsonify(response_raw),200)
+        return make_response(jsonify(response_raw),self.__response_code(response_raw))
 
     def put(self):
         """ substitute app info """
@@ -75,7 +77,14 @@ class ArchitectureApi(MethodView):
         rq['metadata']=self.__metadata()
         return rq
 
+    def __response_code(self,response_raw):
+        if 'error' in response_raw:
+            return self.ARQ_ERROR_CODE
+        else:
+            return self.OK_CODE
+
     def __metadata(self)->dict:
         return {
-            'protocol':'rest'
+            'protocol':'rest',
+            'methodView':'architecture_api'
         }

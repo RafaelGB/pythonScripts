@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-
 class ArqErrorMock(Exception):
    pass
 # define Python user-defined exceptions
@@ -9,6 +6,12 @@ class ArqError(Exception):
    def __init__(self,message, code,traceback=None):
         super().__init__(message)
         self.code:int = code
+
+   def normalize_exception(self)->dict:
+      verboseException = {}
+      verboseException['message']= self.code_message()
+      verboseException['traceback']= str(self)
+      return verboseException
 
    def code_message(self) -> str:
       if self.code in ArqErrorInfo:
