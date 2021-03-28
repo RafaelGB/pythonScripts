@@ -14,18 +14,17 @@ class Metadata:
     @staticmethod
     def getInfo() -> Any: 
         if Metadata.info is None:  # Read only once, lazy.
-            print("inicialización de metadatos custom")
+            # Inicialización de metadatos custom
             Metadata.info = configparser.ConfigParser()
             main_path = path.realpath(sys.argv[0]) if sys.argv[0] else ''
             parent_path = Path(main_path).parent
             resources_path = path.join(parent_path, "resources/")
             conf_path = path.join(resources_path, 'metadata.cfg')
-            print('ruta de fichero: '+conf_path)
+            # Ruta de fichero
             if path.exists(conf_path):
                 Metadata.info.read(conf_path)
-                {section: print("Sección {0}: {1}".format(section, json.dumps(dict(Metadata.info[section])))) for section in Metadata.info.sections()}
             else:
-                print('ruta no existe')
+                # ruta no existe
                 return None
         return Metadata.info
 
