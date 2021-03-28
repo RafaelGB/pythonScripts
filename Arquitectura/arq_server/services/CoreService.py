@@ -6,8 +6,7 @@ import traceback
 from logging.config import fileConfig, dictConfig
 from cachetools import cached, TTLCache
 from typing import Any, Dict
-#Testing
-import unittest
+
 # Filesystem
 from os import path, getenv,mkdir
 from pathlib import Path
@@ -118,7 +117,7 @@ class Base:
             raise ArqError("La acción "+instructions["action"]+" no está contemplada",102,traceback=attError)
         except TypeError as tpError:
             raise ArqError("Los argumentos de entrada no son correctos (sobran o faltan)",103,traceback=tpError)
-        instructions["response"]=result
+        instructions["output_instructions"]=result
         return instructions
 
     def __parse_kwargs_instructions(self,kwargs_instructions:list):
@@ -290,6 +289,7 @@ class CoreService(containers.DeclarativeContainer):
         const=constants,
         logger=logger_service
     )
+    
     config_service = providers.Singleton(
         Configuration,
         const=constants,

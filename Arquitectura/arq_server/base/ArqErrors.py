@@ -12,16 +12,19 @@ class ArqError(Exception):
 
    def code_message(self) -> str:
       if self.code in ArqErrorInfo:
-         return str(ArqErrorInfo[self.code])
+         return str(ArqErrorInfo[self.code]["esp"])
       return "##ERROR## Código de error no válido"
 
 
 ArqErrorInfo = {
    101:{
-      "esp","Error no controlado: ¡algo malo ocurrió!"
+      "esp":"Error no controlado: ¡algo malo ocurrió!"
+   },
+   102:{
+      "esp":"Servicio de arquitectura no existe o no admite instrucciones"
    },
    # Errores relacionados con ficheros
    201:{
-      "esp","Credenciales no encontradas"
+      "esp":"Credenciales no encontradas"
    }
 }

@@ -12,6 +12,7 @@ import logging
 # Own
 from arq_server.services.protocols.physical.Common import arqCache
 from arq_server.services.CoreService import Configuration
+from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
 from arq_server.services.protocols.physical.rest.MethodViews import ApplicationsApi , ArchitectureApi
 
 
@@ -22,11 +23,13 @@ class APIRestTools:
     # Services TIPS
     __logger: logging.Logger
     __config: Configuration
+    __normalizer: NormalizeSelector
 
-    def __init__(self, core):
+    def __init__(self, core, logical):
         self.__init_services(
             core.logger_service(),
-            core.config_service()
+            core.config_service(),
+            logical
         )
         self.parent_path = Path(path.dirname(
             path.abspath(sys.modules['__main__'].__file__)))
@@ -74,7 +77,7 @@ class APIRestTools:
     MÉTODOS PRIVADOS
     """
     def __start_server(self):
-        self.server.containerConfig=self.__config
+        self.server.normalizer=self.__normalizer
         self.server.run(debug=False)
 
     def __selectMethod(self, alias):
@@ -83,10 +86,11 @@ class APIRestTools:
         else:
             return None
 
-    def __init_services(self, logger, config):
+    def __init_services(self, logger, config, logical):
         # Servicio de logging
         self.__logger = logger.arqLogger()
         self.__config = config
+        self.__normalizer = logical.normalize_selector_service()
         arqCache.init_app(app=self.server, config={
                           "CACHE_TYPE": "filesystem", 'CACHE_DIR': Path('/tmp')})
 

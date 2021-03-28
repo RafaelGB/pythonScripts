@@ -4,7 +4,7 @@ from flask import make_response, jsonify, current_app, request
 from flask.views import MethodView
 # Own
 from arq_server.services.protocols.physical.Common import arqCache
-from arq_server.services.CoreService import CoreService
+from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
 
 class ApplicationsApi(MethodView):
     """
@@ -40,8 +40,10 @@ class ArchitectureApi(MethodView):
     """
     API RESTful interfaz para la arquitectura
     """
+    normalizer:NormalizeSelector
+
     def __init__(self, view_name, *args, **kwargs):
-        self.confPrueba=current_app.containerConfig
+        self.normalizer=current_app.normalizer
         super(ArchitectureApi, self).__init__(*args, **kwargs)
         self.logger = current_app.logger
         self.view_name = view_name
@@ -52,9 +54,8 @@ class ArchitectureApi(MethodView):
 
     def post(self):
         """ run app """
-        form = request.get_json()
-
-        response_raw = self.confPrueba.read_input_instruccions(form)
+        form = self.__obtain_request()
+        response_raw = self.normalizer.processInput(form)
         return make_response(jsonify(response_raw),200)
 
     def put(self):
@@ -68,3 +69,13 @@ class ArchitectureApi(MethodView):
     def delete(self):
         """ delete app """
         return make_response(jsonify(arqCache.get('errors')["methodNotSupported"]), 400)
+    
+    def __obtain_request(self)->dict:
+        rq = request.get_json()
+        rq['metadata']=self.__metadata()
+        return rq
+
+    def __metadata(self)->dict:
+        return {
+            'protocol':'rest'
+        }
