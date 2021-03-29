@@ -84,8 +84,10 @@ def arq_decorator(Cls):
             try:
                 x = super(NewApp, self).__getattribute__(attr)
             except (AttributeError, TypeError) as e:
+                # Continua al siguiente bloque de try-except
                 pass
             else:
+                # Devuelve atributo del padre
                 if type(x) == types.MethodType:
                     x = method_wrapper(x)
                 return x
@@ -94,7 +96,7 @@ def arq_decorator(Cls):
                 x = self.wrapped.__getattribute__(attr)
             except:
                 return None
-
+            # Devuelve atributo del hijo
             if type(x) == types.MethodType:
                 x = method_wrapper(x)
             return x
@@ -138,7 +140,6 @@ def arq_decorator(Cls):
                 kwargs['config'] = self.__config
             return args, kwargs
     return NewApp
-
 
 @arq_decorator
 class ArqToolsTemplate:

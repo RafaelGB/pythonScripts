@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-
+# Typing
+from typing import List
 import os
 import time
 
@@ -7,6 +8,7 @@ from flask import make_response, jsonify
 # Own
 from arq_decorators.arq_decorator import ArqToolsTemplate
 
+from arq_server.services.data_access.relational.models.User import User
 
 class MiApp(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
@@ -77,11 +79,16 @@ class MiApp(ArqToolsTemplate):
                     self.__class__.__name__, "test")) and callable(test):
                 self.add_test(test)
 
-class AWSPrueba(ArqToolsTemplate):
+class SQLPrueba(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
     def __init__(self, *args, **kwargs):
         super().__init__(self.__class__.__name__, *args, **kwargs)
-        
+    def addUser(self):
+        result:List[User]=self.sqlTools.select_items_filtering_by(User,nickname="RafaGB")
+        for item in result:
+            self.logger.info(item.__repr__())
+
+
 if __name__ == "__main__":
-    prueba = AWSPrueba()
-    
+    prueba = SQLPrueba()
+    prueba.addUser()
