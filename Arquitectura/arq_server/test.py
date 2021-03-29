@@ -81,7 +81,7 @@ class AWSPrueba(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
     def __init__(self, *args, **kwargs):
         super().__init__(self.__class__.__name__, *args, **kwargs)
-        self.logger.info("****************\nlog desde la aplicacion\n****************")
+        
 if __name__ == "__main__":
     prueba = AWSPrueba()
     

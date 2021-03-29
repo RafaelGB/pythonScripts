@@ -30,6 +30,7 @@ from arq_server.services.analytics.StadisticTools import StatisticsTools
 from arq_server.services.analytics.DashTools import DashTools
 # Data
 from arq_server.services.data_access.CacheTools import RedisTools
+from arq_server.services.data_access.relational.DatabaseSQL import DbSQL
 # Support
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
@@ -164,6 +165,7 @@ class ArqToolsTemplate:
     stadisticsTools : StatisticsTools
     dashTools : DashTools
     restTools : APIRestTools
+    sqlTools : DbSQL
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
@@ -329,6 +331,7 @@ class ArqToolsTemplate:
 
         # Data
         self.cacheTools = ArqContainer.data_service.cache_tools()
+        self.sqlTools = ArqContainer.data_service.relational_tools().db_sql()
 
         # Utils
         self.dockerTools = ArqContainer.utils_service.docker_tools()

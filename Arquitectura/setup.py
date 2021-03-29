@@ -38,7 +38,9 @@ setup(
           'dash==1.10.0',
           'dash-bootstrap-components==0.9.2',
           'pandas==1.2.3',
-          'pyjwt==2.0.1'
+          'pyjwt==2.0.1',
+          'SQLAlchemy==1.4.3',
+          'psycopg2-binary==2.8.6'
     ],
     python_requires='>=3.7',
     include_package_data=True,

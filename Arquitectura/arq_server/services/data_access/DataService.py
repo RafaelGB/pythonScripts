@@ -7,6 +7,7 @@ import logging
 from dependency_injector import containers, providers
 # Own
 from arq_server.services.data_access.CacheTools  import RedisTools
+from arq_server.services.data_access.relational.RelationalService import RelationalService
 
 class DataService(containers.DeclarativeContainer):
     """Application IoC container."""
@@ -14,5 +15,10 @@ class DataService(containers.DeclarativeContainer):
     # Services
     cache_tools = providers.Singleton(
         RedisTools,
+        core=core
+    )
+
+    relational_tools = providers.Singleton(
+        RelationalService,
         core=core
     )
