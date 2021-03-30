@@ -48,6 +48,7 @@ class ArchitectureApi(MethodView):
         self.normalizer=current_app.normalizer
         super(ArchitectureApi, self).__init__(*args, **kwargs)
         self.logger = current_app.logger
+        current_app.loggerService.generate_context()
         self.view_name = view_name
 
     def get(self):

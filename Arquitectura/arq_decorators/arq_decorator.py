@@ -40,6 +40,9 @@ from arq_server.services.support.ConcurrentTools import ConcurrentTools
 from arq_server.services.protocols.physical.rest.RestService import APIRestTools
 
 def transactional(function):
+    """
+    La función decorada pasa a tener un comportamiento transaccional en bbdd
+    """
     @wraps(function)
     def wrapper(*args, **kwargs):
         relational:DbSQL = ArqContainer.data_service.relational_tools().db_sql()

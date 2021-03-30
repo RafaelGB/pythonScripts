@@ -3,6 +3,8 @@ import requests
 import configparser
 import logging
 import traceback
+import threading
+import uuid
 from logging.config import fileConfig, dictConfig
 from cachetools import cached, TTLCache
 from typing import Any, Dict
@@ -24,6 +26,18 @@ parserDict={
     'eval':eval,
     'str': str
 }
+class ContextFilter(logging.Filter):
+    """
+    Filtro que aplica los filtros deseados al log
+    """
+    def filter(self, record):
+        if 'context' in threading.currentThread().__dict__:
+            context = threading.currentThread().__dict__['context']
+            if 'uuid' in context:
+                record.UUID=context['uuid']
+            return True
+        else:
+            return False
 
 class Logger:
     """
@@ -36,24 +50,43 @@ class Logger:
         main_path = path.realpath(sys.argv[0]) if sys.argv[0] else '.'
         parent_path = Path(main_path).parent
         logger_path = (parent_path / "resources/logger_conf.json").resolve()
-        print("\n\nruta padre de la configuracion:\n" + str(parent_path)+"\n"+str(main_path)+"\n"+str(logger_path))
         self.__setup_logging(default_path=logger_path)
         self.__logger = logging.getLogger("arquitecture")
+
+        self.generate_context()
         if(self.isCustomCOnf):
             self.__logger.debug("Se detectó configuración de logging custom - Configuración utilizada:%s",self.file_path)
         else:
             self.__logger.debug("Cargada configuración de logging por defecto")
         self.__logger.info("¡servicio de logging levantado!")
 
+    def generate_context(self,my_uuid=None,extra_info:dict=None):
+        """
+        Añade información ligada al hilo actual de ejecución
+        """
+        if my_uuid is None:
+            my_uuid:str=str(uuid.uuid4())
+
+        context = {
+            'uuid':my_uuid
+            }
+
+        if extra_info is not None:
+            context.update(extra_info)
+
+        threading.currentThread().__dict__['context'] = context
+
     def arqLogger(self):
-        return logging.getLogger("arquitecture")
+        arqLogger = logging.getLogger("arquitecture")
+        arqLogger.addFilter(ContextFilter())
+        return arqLogger
 
     def appLogger(self):
         return logging.getLogger("app")
 
     def testingLogger(self):
         return logging.getLogger("testing")
-
+    
     def __handlerExceptions(self,Etype, value, tb):
         self.__logger.error("Excepción capturada:%s - %s",Etype,value)
         strTb = ''.join(traceback.format_tb(tb))
@@ -95,7 +128,7 @@ class Base:
     Funciones cross a todos los servicios
     """
     __const:Const
-    __logger:logging.Logger
+    __logger:Logger
     def __init__(self,logger,const) -> None:
         self.__init_services(logger,const)
     

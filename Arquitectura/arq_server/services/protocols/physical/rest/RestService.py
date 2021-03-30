@@ -11,7 +11,7 @@ import json
 import logging
 # Own
 from arq_server.services.protocols.physical.Common import arqCache
-from arq_server.services.CoreService import Configuration
+from arq_server.services.CoreService import Configuration,ContextFilter
 from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
 from arq_server.services.protocols.physical.rest.MethodViews import ApplicationsApi , ArchitectureApi
 
@@ -44,7 +44,7 @@ class APIRestTools:
         self.__init_info_maps()
         self.__init_arq_url_rules()
         self.__logger.info("Herramientas de protocolo REST cargadas correctamente")
-        Thread(target=self.__start_server).start()
+        Thread(target=self.__start_server,kwargs={'loggerService':core.logger_service()}).start()
         self.__logger.info("Protocolo REST lanzado en segundo plano")
         
 
@@ -76,8 +76,10 @@ class APIRestTools:
     """
     MÉTODOS PRIVADOS
     """
-    def __start_server(self):
+    def __start_server(self,loggerService=None):
         self.server.normalizer=self.__normalizer
+        self.server.loggerService=loggerService
+        self.server.logger=self.__logger
         self.server.run(debug=False)
 
     def __selectMethod(self, alias):
@@ -91,6 +93,8 @@ class APIRestTools:
         self.__logger = logger.arqLogger()
         self.__config = config
         self.__normalizer = logical.normalize_selector_service()
+        serverLogger=logging.getLogger('werkzeug')
+        serverLogger.addFilter(ContextFilter())
         arqCache.init_app(app=self.server, config={
                           "CACHE_TYPE": "filesystem", 'CACHE_DIR': Path('/tmp')})
 

@@ -21,7 +21,7 @@ class NormalizeSelector:
             'security': cross.security_tools()
         }
 
-        self.__logger.info("NormalizeSelector - lista de servicios que admiten instrucciones:"+str(self.__avaliableServicesWithIntut))
+        self.__logger.info("NormalizeSelector - lista de servicios que admiten instrucciones:\n"+str(self.__avaliableServicesWithIntut.keys()))
     
     def addAvaliableService(self,singletonService):
         # TODO
@@ -47,7 +47,6 @@ class NormalizeSelector:
                 raise ArqError("contexto no válido", 101)
             
             output['metadata']=metadata
-
         except ArqError as arqErr:
             output['error']=arqErr.normalize_exception()
         return output

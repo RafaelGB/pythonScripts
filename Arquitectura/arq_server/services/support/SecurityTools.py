@@ -25,7 +25,7 @@ class Security(Base):
         try:
             result:List[User]=self.__data.select_items_filtering_by(User,nickname=user)
             if (len(result)==0):
-                raise Exception("Usuario incorrecto")
+                raise Exception("Usuario no encontrado")
             user = result[0]
             if not user.check_password(password):
                 raise Exception("Credenciales incorrectas")       
