@@ -2,7 +2,7 @@ import json
 import sqlalchemy
 from sqlalchemy.types import TypeDecorator
 
-SIZE = 300
+SIZE = 512
 
 class DictType(TypeDecorator):
 

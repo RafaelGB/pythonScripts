@@ -10,14 +10,15 @@ class NormalizeSelector:
     __logger: logging.Logger
     __config: Configuration
 
-    def __init__(self, core):
+    def __init__(self, core,cross):
         self.__init_services(
             core.logger_service(),
             core.config_service()
         )
         self.__logger.info("NormalizeSelector - Servicios core inicializados correctamente")
         self.__avaliableServicesWithIntut={
-            'configuration': core.config_service()
+            'configuration': core.config_service(),
+            'security': cross.security_tools()
         }
 
         self.__logger.info("NormalizeSelector - lista de servicios que admiten instrucciones:"+str(self.__avaliableServicesWithIntut))

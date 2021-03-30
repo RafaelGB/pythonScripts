@@ -42,6 +42,8 @@ class DbSQL:
         Escribe un item en BBDD
         """
         try:
+            if self.__current_session is None:
+                self.open_session()
             self.__current_session.add(item)
         except Exception as e:
             self.__logger.error("Tipo de error: %s",e.__class__.__name__)

@@ -1,4 +1,5 @@
 # Librerias nativas
+from arq_server.services.data_access.relational.RelationalService import RelationalService
 from os import path
 from functools import wraps
 from inspect import isclass
@@ -38,6 +39,16 @@ from arq_server.services.support.ConcurrentTools import ConcurrentTools
 # Physical Protocols
 from arq_server.services.protocols.physical.rest.RestService import APIRestTools
 
+def transactional(function):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        relational:DbSQL = ArqContainer.data_service.relational_tools().db_sql()
+        relational.open_session()
+        result = function(*args,**kwargs)
+        relational.commit_current_session()
+        return result
+    return wrapper
+
 def method_wrapper(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
@@ -48,11 +59,11 @@ def method_wrapper(function):
         try:
             result = function(*args, **kwargs)
         except ArqError as arq_e:
-            logger.error("Error controlado - función %s",
+            logger.exception("Error controlado - función %s",
                          function.__name__, arq_e.code_message())
 
         except Exception as e:
-            logger.error(
+            logger.exception(
                 "Error no controlado por la arquitectura - función %s \n%s", function.__name__, e)
             raise e
         finally:

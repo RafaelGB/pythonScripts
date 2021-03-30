@@ -5,8 +5,10 @@ from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSel
 
 class LogicalService(containers.DeclarativeContainer):
   core = providers.Dependency()
+  cross = providers.Dependency()
 
   normalize_selector_service = providers.Singleton(
         NormalizeSelector,
-        core=core
+        core=core,
+        cross=cross
     )

@@ -6,7 +6,7 @@ import time
 
 from flask import make_response, jsonify
 # Own
-from arq_decorators.arq_decorator import ArqToolsTemplate
+from arq_decorators.arq_decorator import ArqToolsTemplate,transactional
 
 from arq_server.services.data_access.relational.models.User import User
 
@@ -75,9 +75,11 @@ class SQLPrueba(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
     def __init__(self, *args, **kwargs):
         super().__init__(self.__class__.__name__, *args, **kwargs)
+    
+    @transactional
     def addUser(self):
         result:List[User]=self.sqlTools.select_items_filtering_by(User,nickname="RafaGB")
-        if result.count() == 0:
+        if len(result) == 0:
             self.sqlTools.add_item(User("RafaGB","adminPassword",fullname="rafaelgomezbermejo"))
 
 
