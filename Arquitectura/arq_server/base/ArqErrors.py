@@ -1,27 +1,33 @@
-import json
-from pathlib import Path
-
 class ArqErrorMock(Exception):
    pass
 # define Python user-defined exceptions
 class ArqError(Exception):
    """Base class for other exceptions"""
-   def __init__(self,message, code):
+   def __init__(self,message, code,traceback=None):
         super().__init__(message)
         self.code:int = code
 
+   def normalize_exception(self)->dict:
+      verboseException = {}
+      verboseException['message']= self.code_message()
+      verboseException['traceback']= str(self)
+      return verboseException
+
    def code_message(self) -> str:
       if self.code in ArqErrorInfo:
-         return str(ArqErrorInfo[self.code])
+         return str(ArqErrorInfo[self.code]["esp"])
       return "##ERROR## Código de error no válido"
 
 
 ArqErrorInfo = {
    101:{
-      "esp","Error no controlado: ¡algo malo ocurrió!"
+      "esp":"Error no controlado: ¡algo malo ocurrió!"
+   },
+   102:{
+      "esp":"Servicio de arquitectura no existe o no admite instrucciones"
    },
    # Errores relacionados con ficheros
    201:{
-      "esp","Credenciales no encontradas"
+      "esp":"Credenciales no encontradas"
    }
 }

@@ -1,12 +1,14 @@
 #!/usr/bin/env python
-
+# Typing
+from typing import List
 import os
 import time
 
 from flask import make_response, jsonify
 # Own
-from arq_decorators.arq_decorator import ArqToolsTemplate
+from arq_decorators.arq_decorator import ArqToolsTemplate,transactional
 
+from arq_server.services.data_access.relational.models.User import User
 
 class MiApp(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
@@ -16,14 +18,6 @@ class MiApp(ArqToolsTemplate):
         self.__init_app_test()
         
     def dashPrueba(self):
-        """
-        components = []
-        alert = self.dashTools.alert("alerta desde megocio","nuevo-id",color="primary", is_open=True, dismissable=True)
-        components.append(alert)
-        figure = self.stadisticsTools.generate_figure()
-        dashFigure = self.dashTools.plotly_graph(figure)
-        components.append(dashFigure)
-        """
         self.stadisticsTools.createDashServer(None,None)
     
     def __test_lanzaProcesoPesado(self):
@@ -77,12 +71,18 @@ class MiApp(ArqToolsTemplate):
                     self.__class__.__name__, "test")) and callable(test):
                 self.add_test(test)
 
-class AWSPrueba(ArqToolsTemplate):
+class SQLPrueba(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
     def __init__(self, *args, **kwargs):
         super().__init__(self.__class__.__name__, *args, **kwargs)
+    
+    @transactional
+    def addUser(self):
+        result:List[User]=self.sqlTools.select_items_filtering_by(User,nickname="RafaGB")
+        if len(result) == 0:
+            self.sqlTools.add_item(User("RafaGB","adminPassword",fullname="rafaelgomezbermejo"))
 
-        self.restTools.start_server()
 
 if __name__ == "__main__":
-    prueba = AWSPrueba()
+    prueba = SQLPrueba()
+    prueba.addUser()

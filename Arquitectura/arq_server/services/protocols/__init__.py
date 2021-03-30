@@ -1,1 +1,1 @@
-from . import rest
+from . import ProtocolsService

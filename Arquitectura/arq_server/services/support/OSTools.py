@@ -49,6 +49,5 @@ class FileSystemTools(object):
     
     def __init_services(self, core) -> None:
         # Servicio de logging
-        self.__core = core
         self.__logger = core.logger_service().arqLogger()
         self.__config = core.config_service()

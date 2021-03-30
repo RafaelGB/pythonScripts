@@ -12,7 +12,7 @@ setup(
     author="Rafael Gómez Bermejo",
     author_email="sernn2@gmail.com",
     name="architecture-tools-RafaelGB",
-    version='0.0.9',
+    version='0.0.10',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: MIT License',
@@ -37,7 +37,10 @@ setup(
           'Rx==3.1.0',
           'dash==1.10.0',
           'dash-bootstrap-components==0.9.2',
-          'pandas==1.2.3'
+          'pandas==1.2.3',
+          'pyjwt==2.0.1',
+          'SQLAlchemy==1.4.3',
+          'psycopg2-binary==2.8.6'
     ],
     python_requires='>=3.7',
     include_package_data=True,

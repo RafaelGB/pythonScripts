@@ -1,4 +1,5 @@
 # Librerias nativas
+from arq_server.services.data_access.relational.RelationalService import RelationalService
 from os import path
 from functools import wraps
 from inspect import isclass
@@ -30,12 +31,26 @@ from arq_server.services.analytics.StadisticTools import StatisticsTools
 from arq_server.services.analytics.DashTools import DashTools
 # Data
 from arq_server.services.data_access.CacheTools import RedisTools
+from arq_server.services.data_access.relational.DatabaseSQL import DbSQL
 # Support
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
 from arq_server.services.support.ConcurrentTools import ConcurrentTools
-# Protocols
-from arq_server.services.protocols.rest.RestService import APIRestTools
+# Physical Protocols
+from arq_server.services.protocols.physical.rest.RestService import APIRestTools
+
+def transactional(function):
+    """
+    La función decorada pasa a tener un comportamiento transaccional en bbdd
+    """
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        relational:DbSQL = ArqContainer.data_service.relational_tools().db_sql()
+        relational.open_session()
+        result = function(*args,**kwargs)
+        relational.commit_current_session()
+        return result
+    return wrapper
 
 def method_wrapper(function):
     @wraps(function)
@@ -47,11 +62,11 @@ def method_wrapper(function):
         try:
             result = function(*args, **kwargs)
         except ArqError as arq_e:
-            logger.error("Error controlado - función %s",
+            logger.exception("Error controlado - función %s",
                          function.__name__, arq_e.code_message())
 
         except Exception as e:
-            logger.error(
+            logger.exception(
                 "Error no controlado por la arquitectura - función %s \n%s", function.__name__, e)
             raise e
         finally:
@@ -64,6 +79,18 @@ def method_wrapper(function):
 
 def arq_decorator(Cls):
     class NewApp(object):
+        # TYPE HINTS logger
+        logger: logging.Logger
+
+        # TYPE HINTS public Tools
+        dockerTools: DockerTools
+        osTools: FileSystemTools
+        cacheTools: RedisTools
+        concurrentTools : ConcurrentTools
+        stadisticsTools : StatisticsTools
+        dashTools : DashTools
+        restTools : APIRestTools
+        sqlTools : DbSQL
 
         def __init__(self, *args, **kwargs):
             self.__tools_init()
@@ -83,8 +110,10 @@ def arq_decorator(Cls):
             try:
                 x = super(NewApp, self).__getattribute__(attr)
             except (AttributeError, TypeError) as e:
+                # Continua al siguiente bloque de try-except
                 pass
             else:
+                # Devuelve atributo del padre
                 if type(x) == types.MethodType:
                     x = method_wrapper(x)
                 return x
@@ -93,7 +122,7 @@ def arq_decorator(Cls):
                 x = self.wrapped.__getattribute__(attr)
             except:
                 return None
-
+            # Devuelve atributo del hijo
             if type(x) == types.MethodType:
                 x = method_wrapper(x)
             return x
@@ -138,7 +167,6 @@ def arq_decorator(Cls):
             return args, kwargs
     return NewApp
 
-
 @arq_decorator
 class ArqToolsTemplate:
     # TEMPLATE FLAGS
@@ -164,6 +192,7 @@ class ArqToolsTemplate:
     stadisticsTools : StatisticsTools
     dashTools : DashTools
     restTools : APIRestTools
+    sqlTools : DbSQL
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
@@ -178,22 +207,22 @@ class ArqToolsTemplate:
     --------------
     """
 
-    def getProperty(self, property_key, parseType=str) -> Any:
+    def getProperty(self, group, property_key, parseType=str) -> Any:
         """
         Recupera de la configuración de aplicación la propiedad solicitada por parámetro.
         Por defecto se entenderá como String. Se facilita como parámetro opcional la posibilidad
         de interpretar el tipo
         """
-        return self.__config.getProperty(self.app_name, property_key, parseType=parseType)
+        return self.__config.getProperty(group, property_key, parseType=parseType,confKey=self.app_name)
 
-    def getPropertyDefault(self, property_key: str, default: str, parseType=str) -> Any:
+    def getPropertyDefault(self, group, property_key: str, default: str, parseType=str) -> Any:
         """
         Recupera de la configuración de aplicación la propiedad solicitada por parámetro. Añade
         la posibilidad de incluir uin valor por defecto en caso de no existir la propiedad.
         Por defecto se entenderá como String. Se facilita como parámetro opcional la posibilidad
         de interpretar el tipo
         """
-        return self.__config.getPropertyDefault(self.app_name, property_key, default, parseType=parseType)
+        return self.__config.getPropertyDefault(group, property_key, default, parseType=parseType, confKey=self.app_name)
 
     """
     --------------
@@ -321,21 +350,25 @@ class ArqToolsTemplate:
 
     def __init_public_tools(self):
         # Core
-        self.logger = ArqContainer.core_service(
-        ).logger_service().appLogger()
+        self.logger = ArqContainer.core_service().logger_service().appLogger()
+        
         # Analytics
         self.stadisticsTools = ArqContainer.analytic_service.stadistics_tools()
         self.dashTools = ArqContainer.analytic_factories.dash_tools()
+
         # Data
         self.cacheTools = ArqContainer.data_service.cache_tools()
-        # Protocols
-        self.restTools = ArqContainer.protocols_service.rest_protocol_tools()
+        self.sqlTools = ArqContainer.data_service.relational_tools().db_sql()
+
         # Utils
         self.dockerTools = ArqContainer.utils_service.docker_tools()
         self.osTools = ArqContainer.utils_service.file_system_tools()
         self.concurrentTools = ArqContainer.utils_service.concurrent_tools()
-    # TESTING
 
+        # Physical Protocols
+        self.restTools = ArqContainer.protocols_service.physical_protocol_services().rest_protocol_tools()
+
+    # TESTING
     def __init_arq_test(self):
         if not self.__flags["skip_add_arq_test"]:
             for attr in dir(self):

@@ -30,8 +30,10 @@
     "python.linting.pylintArgs": [
         "--load-plugins"
     ],
+    
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": true,
     "python.linting.pylintUseMinimalCheckers": false,
-    "python.venvPath": "/Users/rafaelgomezbermejo/Environments"
+    "python.venvPath": "/Users/rafaelgomezbermejo/Environments",
+    "python.languageServer": "Pylance"
 }
