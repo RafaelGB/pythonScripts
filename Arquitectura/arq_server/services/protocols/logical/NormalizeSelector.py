@@ -41,6 +41,7 @@ class NormalizeSelector:
             input = self.__validateInput(input)
             context = input.pop('context')
             metadata = input.pop('metadata')
+            self.__logger.info("Contexto: %s",context)
             if context == 'arq':
                 output['response']=self.__arq_instructions(input.pop('service'),input)
             else:
@@ -65,6 +66,7 @@ class NormalizeSelector:
             filtered_input =  { av_key: raw_input[av_key] for av_key in avaliableKeys }
             if (not isinstance(filtered_input['args'],List)) or (not isinstance(filtered_input['args'],List)):
                 raise ArqError("Los argumentos no traen el formato correcto",101)
+            self.__logger.info("La entrada es válida")
             return filtered_input
         except ArqError as arqe:
             raise arqe

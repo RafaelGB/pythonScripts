@@ -1,4 +1,6 @@
 from dependency_injector import containers, providers
+# System
+from threading import currentThread
 # Server
 from flask import make_response, jsonify, current_app, request
 from flask.views import MethodView
@@ -50,6 +52,7 @@ class ArchitectureApi(MethodView):
         self.logger = current_app.logger
         current_app.loggerService.generate_context()
         self.view_name = view_name
+        self.logger.info("Generando nuevo contexto")
 
     def get(self):
         """ app info """
@@ -87,5 +90,6 @@ class ArchitectureApi(MethodView):
     def __metadata(self)->dict:
         return {
             'protocol':'rest',
-            'methodView':'architecture_api'
+            'methodView':'architecture_api',
+            'uuid': currentThread().__dict__['context']['uuid']
         }
