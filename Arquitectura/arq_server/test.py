@@ -18,14 +18,6 @@ class MiApp(ArqToolsTemplate):
         self.__init_app_test()
         
     def dashPrueba(self):
-        """
-        components = []
-        alert = self.dashTools.alert("alerta desde megocio","nuevo-id",color="primary", is_open=True, dismissable=True)
-        components.append(alert)
-        figure = self.stadisticsTools.generate_figure()
-        dashFigure = self.dashTools.plotly_graph(figure)
-        components.append(dashFigure)
-        """
         self.stadisticsTools.createDashServer(None,None)
     
     def __test_lanzaProcesoPesado(self):
@@ -85,8 +77,8 @@ class SQLPrueba(ArqToolsTemplate):
         super().__init__(self.__class__.__name__, *args, **kwargs)
     def addUser(self):
         result:List[User]=self.sqlTools.select_items_filtering_by(User,nickname="RafaGB")
-        for item in result:
-            self.logger.info(item.__repr__())
+        if result.count() == 0:
+            self.sqlTools.add_item(User("RafaGB","adminPassword",fullname="rafaelgomezbermejo"))
 
 
 if __name__ == "__main__":

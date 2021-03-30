@@ -65,6 +65,18 @@ def method_wrapper(function):
 
 def arq_decorator(Cls):
     class NewApp(object):
+        # TYPE HINTS logger
+        logger: logging.Logger
+
+        # TYPE HINTS public Tools
+        dockerTools: DockerTools
+        osTools: FileSystemTools
+        cacheTools: RedisTools
+        concurrentTools : ConcurrentTools
+        stadisticsTools : StatisticsTools
+        dashTools : DashTools
+        restTools : APIRestTools
+        sqlTools : DbSQL
 
         def __init__(self, *args, **kwargs):
             self.__tools_init()

@@ -22,11 +22,11 @@ class NormalizeSelector:
 
         self.__logger.info("NormalizeSelector - lista de servicios que admiten instrucciones:"+str(self.__avaliableServicesWithIntut))
     
-    def addAvaliableService(singletonService):
+    def addAvaliableService(self,singletonService):
         # TODO
         pass
 
-    def processInput(self,input:dict)->dict:
+    def processInput(self,input:dict, headers:dict)->dict:
         """
         metadata:
         {
@@ -37,7 +37,7 @@ class NormalizeSelector:
         """
         output = {}
         try:
-            input= self.__validateInput(input)
+            input = self.__validateInput(input)
             context = input.pop('context')
             metadata = input.pop('metadata')
             if context == 'arq':
@@ -48,7 +48,6 @@ class NormalizeSelector:
             output['metadata']=metadata
 
         except ArqError as arqErr:
-            self.__logger.exception("Error controlado: ",arqErr)
             output['error']=arqErr.normalize_exception()
         return output
     

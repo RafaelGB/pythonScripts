@@ -56,8 +56,8 @@ class ArchitectureApi(MethodView):
 
     def post(self):
         """ run app """
-        form = self.__obtain_request()
-        response_raw = self.normalizer.processInput(form)
+        form, headers = self.__obtain_request()
+        response_raw = self.normalizer.processInput(form, headers)
         return make_response(jsonify(response_raw),self.__response_code(response_raw))
 
     def put(self):
@@ -75,7 +75,7 @@ class ArchitectureApi(MethodView):
     def __obtain_request(self)->dict:
         rq = request.get_json()
         rq['metadata']=self.__metadata()
-        return rq
+        return rq, request.headers
 
     def __response_code(self,response_raw):
         if 'error' in response_raw:

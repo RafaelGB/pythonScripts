@@ -81,7 +81,7 @@ class DbSQL:
                 ":"+db_password + \
                 "@"+host + \
                 "/"+connection
-        return create_engine(config, echo=True)
+        return create_engine(config, echo=self.__config.getProperty("sql","verbose",parseType=eval,confKey="relational"))
 
     def __init_services(self, core) -> None:
         # Servicio de logging
