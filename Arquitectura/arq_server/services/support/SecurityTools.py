@@ -23,10 +23,7 @@ class Security(Base):
         Funcion preparada para llamada por instrucción
         """
         try:
-            result:List[User]=self.__data.select_items_filtering_by(User,nickname=user)
-            if (len(result)==0):
-                raise Exception("Usuario no encontrado")
-            user = result[0]
+            user = self.__obtainUser(user)
             if not user.check_password(password):
                 raise Exception("Credenciales incorrectas")       
 
@@ -36,6 +33,40 @@ class Security(Base):
         except Exception as e:
             self.__logger.exception("Error obteniendo token del usuario %s",user)
             raise ArqError("Error obteniendo token:"+str(e),101)
+    
+    def validate_token(self,token,**kwargs):
+        """
+        Valida el token activo
+        ---
+        Funcion preparada para llamada por instrucción
+        """
+        try:
+            payload = self.__obtainPayload(token)
+            if 'sub' not in payload:
+                raise ArqError("El token no tiene asociado ningun usuario",101)
+            user = self.__obtainUser(payload['sub'])
+            self.__validate_auth_token(token,user.password_hashed)
+        except ArqError as arqE:
+            # Excepciones ya controladas
+            raise arqE
+
+    def __obtainPayload(self,token):
+        try:
+            return jwt.decode(token, options={"verify_signature": False})
+        except Exception as e:
+            raise ArqError("Ha habido un problema obteniendo el payload del token:"+str(e),101)
+
+    def __obtainUser(self,nickname):
+        """
+        Devuelve el usuario en función de su nickname
+        ---
+        En caso de no encontrarse, se lanza una excepción
+        """
+        result:List[User]=self.__data.select_items_filtering_by(User,nickname=nickname)
+        if len(result)==0:
+            raise Exception("Usuario no encontrado")
+        user = result[0]
+        return user
     
     def __encode_auth_token(self,user_id,secret_key):
         """
@@ -55,6 +86,19 @@ class Security(Base):
             )
         except Exception as e:
             return e
+    
+    def __validate_auth_token(self,token,secret_key):
+        """
+        Valida el token activo
+        """
+        try:
+            payload = jwt.decode(token, secret_key,algorithms=["HS256"])
+            return payload
+        except jwt.ExpiredSignatureError as expired:
+            raise ArqError('El token ya ha expirado. Requiere renovación'+str(expired),101)
+        except jwt.InvalidTokenError as invalid:
+            raise ArqError('Credenciales incorrectas para el token'+str(invalid),101)
+
 
     def __init__(self,core,data, *args, **kwargs):
         self.__init_services(core,data)

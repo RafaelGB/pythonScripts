@@ -36,6 +36,7 @@ from arq_server.services.data_access.relational.DatabaseSQL import DbSQL
 from arq_server.services.support.OSTools import FileSystemTools
 from arq_server.services.support.DockerTools import DockerTools
 from arq_server.services.support.ConcurrentTools import ConcurrentTools
+from arq_server.services.support.SecurityTools import Security
 # Physical Protocols
 from arq_server.services.protocols.physical.rest.RestService import APIRestTools
 
@@ -51,6 +52,20 @@ def transactional(function):
         relational.commit_current_session()
         return result
     return wrapper
+
+def requires_authorization(function):
+    """
+    Se comprueba token de seguridad (requerido en los argumentos)
+    """
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        security:Security = ArqContainer.utils_service().security_tools()
+        if 'auth_token' not in kwargs:
+            raise ArqError("Función que requiere autorización no trae token")
+        security.validate_token(kwargs['auth_token'])
+        result = function(*args,**kwargs)
+        return result
+    return wrapper    
 
 def method_wrapper(function):
     @wraps(function)

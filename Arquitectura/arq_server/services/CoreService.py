@@ -194,7 +194,7 @@ class Configuration(Base):
         else:
             self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
-    
+
     def getPropertyVerbose(self, group, key, parseType=str,confKey="arq") -> Any:
         """
         Obtener propiedad en función del grupo y la clave ( sin usar cache )
