@@ -52,7 +52,7 @@ class NormalizeSelector:
             if context == 'arq':
                 output['response']=self.__arq_instructions(service,input)
             else:
-                raise ArqError("contexto no válido", 101)
+                raise ArqError("contexto no válido")
             
             output['metadata']=metadata
         except ArqError as arqErr:
@@ -61,7 +61,7 @@ class NormalizeSelector:
     
     def __arq_instructions(self,service, input_instructions:dict):
         if service not in self.__avaliableServicesWithInput:
-            raise ArqError("Servicio de arquitectura no existe o no admite instrucciones",101)
+            raise ArqError("Servicio de arquitectura no existe o no admite instrucciones")
         return self.__avaliableServicesWithInput[service].read_input_instruccions(input_instructions)
     
     def __validateInput(self,raw_input:dict)->dict:
@@ -74,13 +74,13 @@ class NormalizeSelector:
         try:
             filtered_input =  { av_key: raw_input[av_key] for av_key in avaliableKeys }
             if (not isinstance(filtered_input['args'],List)) or (not isinstance(filtered_input['kwargs'],List)):
-                raise ArqError("Los argumentos no traen el formato correcto",101)
+                raise ArqError("Los argumentos no traen el formato correcto")
             self.__logger.info("La entrada es válida")
             return filtered_input
         except ArqError as arqe:
             raise arqe
         except Exception as e:
-            raise ArqError("La entrada no cumple los requisitos, revisar:"+str(e), 101)
+            raise ArqError("La entrada no cumple los requisitos, revisar:"+str(e))
     
     def __validateheaders(self,raw_headers):
         """
@@ -95,7 +95,7 @@ class NormalizeSelector:
         except ArqError as arqe:
             raise arqe
         except Exception as e:
-            raise ArqError("Faltan cabeceras, revisar:"+str(e), 101)
+            raise ArqError("Faltan cabeceras, revisar:"+str(e))
         
     def __init_services(self, logger, config, security):
         # Servicio de logging

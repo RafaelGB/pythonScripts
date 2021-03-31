@@ -78,7 +78,7 @@ def method_wrapper(function):
             result = function(*args, **kwargs)
         except ArqError as arq_e:
             logger.exception("Error controlado - función %s",
-                         function.__name__, arq_e.code_message())
+                         function.__name__, arq_e.message())
 
         except Exception as e:
             logger.exception(

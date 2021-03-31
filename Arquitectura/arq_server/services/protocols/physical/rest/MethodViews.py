@@ -4,6 +4,7 @@ from threading import currentThread
 # Server
 from flask import make_response, jsonify, current_app, request
 from flask.views import MethodView
+from flask.wrappers import Response
 # Own
 from arq_server.services.protocols.physical.Common import arqCache
 from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
@@ -62,7 +63,7 @@ class ArchitectureApi(MethodView):
         """ run app """
         form, headers = self.__obtain_request()
         response_raw = self.normalizer.processInput(form, headers)
-        return make_response(jsonify(response_raw),self.__response_code(response_raw))
+        return self.__generate_response(response_raw)
 
     def put(self):
         """ substitute app info """
@@ -80,6 +81,11 @@ class ArchitectureApi(MethodView):
         rq = request.get_json()
         rq['metadata']=self.__metadata()
         return rq, request.headers
+
+    def __generate_response(self,response_raw:dict)-> Response:
+        response = make_response(jsonify(response_raw),self.__response_code(response_raw))
+        response.headers['Content-Type']='application/json; charset=utf-8'
+        return response
 
     def __response_code(self,response_raw):
         if 'error' in response_raw:

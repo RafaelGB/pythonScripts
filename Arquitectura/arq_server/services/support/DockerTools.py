@@ -70,7 +70,7 @@ class DockerTools(object):
             self.__logger.debug("el contenedor %s fué detenido",name)
             isStoped=True
         except NotFound as not_found_e:
-            raise ArqError(not_found_e.response,101)
+            raise ArqError(not_found_e.response)
         finally:
             return isStoped
 

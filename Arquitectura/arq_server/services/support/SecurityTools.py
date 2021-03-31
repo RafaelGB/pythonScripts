@@ -32,7 +32,7 @@ class Security(Base):
                 }
         except Exception as e:
             self.__logger.exception("Error obteniendo token del usuario %s",user)
-            raise ArqError("Error obteniendo token:"+str(e),101)
+            raise ArqError("Error obteniendo token:"+str(e))
     
     def validate_token(self,token,**kwargs):
         """
@@ -43,7 +43,7 @@ class Security(Base):
         try:
             payload = self.__obtainPayload(token)
             if 'sub' not in payload:
-                raise ArqError("El token no tiene asociado ningun usuario",101)
+                raise ArqError("El token no tiene asociado ningun usuario")
             user = self.__obtainUser(payload['sub'])
             self.__validate_auth_token(token,user.password_hashed)
         except ArqError as arqE:
@@ -54,7 +54,7 @@ class Security(Base):
         try:
             return jwt.decode(token, options={"verify_signature": False})
         except Exception as e:
-            raise ArqError("Ha habido un problema obteniendo el payload del token:"+str(e),101)
+            raise ArqError("Ha habido un problema obteniendo el payload del token:"+str(e))
 
     def __obtainUser(self,nickname):
         """
@@ -73,9 +73,17 @@ class Security(Base):
         Generates the Auth Token
         :return: string
         """
+        filterConf="jwt.token.ttl."
+        def callback(elem): return elem.startswith(filterConf)
+        ttl_token_conf = self.__config.getFilteredGroupOfProperties("security",callback)
         try:
             payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=5),
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(
+                    days=int(ttl_token_conf[filterConf+'days']),
+                    hours=int(ttl_token_conf[filterConf+'hours']),
+                    minutes=int(ttl_token_conf[filterConf+'minutes']),
+                    seconds=int(ttl_token_conf[filterConf+'seconds'])
+                    ),
                 'iat': datetime.datetime.utcnow(),
                 'sub': user_id
             }
@@ -95,9 +103,9 @@ class Security(Base):
             payload = jwt.decode(token, secret_key,algorithms=["HS256"])
             return payload
         except jwt.ExpiredSignatureError as expired:
-            raise ArqError('El token ya ha expirado. Requiere renovación'+str(expired),101)
+            raise ArqError('El token ya ha expirado. Requiere renovación'+str(expired))
         except jwt.InvalidTokenError as invalid:
-            raise ArqError('Credenciales incorrectas para el token'+str(invalid),101)
+            raise ArqError('Credenciales incorrectas para el token'+str(invalid))
 
 
     def __init__(self,core,data, *args, **kwargs):

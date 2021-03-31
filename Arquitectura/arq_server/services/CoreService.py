@@ -147,9 +147,9 @@ class Base:
                 **self.__parse_kwargs_instructions(instructions.pop('kwargs'))
             )
         except AttributeError as attError:
-            raise ArqError("La acción "+instructions["action"]+" no está contemplada",102,traceback=attError)
+            raise ArqError("La acción "+instructions["action"]+" no está contemplada")
         except TypeError as tpError:
-            raise ArqError("Los argumentos de entrada no son correctos (sobran o faltan)",103,traceback=tpError)
+            raise ArqError("Los argumentos de entrada no son correctos (sobran o faltan)")
         instructions["output_instructions"]=result
         return instructions
 
@@ -258,7 +258,7 @@ class Configuration(Base):
         
         if not path.exists(credentials_path):
             self.__logger.error("La ruta '%s' no existe! Parando el arranque",credentials_path)
-            raise ArqError("Fichero de credenciales no existe",201)
+            raise ArqError("Fichero de credenciales no existe")
         else:
             credentialsMap.read(credentials_path)
             self.__allModulesConfDict = self.__getConfFromGit(credentialsMap)
