@@ -14,7 +14,7 @@ from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Metadata import Metadata
 
 class DockerTools(object):
-    __isEnabled:bool = eval(Metadata.getInfo()['enabled.modules']['docker'])
+    __isEnabled:bool = True
     __logger: logging.Logger
     __config: Configuration
 

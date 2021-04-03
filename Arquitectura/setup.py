@@ -27,7 +27,7 @@ setup(
     packages=find_packages(),
     install_requires=[
           'markdown==3.2.1',
-          'dependency-injector==4.5.4',
+          'dependency-injector==4.31.2',
           'Flask==1.1.2',
           'Flask-Caching==1.9.0',
           'pylint==2.6.0',

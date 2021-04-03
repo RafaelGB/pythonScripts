@@ -11,6 +11,9 @@ from arq_server.services.data_access.relational.RelationalService import Relatio
 
 class DataService(containers.DeclarativeContainer):
     """Application IoC container."""
+    # Configuration
+    config = providers.Configuration()
+    
     core = providers.Dependency()
     # Services
     cache_tools = providers.Singleton(

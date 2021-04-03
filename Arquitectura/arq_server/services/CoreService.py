@@ -26,6 +26,7 @@ parserDict={
     'eval':eval,
     'str': str
 }
+
 class ContextFilter(logging.Filter):
     """
     Filtro que aplica los filtros deseados al log
@@ -46,14 +47,18 @@ class Logger:
     Servicio para ofrecer logging centralizado al resto de servicios y aplicaciones
     """
     isCustomCOnf: bool
-    def __init__(self):
-        main_path = path.realpath(sys.argv[0]) if sys.argv[0] else '.'
-        parent_path = Path(main_path).parent
-        logger_path = (parent_path / "resources/logger_conf.json").resolve()
-        self.__setup_logging(default_path=logger_path)
-        self.__logger = logging.getLogger("arquitecture")
-
+    def __init__(self,logger_config):
+        log_conf_path='' # Ruta absoluta hacia el fichero de configuración
+        if 'log_conf_path' not in logger_config:
+            # Por defecto se busca la config en la __main__/resources/logger_conf.json
+            main_path = path.realpath(sys.argv[0]) if sys.argv[0] else '.'
+            parent_path = Path(main_path).parent
+            log_conf_path = (parent_path / "resources/logger_conf.json").resolve()
+        else:
+            log_conf_path=logger_config['log_conf_path']
+        self.__setup_logging(default_path=log_conf_path)
         self.generate_context()
+        self.__logger = self.arqLogger()
         if(self.isCustomCOnf):
             self.__logger.debug("Se detectó configuración de logging custom - Configuración utilizada:%s",self.file_path)
         else:
@@ -106,7 +111,8 @@ class Logger:
         Setup logging configuration
         """
         custom_path = Path((sys.modules['__main__'].__file__)).parent
-        custom_path = path.join(custom_path, "resources/").join("logger_conf.json")
+        custom_path = path.join(custom_path, "resources/")
+        custom_path = path.join(custom_path, "logger_conf.json")
         if path.exists(custom_path):
             self.file_path = custom_path
             self.isCustomCOnf = True
@@ -168,12 +174,13 @@ class Configuration(Base):
     __const:Const
     __logger:logging.Logger
     __allModulesConfDict : Dict
-    def __init__(self,logger,const):
+    def __init__(self,logger,const,configuration_config):
         self.__init_services(logger,const)
         self.__logger.info("INI - servicio de Configuración")
-
-        parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
-        self.__init_conf(parent_path,"credentials.cfg")
+        try:
+            self.__init_conf(configuration_config['github'])
+        except Exception as ex:
+            raise ArqError("Error: no se han definido las credenciales para recuperar la configuración")
         self.__logger.info("FIN - servicio de Configuración")
     
     @cached(cache=TTLCache(maxsize=1024, ttl=600))
@@ -247,39 +254,29 @@ class Configuration(Base):
         self.__logger = logger.arqLogger()
         self.__const = const
     
-    def __init_conf(self,basepath,credentialsPath):
+    def __init_conf(self,credentialsPath):
         """
         Dado un fichero de credenciales, recupera configuración de un repositorio git
         """
-        credentialsMap = configparser.ConfigParser()
-        resources_path = path.join(basepath, "resources/")
-        credentials_path = path.join(resources_path, credentialsPath)
-        self.__logger.info("conf general obtenida de '%s'",credentials_path)
-        
-        if not path.exists(credentials_path):
-            self.__logger.error("La ruta '%s' no existe! Parando el arranque",credentials_path)
-            raise ArqError("Fichero de credenciales no existe")
-        else:
-            credentialsMap.read(credentials_path)
-            self.__allModulesConfDict = self.__getConfFromGit(credentialsMap)
+        self.__allModulesConfDict = self.__getConfFromGit(credentialsPath)
 
     def __getConfFromGit(self,credentials) -> dict:
         """
         Recupera configuración de un repositorio git
         """ 
-        self.__logger.info("Obteniendo configuracion con perfil %s en git",credentials['github']['profile'])
+        self.__logger.info("Obteniendo configuracion con perfil %s en git",credentials['profile'])
         confDict={}
-        content= credentials['github']['content_url']+credentials['github']['profile']
-        filelist=request(content,headers={'Authorization':'Token '+credentials['github']['config_token']})
+        content= credentials['content_url']+credentials['profile']
+        filelist=request(content,headers={'Authorization':'Token '+credentials['config_token']})
         for hit in json.loads(filelist.text):
             self.__logger.info("Fichero '%s' obtenido",hit["name"])
             funcConf=configparser.ConfigParser()
             urlFile=self.__generate_git_file_url(
-                credentials['github']['user'],
-                credentials['github']['repo'],
-                credentials['github']['branch'],
+                credentials['user'],
+                credentials['repo'],
+                credentials['branch'],
                 hit['path'])
-            response=request(urlFile,headers={'Authorization':'Token '+credentials['github']['config_token']})
+            response=request(urlFile,headers={'Authorization':'Token '+credentials['config_token']})
             funcConf.read_string(response.text)
             confDict[hit["name"][:hit["name"].index(".")]]=funcConf
         return confDict
@@ -308,13 +305,10 @@ Inversion of control section
 """ 
 class CoreService(containers.DeclarativeContainer):
     """Application IoC container."""
-
-    # Gateways
-
-    #database_client = providers.Singleton(sqlite3.connect, config.database.dsn)
-
+    # Configuration
+    config = providers.Configuration()
     # Services
-    logger_service = providers.Singleton(Logger)
+    logger_service = providers.Singleton(Logger,logger_config=config.logger)
     constants = providers.Singleton(Const)
 
     base_service = providers.Singleton(
@@ -326,7 +320,8 @@ class CoreService(containers.DeclarativeContainer):
     config_service = providers.Singleton(
         Configuration,
         const=constants,
-        logger=logger_service
+        logger=logger_service,
+        configuration_config=config.configuration
     )
 
 def request(url: str, params:dict = {},headers:dict = {}):

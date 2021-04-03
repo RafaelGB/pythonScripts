@@ -13,6 +13,17 @@
             "justMyCode": false
         },
         {
+            "name": "Python: TDD Arquitectura",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "pythonArgs": [
+                "-m pytest"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python: fichero de arranque",
             "type": "python",
             "request": "launch",

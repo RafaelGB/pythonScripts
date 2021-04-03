@@ -1,5 +1,6 @@
 # Filesystem
 import logging
+from typing import Any, List
 
 # Database
 from sqlalchemy import  create_engine
@@ -33,9 +34,19 @@ class DbSQL:
         self.__init_schema()
     
     def select_items_filtering_by(self,item_class,**kwargs) -> list:
+        # select * from item_class where **kwargs
         with self.__session_maker() as session:
-            result = session.query(item_class).filter_by(**kwargs)
+            result:List[item_class] = session.query(item_class).filter_by(**kwargs)
             return result.all()
+    
+    def select_unique_item_filtering_by(self,item_class,**kwargs) -> Any:
+        # select * from item_class where **kwargs (resultado único obligado)
+        with self.__session_maker() as session:
+            result:List[item_class] = session.query(item_class).filter_by(**kwargs)
+            if len(result) == 0:
+                return result.pop(0)
+            else:
+                return None
 
     def add_item(self,item):
         """
