@@ -35,8 +35,8 @@
     "python.linting.pylintEnabled": true,
     "python.linting.pylintUseMinimalCheckers": false,
     "python.venvPath": "/Users/rafaelgomezbermejo/Environments",
-    "terminal.external.osxExec":"Rossetta_Terminal.app",
     "terminal.integrated.shell.osx": "/bin/zsh",
     "python.languageServer": "Pylance",
     "terminal.explorerKind": "external",
+    "python.testing.pytestEnabled": true
 }

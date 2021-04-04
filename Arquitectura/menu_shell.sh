@@ -11,6 +11,9 @@ local_install_arq(){
     pip uninstall architecture-tools-RafaelGB
     pip install dist/architecture-tools-RafaelGB-0.0.10.tar.gz
 }
+run_general_test(){
+    pytest --rootdir /Users/rafaelgomezbermejo/Repositorios/pythonScripts/Arquitectura/tdd -v  tdd/tdd_main.py
+}
 # ----------------------------------
 # General Menu
 # ----------------------------------
@@ -29,6 +32,7 @@ do
             ;;
         "Run general TEST")
             echo "you chose choice $REPLY which is $opt"
+            run_general_test
             ;;
         "Quit")
             break

@@ -9,23 +9,12 @@ from arq_server.services.CoreService import Configuration, Logger, Const
 from arq_server.services.data_access.relational.DatabaseSQL import DbSQL
 from tdd.containers.TestingContainer import TestingContainer
 
-"""
-# TYPE HINTS public Tools
-        dockerTools: DockerTools
-        osTools: FileSystemTools
-        cacheTools: RedisTools
-        concurrentTools : ConcurrentTools
-        stadisticsTools : StatisticsTools
-        dashTools : DashTools
-        restTools : APIRestTools
-        sqlTools : DbSQL
-"""
 class TestingArq(object):
     __container:DeclarativeContainer
 
     def __init__(self,**kwargs):
         confif_path = os.environ['config_path_file']
-        self.__container = TestingContainer()
+        self.__container:TestingContainer = TestingContainer()
         self.__container.init_resources()
         self.__container.config.from_yaml(confif_path,required=True)
         self.__container.wire(modules=[sys.modules[__name__]])
@@ -40,4 +29,13 @@ class TestingArq(object):
         return self.__container.core_service().config_service()
     
     def get_sql_service(self) -> DbSQL:
-        return self.__container.data_service().relational_tools().db_sql()
+        sqldb = None
+        try:
+            sqldb = self.__container.data_service.relational_tools().db_sql()
+            return sqldb
+        except Exception as e:
+            raise e
+
+if __name__ == "__main__":
+    arq = TestingArq()
+    sql_service = arq.get_sql_service()

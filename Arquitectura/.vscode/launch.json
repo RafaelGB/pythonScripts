@@ -13,15 +13,13 @@
             "justMyCode": false
         },
         {
-            "name": "Python: TDD Arquitectura",
+            "name": "Python: TDD arquitectura",
             "type": "python",
             "request": "launch",
             "module": "pytest",
-            "pythonArgs": [
-                "-m pytest"
-            ],
-            "console": "integratedTerminal",
-            "justMyCode": false
+            "args": [
+                "--rootdir ${workspaceFolder}/tdd"
+            ]
         },
         {
             "name": "Python: fichero de arranque",

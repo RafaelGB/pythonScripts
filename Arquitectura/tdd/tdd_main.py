@@ -15,7 +15,7 @@ def monkeysession(request):
 	# Mockea variables de entorno en el scope fixture
     from _pytest.monkeypatch import MonkeyPatch
     mpatch = MonkeyPatch()
-    mpatch.setenv('config_path_file', '/Users/rafaelgomezbermejo/Repositorios/pythonScripts/Arquitectura/tdd/resources/config.yml')
+    mpatch.setenv('config_path_file', '/Users/rafaelgomezbermejo/Repositorios/pythonScripts/Arquitectura/arq_server/resources/config.yml')
     yield mpatch
     mpatch.undo()
 
@@ -50,5 +50,5 @@ def test_config_service(shared_arq_instance:TestingArq):
 
 def test_sql_service(shared_arq_instance:TestingArq):
 	sql_service = shared_arq_instance.get_sql_service()
-	sql_service.select_items_filtering_by(User,)
-	assert property is not None
+	user:User = sql_service.select_items_filtering_by(User,nickname="RafaGB")
+	assert user.nickname=="RafaGB"
