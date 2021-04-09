@@ -1,4 +1,8 @@
 """Example of dependency injection in Python."""
+# Base
+import os
+import sys
+# Dependecies
 from dependency_injector import containers, providers
 # own
 from arq_server.services.CoreService import CoreService
@@ -27,5 +31,15 @@ class ArqContainer(containers.DeclarativeContainer):
     # Protocols
     protocols_service = ProtocolsService(core=core_service,cross=utils_service)
     
-    
+
+class BaseContainerDecorator(object):
+    _container:ArqContainer
+
+    def __init__(self,**kwargs):
+        config_path = os.environ['config_path_file']
+        self._container:ArqContainer = ArqContainer()
+        self._container.init_resources()
+        self._container.config.from_yaml(config_path,required=True)
+        self._container.wire(modules=[sys.modules[__name__]])
+
 

@@ -8,8 +8,9 @@ generate_new_dist(){
 }
 
 local_install_arq(){
-    pip uninstall architecture-tools-RafaelGB
+    pip uninstall -y architecture-tools-RafaelGB
     pip install dist/architecture-tools-RafaelGB-0.0.10.tar.gz
+    break
 }
 run_general_test(){
     pytest --rootdir /Users/rafaelgomezbermejo/Repositorios/pythonScripts/Arquitectura/tdd -v  tdd/tdd_main.py

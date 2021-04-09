@@ -38,5 +38,6 @@
     "terminal.integrated.shell.osx": "/bin/zsh",
     "python.languageServer": "Pylance",
     "terminal.explorerKind": "external",
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "pythonTestExplorer.testFramework": "pytest"
 }

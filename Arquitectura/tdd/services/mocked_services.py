@@ -13,10 +13,10 @@ class TestingArq(object):
     __container:DeclarativeContainer
 
     def __init__(self,**kwargs):
-        confif_path = os.environ['config_path_file']
+        config_path = os.environ['config_path_file']
         self.__container:TestingContainer = TestingContainer()
         self.__container.init_resources()
-        self.__container.config.from_yaml(confif_path,required=True)
+        self.__container.config.from_yaml(config_path,required=True)
         self.__container.wire(modules=[sys.modules[__name__]])
 
     def config_container(self) -> di_Configuration:
@@ -31,7 +31,8 @@ class TestingArq(object):
     def get_sql_service(self) -> DbSQL:
         sqldb = None
         try:
-            sqldb = self.__container.data_service.relational_tools().db_sql()
+            sqldb = self.__container.data_service
+            print(sqldb)
             return sqldb
         except Exception as e:
             raise e

@@ -87,7 +87,9 @@ class Logger:
         return arqLogger
 
     def appLogger(self):
-        return logging.getLogger("app")
+        appLogger = logging.getLogger("app")
+        appLogger.addFilter(ContextFilter())
+        return appLogger
 
     def testingLogger(self):
         return logging.getLogger("testing")

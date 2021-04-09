@@ -25,6 +25,7 @@
             "name": "Python: fichero de arranque",
             "type": "python",
             "request": "launch",
+            "envFile": "${workspaceFolder}/.env",
             "program": "${workspaceFolder}/arq_server/test.py",
             "console": "integratedTerminal",
             "justMyCode": false
