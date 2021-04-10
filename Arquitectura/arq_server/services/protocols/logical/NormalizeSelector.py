@@ -45,12 +45,12 @@ class NormalizeSelector:
             context = input.pop('context')
             service = input.pop('service')
             metadata = input.pop('metadata')
-            if service not in ['security']:
-                filtered_headers=self.__validateheaders(headers) # Si faltan cabeceras, salta excepción
+            filtered_headers=self.__filterHeaders(headers,service) # Si faltan cabeceras, salta excepción
+            if service not in self.__config.getProperty('logical','publicServices').split(','):
                 self.__security.validate_token(filtered_headers['token']) # Valida token para los servicios protegidos
             self.__logger.info("Contexto: %s",context)
             if context == 'arq':
-                output['response']=self.__arq_instructions(service,input)
+                output['response']=self.__arq_instructions(service,input,**filtered_headers)
             else:
                 raise ArqError("contexto no válido")
             
@@ -59,10 +59,10 @@ class NormalizeSelector:
             output['error']=arqErr.normalize_exception()
         return output
     
-    def __arq_instructions(self,service, input_instructions:dict):
+    def __arq_instructions(self,service, input_instructions:dict,**kwargs):
         if service not in self.__avaliableServicesWithInput:
             raise ArqError("Servicio de arquitectura no existe o no admite instrucciones")
-        return self.__avaliableServicesWithInput[service].read_input_instruccions(input_instructions)
+        return self.__avaliableServicesWithInput[service].read_input_instruccions(input_instructions,**kwargs)
     
     def __validateInput(self,raw_input:dict)->dict:
         """
@@ -82,13 +82,17 @@ class NormalizeSelector:
         except Exception as e:
             raise ArqError("La entrada no cumple los requisitos, revisar:"+str(e))
     
-    def __validateheaders(self,raw_headers):
+    def __filterHeaders(self,raw_headers,service):
         """
         Comprueba que las cabeceras contiene las claves configuradas. Descarta excesos
         ---
         Devuelve el diccionario de cabeceras filtrado
         """
-        avaliableHeaders = self.__config.getProperty('logical','avaliableHeaders').split(',')
+        service_headers= self.__config.getProperty('logical',service+'.avaliableHeaders')
+        if service_headers is None:
+            service_headers = self.__config.getProperty('logical','__default.avaliableHeaders')
+        avaliableHeaders = service_headers.split(',')
+        # TODO pensar como gestionar diferentes cabeceras en funcion del servicio entrante
         try:
             filtered_headers =  { av_key: raw_headers[av_key] for av_key in avaliableHeaders }
             return filtered_headers

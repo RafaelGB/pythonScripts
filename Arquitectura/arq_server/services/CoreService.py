@@ -145,14 +145,14 @@ class Base:
         self.__logger = logger.arqLogger()
         self.__const = const
 
-    def read_input_instruccions(self,instructions:dict)->dict:
+    def read_input_instruccions(self,instructions:dict,**kwargs)->dict:
         try:
             result = getattr(
                 self,
                 instructions.pop("action")
             )(
                 *instructions.pop("args"),
-                **self.__parse_kwargs_instructions(instructions.pop('kwargs'))
+                **self.__parse_kwargs_instructions(instructions.pop('kwargs'),**kwargs)
             )
         except AttributeError as attError:
             raise ArqError("La acción "+instructions["action"]+" no está contemplada")
@@ -161,10 +161,11 @@ class Base:
         instructions["output_instructions"]=result
         return instructions
 
-    def __parse_kwargs_instructions(self,kwargs_instructions:list):
+    def __parse_kwargs_instructions(self,kwargs_instructions:list,**kwargs):
         parsed_kwargs={}
         for hit in kwargs_instructions:
             parsed_kwargs[hit['key']]=parserDict[hit['type']](hit['value'])
+        parsed_kwargs.update(kwargs)
         return parsed_kwargs
 
 class Configuration(Base):
@@ -186,7 +187,7 @@ class Configuration(Base):
         self.__logger.info("FIN - servicio de Configuración")
     
     @cached(cache=TTLCache(maxsize=1024, ttl=600))
-    def getProperty(self, group, key, parseType=str,confKey="arq") -> Any:
+    def getProperty(self, group, key, parseType=str,confKey="arq", **kwargs) -> Any:
         """
         Obtener propiedad en función del grupo y la clave ( usando cache )
         """
@@ -204,7 +205,7 @@ class Configuration(Base):
             self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
 
-    def getPropertyVerbose(self, group, key, parseType=str,confKey="arq") -> Any:
+    def getPropertyVerbose(self, group, key, parseType=str,confKey="arq", **kwargs) -> Any:
         """
         Obtener propiedad en función del grupo y la clave ( sin usar cache )
         """
@@ -222,7 +223,7 @@ class Configuration(Base):
             self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
 
-    def getPropertyDefault(self, group, key, defaultValue:Any,parseType=str,confKey="arq") -> Any:
+    def getPropertyDefault(self, group, key, defaultValue:Any,parseType=str,confKey="arq", **kwargs) -> Any:
         """
         Obtener propiedad en función del grupo y la clave.
         En caso de no existir, define un valor por defecto
@@ -230,7 +231,7 @@ class Configuration(Base):
         propertyValue = self.getProperty(group,key,parseType=parseType,confKey=confKey)
         return (propertyValue, defaultValue)[propertyValue == None]
     
-    def getGroupOfProperties(self,group_name,confKey="arq"):
+    def getGroupOfProperties(self,group_name,confKey="arq", **kwargs):
         """
         Devuelve un grupo de propiedades.
         En caso de no existir devuelve 'None'
@@ -241,7 +242,7 @@ class Configuration(Base):
             self.__logger.error("El grupo '%s' no está definido en configuración", group_name)
             return None
 
-    def getFilteredGroupOfProperties(self, group_name, callback,confKey="arq"):
+    def getFilteredGroupOfProperties(self, group_name, callback,confKey="arq", **kwargs):
         """
         Devuelve un grupo de propiedades filtradas en función de la condición impuesta por parámetro
         """

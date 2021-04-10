@@ -8,6 +8,7 @@ from flask import make_response, jsonify
 # Own
 from arq_decorators.arq_decorator import ArqToolsTemplate
 
+from arq_server.services.data_access.relational.models.Client import Client
 from arq_server.services.data_access.relational.models.User import User
 
 class MiApp(ArqToolsTemplate):
@@ -76,8 +77,11 @@ class SQLPrueba(ArqToolsTemplate):
     def __init__(self, *args, **kwargs):
         super().__init__(self.__class__.__name__, *args, **kwargs)
     def prueba(self):
-        self.logger.info("prueba")
+        self.sqlTools.open_session()
+        adminUser = User("RafaelGB","password")
+        self.sqlTools.add_item(adminUser)
+        self.sqlTools.commit_current_session()
 
 if __name__ == "__main__":
     prueba = SQLPrueba()
-    prueba.prueba()
+    #prueba.prueba()

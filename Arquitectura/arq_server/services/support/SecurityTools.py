@@ -2,6 +2,7 @@
 import jwt
 # system
 import logging
+import base64
 import datetime
 from typing import List
 # Own
@@ -16,19 +17,24 @@ class Security(Base):
     __config: Configuration
     __data: DbSQL
 
-    def obtain_token(self,user, password,**kwargs):
+    def obtain_token(self,**kwargs):
         """
         Obtención de un token de seguridad en función del usuario
         ---
         Funcion preparada para llamada por instrucción
         """
         try:
-            user = self.__obtainUser(user)
+            if 'Authorization' not in kwargs:
+                raise Exception("Petición sin autorización")
+
+            authorization:str = kwargs['Authorization']
+            username,password = self.__decode_basic_auth(authorization)
+            user = self.__obtainUser(username)
             if not user.check_password(password):
                 raise Exception("Credenciales incorrectas")       
 
             return {
-                'token' : self.__encode_auth_token(user.nickname,user.password_hashed)
+                'token' : self.__encode_auth_token(user.username,user.password)
                 }
         except Exception as e:
             self.__logger.exception("Error obteniendo token del usuario %s",user)
@@ -45,7 +51,7 @@ class Security(Base):
             if 'sub' not in payload:
                 raise ArqError("El token no tiene asociado ningun usuario")
             user = self.__obtainUser(payload['sub'])
-            self.__validate_auth_token(token,user.password_hashed)
+            self.__validate_auth_token(token,user.password)
         except ArqError as arqE:
             # Excepciones ya controladas
             raise arqE
@@ -56,16 +62,22 @@ class Security(Base):
         except Exception as e:
             raise ArqError("Ha habido un problema obteniendo el payload del token:"+str(e))
 
-    def __obtainUser(self,nickname):
+    def __decode_basic_auth(self,authorization:str):
+        auth:str = authorization.split(" ")[1]
+        message_bytes = base64.b64decode(auth)
+        plain_auth = message_bytes.decode('utf8')
+        result = plain_auth.split(':')
+        return result[0],result[1]
+
+    def __obtainUser(self,username):
         """
-        Devuelve el usuario en función de su nickname
+        Devuelve el usuario en función de su username
         ---
         En caso de no encontrarse, se lanza una excepción
         """
-        result:List[User]=self.__data.select_items_filtering_by(User,nickname=nickname)
-        if len(result)==0:
+        user:User=self.__data.select_unique_item_filtering_by(User,username=username)
+        if user is None:
             raise Exception("Usuario no encontrado")
-        user = result[0]
         return user
     
     def __encode_auth_token(self,user_id,secret_key):

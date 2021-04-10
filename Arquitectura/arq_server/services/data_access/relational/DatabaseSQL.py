@@ -42,11 +42,8 @@ class DbSQL:
     def select_unique_item_filtering_by(self,item_class,**kwargs) -> Any:
         # select * from item_class where **kwargs (resultado único obligado)
         with self.__session_maker() as session:
-            result:List[item_class] = session.query(item_class).filter_by(**kwargs)
-            if len(result) == 0:
-                return result.pop(0)
-            else:
-                return None
+            result = session.query(item_class).filter_by(**kwargs).first()
+            return result
 
     def add_item(self,item):
         """
@@ -106,6 +103,9 @@ class DbSQL:
         self.__logger.info("Inicializando los esquemas de la arquitectura en bbdd")
         # Importamos las tablas propias de la arquitectura
         from arq_server.services.data_access.relational.models.User import User
+        from arq_server.services.data_access.relational.models.Client import Client
+        from arq_server.services.data_access.relational.models.Grant import Grant
+        from arq_server.services.data_access.relational.models.Token import Token
         Base.metadata.create_all(bind=self.__engine)
         self.__current_session = None
         self.__logger.info("Esquemas inicializados")
