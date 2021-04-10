@@ -21,15 +21,15 @@ class ArqContainer(containers.DeclarativeContainer):
     # Base
     core_service = providers.Singleton(CoreService,config=config.core)
     # Factories
-    analytic_factories = AnalyticServerFactory(core=core_service)
+    #analytic_factories = AnalyticServerFactory(core=core_service)
     # Info
-    data_service = DataService(core=core_service,config=config.data)
+    data_service = providers.Singleton(DataService,core=core_service,config=config.data)
     # Cross
-    utils_service = UtilsService(core=core_service,data=data_service)
+    utils_service = providers.Singleton(UtilsService,core=core_service,data=data_service)
     # Services
-    analytic_service = AnalyticService(core=core_service,factories=analytic_factories)
+    #analytic_service = AnalyticService(core=core_service,factories=analytic_factories)
     # Protocols
-    protocols_service = ProtocolsService(core=core_service,cross=utils_service)
+    protocols_service = providers.Singleton(ProtocolsService,core=core_service,cross=utils_service)
     
 
 class BaseContainerDecorator(object):

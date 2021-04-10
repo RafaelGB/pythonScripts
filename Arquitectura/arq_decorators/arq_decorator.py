@@ -374,23 +374,21 @@ class ArqToolsTemplate:
     def __init_public_tools(self):
         # Core
         self.logger = self.__arq_container.core_service().logger_service().appLogger()
-        """
         # Analytics
-        self.stadisticsTools = ArqContainer.analytic_service.stadistics_tools()
-        self.dashTools = ArqContainer.analytic_factories.dash_tools()
+        #self.stadisticsTools = self.__arq_container.analytic_service.stadistics_tools()
+        #self.dashTools = self.__arq_container.analytic_factories.dash_tools()
 
         # Data
-        self.cacheTools = ArqContainer.data_service.cache_tools()
-        self.sqlTools = ArqContainer.data_service.relational_tools().db_sql()
+        self.cacheTools = self.__arq_container.data_service().cache_tools()
+        self.sqlTools = self.__arq_container.data_service().relational_tools().db_sql()
 
         # Utils
-        self.dockerTools = ArqContainer.utils_service.docker_tools()
-        self.osTools = ArqContainer.utils_service.file_system_tools()
-        self.concurrentTools = ArqContainer.utils_service.concurrent_tools()
+        self.dockerTools = self.__arq_container.utils_service().docker_tools()
+        self.osTools = self.__arq_container.utils_service().file_system_tools()
+        self.concurrentTools = self.__arq_container.utils_service().concurrent_tools()
 
         # Physical Protocols
-        self.restTools = ArqContainer.protocols_service.physical_protocol_services().rest_protocol_tools()
-        """
+        self.restTools = self.__arq_container.protocols_service().physical_protocol_services().rest_protocol_tools()
 
     # TESTING
     def __init_arq_test(self):
