@@ -1,7 +1,10 @@
 from dependency_injector import containers, providers
+# System
+from threading import currentThread
 # Server
 from flask import make_response, jsonify, current_app, request
 from flask.views import MethodView
+from flask.wrappers import Response
 # Own
 from arq_server.services.protocols.physical.Common import arqCache
 from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
@@ -50,6 +53,7 @@ class ArchitectureApi(MethodView):
         self.logger = current_app.logger
         current_app.loggerService.generate_context()
         self.view_name = view_name
+        self.logger.info("Generando nuevo contexto")
 
     def get(self):
         """ app info """
@@ -59,7 +63,7 @@ class ArchitectureApi(MethodView):
         """ run app """
         form, headers = self.__obtain_request()
         response_raw = self.normalizer.processInput(form, headers)
-        return make_response(jsonify(response_raw),self.__response_code(response_raw))
+        return self.__generate_response(response_raw)
 
     def put(self):
         """ substitute app info """
@@ -78,6 +82,11 @@ class ArchitectureApi(MethodView):
         rq['metadata']=self.__metadata()
         return rq, request.headers
 
+    def __generate_response(self,response_raw:dict)-> Response:
+        response = make_response(jsonify(response_raw),self.__response_code(response_raw))
+        response.headers['Content-Type']='application/json; charset=utf-8'
+        return response
+
     def __response_code(self,response_raw):
         if 'error' in response_raw:
             return self.ARQ_ERROR_CODE
@@ -87,5 +96,6 @@ class ArchitectureApi(MethodView):
     def __metadata(self)->dict:
         return {
             'protocol':'rest',
-            'methodView':'architecture_api'
+            'methodView':'architecture_api',
+            'uuid': currentThread().__dict__['context']['uuid']
         }

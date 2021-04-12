@@ -1,33 +1,31 @@
+import traceback
+
 class ArqErrorMock(Exception):
    pass
 # define Python user-defined exceptions
 class ArqError(Exception):
    """Base class for other exceptions"""
-   def __init__(self,message, code,traceback=None):
+   def __init__(self,message,traceback=None):
         super().__init__(message)
-        self.code:int = code
+        self.__customTraceback=traceback
 
    def normalize_exception(self)->dict:
       verboseException = {}
-      verboseException['message']= self.code_message()
-      verboseException['traceback']= str(self)
+      verboseException['message']= self.message()
+      if self.__customTraceback is None:
+         verboseException['traceback']= ''.join(
+            traceback.format_exception(
+               etype=type(self), 
+               value=self, 
+               tb=self.__traceback__
+               )
+            )
+      else:
+         verboseException['traceback']=self.__customTraceback
+
       return verboseException
 
-   def code_message(self) -> str:
-      if self.code in ArqErrorInfo:
-         return str(ArqErrorInfo[self.code]["esp"])
-      return "##ERROR## Código de error no válido"
+   def message(self) -> str:
+      return str(self)
 
 
-ArqErrorInfo = {
-   101:{
-      "esp":"Error no controlado: ¡algo malo ocurrió!"
-   },
-   102:{
-      "esp":"Servicio de arquitectura no existe o no admite instrucciones"
-   },
-   # Errores relacionados con ficheros
-   201:{
-      "esp":"Credenciales no encontradas"
-   }
-}

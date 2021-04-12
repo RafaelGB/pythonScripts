@@ -15,17 +15,13 @@ def method_wrapper(function):
 
     @wraps(function)
     def wrapper(*args, **kwargs):
-        code_error=None
         error_type=None
-        if 'code_error' in kwargs:
-            code_error = int(kwargs['code_error'])
-
         if 'error_type' in kwargs:
             error_type = kwargs['error_type']
         try:
             result = function(*args, **kwargs)
         except error_type as own_e:
-            raise ArqError(own_e,code_error)
+            raise ArqError(own_e)
         except Exception as e:
             raise e
         return result

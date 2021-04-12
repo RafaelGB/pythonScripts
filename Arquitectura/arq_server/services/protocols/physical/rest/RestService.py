@@ -77,9 +77,13 @@ class APIRestTools:
     MÉTODOS PRIVADOS
     """
     def __start_server(self,loggerService=None):
+        """
+        Configuración y arranque del servidor Flask
+        """
         self.server.normalizer=self.__normalizer
         self.server.loggerService=loggerService
         self.server.logger=self.__logger
+        self.server.config['JSON_AS_ASCII'] = False
         self.server.run(debug=False)
 
     def __selectMethod(self, alias):

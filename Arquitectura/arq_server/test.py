@@ -6,8 +6,10 @@ import time
 
 from flask import make_response, jsonify
 # Own
-from arq_decorators.arq_decorator import ArqToolsTemplate,transactional
+from arq_decorators.arq_decorator import ArqToolsTemplate
 
+from arq_server.services.CoreService import Base
+from arq_server.services.data_access.relational.models.Client import Client
 from arq_server.services.data_access.relational.models.User import User
 
 class MiApp(ArqToolsTemplate):
@@ -75,14 +77,21 @@ class SQLPrueba(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error
     def __init__(self, *args, **kwargs):
         super().__init__(self.__class__.__name__, *args, **kwargs)
-    
-    @transactional
-    def addUser(self):
-        result:List[User]=self.sqlTools.select_items_filtering_by(User,nickname="RafaGB")
-        if len(result) == 0:
-            self.sqlTools.add_item(User("RafaGB","adminPassword",fullname="rafaelgomezbermejo"))
+        
+    def prueba(self):
+        self.logger.info("primera clase!")
 
+class Calculadora(ArqToolsTemplate,Base):
+    # declaro servicios propios del decorador para evitar que el lint indique error
+    def __init__(self, *args, **kwargs):
+        super().__init__(self.__class__.__name__, *args, **kwargs)
+        self.expose_app(self)
+        
+    def sum(self,a,b,**kwargs):
+        return a+b
+        
 
 if __name__ == "__main__":
     prueba = SQLPrueba()
-    prueba.addUser()
+    prueba.prueba()
+    prueba2 = Calculadora()

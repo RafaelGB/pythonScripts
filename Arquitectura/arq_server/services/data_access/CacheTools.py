@@ -21,7 +21,7 @@ def method_wrapper(function):
         try:
             result = function(*args, **kwargs)
         except redis.RedisError as redis_e:
-            raise ArqError(redis_e, 201)
+            raise ArqError(redis_e)
         except Exception as e:
             raise e
         return result

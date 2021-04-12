@@ -26,6 +26,7 @@ parserDict={
     'eval':eval,
     'str': str
 }
+
 class ContextFilter(logging.Filter):
     """
     Filtro que aplica los filtros deseados al log
@@ -46,14 +47,18 @@ class Logger:
     Servicio para ofrecer logging centralizado al resto de servicios y aplicaciones
     """
     isCustomCOnf: bool
-    def __init__(self):
-        main_path = path.realpath(sys.argv[0]) if sys.argv[0] else '.'
-        parent_path = Path(main_path).parent
-        logger_path = (parent_path / "resources/logger_conf.json").resolve()
-        self.__setup_logging(default_path=logger_path)
-        self.__logger = logging.getLogger("arquitecture")
-
+    def __init__(self,logger_config):
+        log_conf_path='' # Ruta absoluta hacia el fichero de configuración
+        if 'log_conf_path' not in logger_config:
+            # Por defecto se busca la config en la __main__/resources/logger_conf.json
+            main_path = path.realpath(sys.argv[0]) if sys.argv[0] else '.'
+            parent_path = Path(main_path).parent
+            log_conf_path = (parent_path / "resources/logger_conf.json").resolve()
+        else:
+            log_conf_path=logger_config['log_conf_path']
+        self.__setup_logging(default_path=log_conf_path)
         self.generate_context()
+        self.__logger = self.arqLogger()
         if(self.isCustomCOnf):
             self.__logger.debug("Se detectó configuración de logging custom - Configuración utilizada:%s",self.file_path)
         else:
@@ -82,7 +87,9 @@ class Logger:
         return arqLogger
 
     def appLogger(self):
-        return logging.getLogger("app")
+        appLogger = logging.getLogger("app")
+        appLogger.addFilter(ContextFilter())
+        return appLogger
 
     def testingLogger(self):
         return logging.getLogger("testing")
@@ -106,7 +113,8 @@ class Logger:
         Setup logging configuration
         """
         custom_path = Path((sys.modules['__main__'].__file__)).parent
-        custom_path = path.join(custom_path, "resources/").join("logger_conf.json")
+        custom_path = path.join(custom_path, "resources/")
+        custom_path = path.join(custom_path, "logger_conf.json")
         if path.exists(custom_path):
             self.file_path = custom_path
             self.isCustomCOnf = True
@@ -125,38 +133,31 @@ class Base:
     """
     BASE
     ------
-    Funciones cross a todos los servicios
+    Funciones cross a todos los servicios. 
+    NO DEBE TENER SERVICIOS DEL CONTENEDOR 
     """
-    __const:Const
-    __logger:Logger
-    def __init__(self,logger,const) -> None:
-        self.__init_services(logger,const)
-    
-    def __init_services(self,logger,const):
-        # Servicio de logging
-        self.__logger = logger.arqLogger()
-        self.__const = const
 
-    def read_input_instruccions(self,instructions:dict)->dict:
+    def read_input_instruccions(self,instructions:dict,**kwargs)->dict:
         try:
             result = getattr(
                 self,
                 instructions.pop("action")
             )(
-                *instructions.pop("args"),
-                **self.__parse_kwargs_instructions(instructions.pop('kwargs'))
+                *instructions.pop("args"), # *args
+                **self.__parse_kwargs_instructions(instructions.pop('kwargs'),**kwargs) # **kwargs
             )
         except AttributeError as attError:
-            raise ArqError("La acción "+instructions["action"]+" no está contemplada",102,traceback=attError)
+            raise ArqError("La acción "+instructions["action"]+" no está contemplada")
         except TypeError as tpError:
-            raise ArqError("Los argumentos de entrada no son correctos (sobran o faltan)",103,traceback=tpError)
+            raise ArqError("Los argumentos de entrada no son correctos (sobran o faltan)")
         instructions["output_instructions"]=result
         return instructions
 
-    def __parse_kwargs_instructions(self,kwargs_instructions:list):
+    def __parse_kwargs_instructions(self,kwargs_instructions:list,**kwargs):
         parsed_kwargs={}
         for hit in kwargs_instructions:
             parsed_kwargs[hit['key']]=parserDict[hit['type']](hit['value'])
+        parsed_kwargs.update(kwargs)
         return parsed_kwargs
 
 class Configuration(Base):
@@ -168,16 +169,17 @@ class Configuration(Base):
     __const:Const
     __logger:logging.Logger
     __allModulesConfDict : Dict
-    def __init__(self,logger,const):
+    def __init__(self,logger,const,configuration_config):
         self.__init_services(logger,const)
         self.__logger.info("INI - servicio de Configuración")
-
-        parent_path = Path(path.dirname(path.abspath(sys.modules['__main__'].__file__)))
-        self.__init_conf(parent_path,"credentials.cfg")
+        try:
+            self.__init_conf(configuration_config['github'])
+        except Exception as ex:
+            raise ArqError("Error: no se han definido las credenciales para recuperar la configuración")
         self.__logger.info("FIN - servicio de Configuración")
     
     @cached(cache=TTLCache(maxsize=1024, ttl=600))
-    def getProperty(self, group, key, parseType=str,confKey="arq") -> Any:
+    def getProperty(self, group, key, parseType=str,confKey="arq", **kwargs) -> Any:
         """
         Obtener propiedad en función del grupo y la clave ( usando cache )
         """
@@ -194,8 +196,8 @@ class Configuration(Base):
         else:
             self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
-    
-    def getPropertyVerbose(self, group, key, parseType=str,confKey="arq") -> Any:
+
+    def getPropertyVerbose(self, group, key, parseType=str,confKey="arq", **kwargs) -> Any:
         """
         Obtener propiedad en función del grupo y la clave ( sin usar cache )
         """
@@ -213,7 +215,7 @@ class Configuration(Base):
             self.__logger.warn("El grupo '%s' no está definido en configuración", group)
             return None
 
-    def getPropertyDefault(self, group, key, defaultValue:Any,parseType=str,confKey="arq") -> Any:
+    def getPropertyDefault(self, group, key, defaultValue:Any,parseType=str,confKey="arq", **kwargs) -> Any:
         """
         Obtener propiedad en función del grupo y la clave.
         En caso de no existir, define un valor por defecto
@@ -221,7 +223,7 @@ class Configuration(Base):
         propertyValue = self.getProperty(group,key,parseType=parseType,confKey=confKey)
         return (propertyValue, defaultValue)[propertyValue == None]
     
-    def getGroupOfProperties(self,group_name,confKey="arq"):
+    def getGroupOfProperties(self,group_name,confKey="arq", **kwargs):
         """
         Devuelve un grupo de propiedades.
         En caso de no existir devuelve 'None'
@@ -232,7 +234,7 @@ class Configuration(Base):
             self.__logger.error("El grupo '%s' no está definido en configuración", group_name)
             return None
 
-    def getFilteredGroupOfProperties(self, group_name, callback,confKey="arq"):
+    def getFilteredGroupOfProperties(self, group_name, callback,confKey="arq", **kwargs):
         """
         Devuelve un grupo de propiedades filtradas en función de la condición impuesta por parámetro
         """
@@ -247,39 +249,29 @@ class Configuration(Base):
         self.__logger = logger.arqLogger()
         self.__const = const
     
-    def __init_conf(self,basepath,credentialsPath):
+    def __init_conf(self,credentialsPath):
         """
         Dado un fichero de credenciales, recupera configuración de un repositorio git
         """
-        credentialsMap = configparser.ConfigParser()
-        resources_path = path.join(basepath, "resources/")
-        credentials_path = path.join(resources_path, credentialsPath)
-        self.__logger.info("conf general obtenida de '%s'",credentials_path)
-        
-        if not path.exists(credentials_path):
-            self.__logger.error("La ruta '%s' no existe! Parando el arranque",credentials_path)
-            raise ArqError("Fichero de credenciales no existe",201)
-        else:
-            credentialsMap.read(credentials_path)
-            self.__allModulesConfDict = self.__getConfFromGit(credentialsMap)
+        self.__allModulesConfDict = self.__getConfFromGit(credentialsPath)
 
     def __getConfFromGit(self,credentials) -> dict:
         """
         Recupera configuración de un repositorio git
         """ 
-        self.__logger.info("Obteniendo configuracion con perfil %s en git",credentials['github']['profile'])
+        self.__logger.info("Obteniendo configuracion con perfil %s en git",credentials['profile'])
         confDict={}
-        content= credentials['github']['content_url']+credentials['github']['profile']
-        filelist=request(content,headers={'Authorization':'Token '+credentials['github']['config_token']})
+        content= credentials['content_url']+credentials['profile']
+        filelist=request(content,headers={'Authorization':'Token '+credentials['config_token']})
         for hit in json.loads(filelist.text):
             self.__logger.info("Fichero '%s' obtenido",hit["name"])
             funcConf=configparser.ConfigParser()
             urlFile=self.__generate_git_file_url(
-                credentials['github']['user'],
-                credentials['github']['repo'],
-                credentials['github']['branch'],
+                credentials['user'],
+                credentials['repo'],
+                credentials['branch'],
                 hit['path'])
-            response=request(urlFile,headers={'Authorization':'Token '+credentials['github']['config_token']})
+            response=request(urlFile,headers={'Authorization':'Token '+credentials['config_token']})
             funcConf.read_string(response.text)
             confDict[hit["name"][:hit["name"].index(".")]]=funcConf
         return confDict
@@ -308,25 +300,17 @@ Inversion of control section
 """ 
 class CoreService(containers.DeclarativeContainer):
     """Application IoC container."""
-
-    # Gateways
-
-    #database_client = providers.Singleton(sqlite3.connect, config.database.dsn)
-
+    # Configuration
+    config = providers.Configuration()
     # Services
-    logger_service = providers.Singleton(Logger)
+    logger_service = providers.Singleton(Logger,logger_config=config.logger)
     constants = providers.Singleton(Const)
-
-    base_service = providers.Singleton(
-        Base,
-        const=constants,
-        logger=logger_service
-    )
     
     config_service = providers.Singleton(
         Configuration,
         const=constants,
-        logger=logger_service
+        logger=logger_service,
+        configuration_config=config.configuration
     )
 
 def request(url: str, params:dict = {},headers:dict = {}):

@@ -8,14 +8,25 @@
             "name": "Python: PlayGround",
             "type": "python",
             "request": "launch",
+            "envFile": "${workspaceFolder}/.env",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false
         },
         {
+            "name": "Python: TDD arquitectura",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "--rootdir ${workspaceFolder}/tdd"
+            ]
+        },
+        {
             "name": "Python: fichero de arranque",
             "type": "python",
             "request": "launch",
+            "envFile": "${workspaceFolder}/.env",
             "program": "${workspaceFolder}/arq_server/test.py",
             "console": "integratedTerminal",
             "justMyCode": false
