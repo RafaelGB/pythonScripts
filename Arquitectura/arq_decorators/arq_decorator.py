@@ -1,11 +1,12 @@
 # Librerias nativas
-from arq_server.services.data_access.relational.RelationalService import RelationalService
 from os import path, environ
 from functools import wraps
 from inspect import isclass
 from pathlib import Path
 from logging.config import fileConfig
 
+# Injection
+from dependency_injector.wiring import inject, Provide
 
 # Testing
 import unittest
@@ -26,7 +27,7 @@ from datetime import datetime
 from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 from arq_server.containers.ArqContainer import BaseContainerDecorator, ArqContainer
-from arq_server.services.CoreService import Configuration
+from arq_server.services.CoreService import Configuration, Base
 # Analytics
 from arq_server.services.analytics.StadisticTools import StatisticsTools
 from arq_server.services.analytics.DashTools import DashTools
@@ -40,6 +41,8 @@ from arq_server.services.support.ConcurrentTools import ConcurrentTools
 from arq_server.services.support.SecurityTools import Security
 # Physical Protocols
 from arq_server.services.protocols.physical.rest.RestService import APIRestTools
+# Logical Protocols
+from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
 
 # def transactional(function):
 #     """
@@ -244,6 +247,15 @@ class ArqToolsTemplate:
         return self.__config.getPropertyDefault(group, property_key, default, parseType=parseType, confKey=self.app_name)
 
     """
+    ------------------
+    BEHAIVOR Functions
+    ------------------
+    """
+    def expose_app(self,appToExpose:object):
+        # Las funciones públicas de la clase hija quedan expuestas a llamadas por protocolos físicos
+        tmp_logical:NormalizeSelector=self.__arq_container.protocols_service().logical_protocol_services().normalize_selector_service()
+        tmp_logical.addAvaliableService(appToExpose)
+    """
     --------------
     TESTING
     --------------
@@ -294,6 +306,8 @@ class ArqToolsTemplate:
     """
 
     def __actions_on_init(self):
+        # Test en el arranque configurable
+        # TODO deprecado por pytest, remover a futuro!
         if self.__config.getProperty("flags", "init.test",parseType=eval):
             self.run_arq_test()
     """

@@ -4,6 +4,7 @@ import os
 import sys
 # Dependecies
 from dependency_injector import containers, providers
+from dependency_injector.wiring import inject, Provide
 # own
 from arq_server.services.CoreService import CoreService
 # Support
@@ -14,6 +15,8 @@ from arq_server.services.data_access.DataService import DataService
 from arq_server.services.analytics.AnalyticService import AnalyticService,AnalyticServerFactory
 # Protocols
 from arq_server.services.protocols.ProtocolsService import ProtocolsService
+
+ARQ_STARTED=False
 
 class ArqContainer(containers.DeclarativeContainer):
     # Configuration
@@ -31,15 +34,24 @@ class ArqContainer(containers.DeclarativeContainer):
     # Protocols
     protocols_service = providers.Singleton(ProtocolsService,core=core_service,cross=utils_service)
     
+@inject
+def load_started_arq(startedArq:ArqContainer = Provide[ArqContainer]):
+    return startedArq
 
 class BaseContainerDecorator(object):
     _container:ArqContainer
 
     def __init__(self,**kwargs):
-        config_path = os.environ['config_path_file']
-        self._container:ArqContainer = ArqContainer()
-        self._container.init_resources()
-        self._container.config.from_yaml(config_path,required=True)
-        self._container.wire(modules=[sys.modules[__name__]])
-
+        global ARQ_STARTED
+        if not ARQ_STARTED:
+            config_path = os.environ['config_path_file']
+            self._container:ArqContainer = ArqContainer()
+            self._container.init_resources()
+            self._container.config.from_yaml(config_path,required=True)
+            self._container.wire(modules=[sys.modules[__name__]])
+            ARQ_STARTED=True
+        else:
+            self._container=load_started_arq()
+        
+    
 

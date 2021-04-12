@@ -8,6 +8,7 @@
             "name": "Python: PlayGround",
             "type": "python",
             "request": "launch",
+            "envFile": "${workspaceFolder}/.env",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": false

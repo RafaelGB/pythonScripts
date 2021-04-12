@@ -133,17 +133,9 @@ class Base:
     """
     BASE
     ------
-    Funciones cross a todos los servicios
+    Funciones cross a todos los servicios. 
+    NO DEBE TENER SERVICIOS DEL CONTENEDOR 
     """
-    __const:Const
-    __logger:Logger
-    def __init__(self,logger,const) -> None:
-        self.__init_services(logger,const)
-    
-    def __init_services(self,logger,const):
-        # Servicio de logging
-        self.__logger = logger.arqLogger()
-        self.__const = const
 
     def read_input_instruccions(self,instructions:dict,**kwargs)->dict:
         try:
@@ -151,8 +143,8 @@ class Base:
                 self,
                 instructions.pop("action")
             )(
-                *instructions.pop("args"),
-                **self.__parse_kwargs_instructions(instructions.pop('kwargs'),**kwargs)
+                *instructions.pop("args"), # *args
+                **self.__parse_kwargs_instructions(instructions.pop('kwargs'),**kwargs) # **kwargs
             )
         except AttributeError as attError:
             raise ArqError("La acción "+instructions["action"]+" no está contemplada")
@@ -313,12 +305,6 @@ class CoreService(containers.DeclarativeContainer):
     # Services
     logger_service = providers.Singleton(Logger,logger_config=config.logger)
     constants = providers.Singleton(Const)
-
-    base_service = providers.Singleton(
-        Base,
-        const=constants,
-        logger=logger_service
-    )
     
     config_service = providers.Singleton(
         Configuration,

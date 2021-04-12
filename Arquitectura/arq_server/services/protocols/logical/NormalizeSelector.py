@@ -3,8 +3,9 @@ import logging
 from typing import List
 # Own
 from arq_server.base.ArqErrors import ArqError
-from arq_server.services.CoreService import Configuration
+from arq_server.services.CoreService import Configuration,Base
 from arq_server.services.support.SecurityTools import Security
+
 class NormalizeSelector:
     # Services TIPS
     __logger: logging.Logger
@@ -25,9 +26,16 @@ class NormalizeSelector:
 
         self.__logger.info("NormalizeSelector - lista de servicios que admiten instrucciones:\n"+str(self.__avaliableServicesWithInput.keys()))
     
-    def addAvaliableService(self,singletonService):
-        # TODO
-        pass
+    def addAvaliableService(self,singletonService:object):
+        try:
+            self.__avaliableServicesWithInput[singletonService.__class__.__name__]=singletonService
+            self.__logger.info("Nuevo servicio incluído:" \
+                + singletonService.__class__.__name__ \
+                + "Ahora estan expuestos los siguientes servicios:\n" \
+                + str(self.__avaliableServicesWithInput.keys())
+            )
+        except Exception as e:
+            raise ArqError("¡Error añadiendo un servicio nuevo a los ya expuestos! -> "+str(e))
 
     def processInput(self,input:dict, headers:dict)->dict:
         """
@@ -92,7 +100,6 @@ class NormalizeSelector:
         if service_headers is None:
             service_headers = self.__config.getProperty('logical','__default.avaliableHeaders')
         avaliableHeaders = service_headers.split(',')
-        # TODO pensar como gestionar diferentes cabeceras en funcion del servicio entrante
         try:
             filtered_headers =  { av_key: raw_headers[av_key] for av_key in avaliableHeaders }
             return filtered_headers
