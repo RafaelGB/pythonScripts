@@ -220,7 +220,6 @@ class ArqToolsTemplate:
         self.app_name: str = app_name
         self.__init_kwargs_attrs(*args, **kwargs)
         self.__init_public_tools()
-        self.__init_arq_test()
         self.__actions_on_init()
 
     """
@@ -252,52 +251,12 @@ class ArqToolsTemplate:
     ------------------
     """
     def expose_app(self,appToExpose:object):
-        # Las funciones públicas de la clase hija quedan expuestas a llamadas por protocolos físicos
+        """
+        Las funciones públicas de la clase pasada como parámetro
+        quedan expuestas a llamadas por protocolos físicos
+        """
         tmp_logical:NormalizeSelector=self.__arq_container.protocols_service().logical_protocol_services().normalize_selector_service()
         tmp_logical.addAvaliableService(appToExpose)
-    """
-    --------------
-    TESTING
-    --------------
-    """
-
-    def add_test(self, newTest: unittest.TestCase):
-        """ Añade un test para la aplicación invocadora """
-        self.__add_test(self.app_name, newTest)
-
-    def run_own_test(self):
-        """ Ejecuta todos los test de la aplicación invocadora """
-        if self.app_name in self.__saved_test:
-            ownTest = self.__saved_test.pop(self.app_name)
-            self.__logger_test.info("INI - test asignados a la aplicación %s. Número de tests a ejecutar: '%d",
-                                    self.app_name,
-                                    ownTest.countTestCases()
-                                    )
-            unittest.TextTestRunner().run(ownTest)
-            self.__logger_test.info(
-                "FIN - test asignados a la aplicación '%s'. Test limpiados de la memoria", self.app_name)
-        else:
-            self.__logger_test.warn(
-                "No existen actualmente test para la aplicación %s. Para añadir uno utilice la función 'add_test'", self.app_name)
-
-    def run_arq_test(self):
-        """ Ejecuta todos los test asociados a la arquitectura """
-        if '__arq__' in self.__saved_test:
-            arqTestSuite = self.__saved_test.pop('__arq__')
-            self.__logger_test.info("INI - test asignados a la arquitectura. Número de tests a ejecutar: '%d",
-                                    arqTestSuite.countTestCases()
-                                    )
-            verbosityLvl = self.__config.getPropertyDefault(
-                "testing", "verbosity", 1, parseType=int)
-            runner = unittest.TextTestRunner(verbosity=verbosityLvl)
-            runner.run(arqTestSuite)
-
-            self.__logger_test.info(
-                "FIN - test asignados a la arquitectura. Test limpiados de la memoria")
-            self.__flags["skip_run_arq_test"] = True
-        else:
-            self.__logger_test.warn(
-                "Los test de arquitectura ya se han ejecutado. Reinicie la ejecución en caso de querer ejecutarlos de nuevo")
 
     """
     ------------------
@@ -306,67 +265,10 @@ class ArqToolsTemplate:
     """
 
     def __actions_on_init(self):
-        # Test en el arranque configurable
-        # TODO deprecado por pytest, remover a futuro!
-        if self.__config.getProperty("flags", "init.test",parseType=eval):
-            self.run_arq_test()
-    """
-    ------------------
-    Test asociados a la arquitectura
-    respuesta esperada: "resultado obntenido","resultado esperado"
-    ------------------
-    """
-
-    def __add_test(self, context: str, newTest):
-        try:
-            if not context in self.__saved_test:
-                self.__saved_test[context] = unittest.TestSuite()
-            self.__saved_test[context].addTest(
-                unittest.FunctionTestCase(
-                    newTest,
-                    setUp=lambda: None,
-                    tearDown=lambda: None)
-            )
-        except Exception as err:
-            self.logger.error(
-                "Ha habido un problema añadiendo el test '%s' - %s",
-                newTest.__name__,
-                err
-            )
-
-    def __test_logging(self):
-        """TEST orientado a logging"""
-        try:
-            self.__logger_test.info("Log nivel info")
-            self.__logger_test.warn("Log nivel warn")
-            self.__logger_test.error("Log nivel err")
-            self.__logger_test.debug("Log nivel debug")
-        except:
-            assert False
-        assert True
-
-    def __test_config(self):
-        """TEST orientado a configuracion"""
-        jumps = 2000
-        before = datetime.now()
-        for i in range(jumps):
-            self.__config.getPropertyVerbose("base", "path.resources")
-        after = datetime.now()
-        usedTimeNoCache = (after-before).total_seconds() * 1000
-
-        before = datetime.now()
-        for i in range(jumps):
-            self.__config.getProperty("base", "path.resources")
-        after = datetime.now()
-        usedTimeCache = (after-before).total_seconds() * 1000
-        self.__logger_test.info(
-            "%d accesos a misma configuración. %d ms usando cache vs %d ms sin usar cache",
-            jumps,
-            usedTimeCache,
-            usedTimeNoCache
-        )
-
-        assert usedTimeCache < usedTimeNoCache
+        """
+        Acciones a realizar durante el arranque
+        """
+        pass
 
     """
     ------------------
@@ -403,16 +305,3 @@ class ArqToolsTemplate:
 
         # Physical Protocols
         self.restTools = self.__arq_container.protocols_service().physical_protocol_services().rest_protocol_tools()
-
-    # TESTING
-    def __init_arq_test(self):
-        if not self.__flags["skip_add_arq_test"]:
-            for attr in dir(self):
-                test = getattr(self, attr)
-                if attr.startswith("_{}__{}".format(
-                        self.__class__.__name__, "test")) and callable(test):
-                    self.__add_test(
-                        '__arq__',
-                        test
-                    )
-            self.__flags["skip_add_arq_test"] = True
