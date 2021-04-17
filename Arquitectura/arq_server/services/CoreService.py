@@ -204,10 +204,10 @@ class Configuration(Base):
                     self.__logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
                     return None
             else:
-                self.__logger.warn("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
+                self.__logger.warning("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
                 return None
         else:
-            self.__logger.warn("El grupo '%s' no está definido en configuración", group)
+            self.__logger.warning("El grupo '%s' no está definido en configuración", group)
             return None
 
     def getPropertyVerbose(self, group, key, parseType=str,confKey="arq", **kwargs) -> Any:

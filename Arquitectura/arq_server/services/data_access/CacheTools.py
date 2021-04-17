@@ -64,14 +64,14 @@ class RedisTools(object):
 
     __redis_client: StrictRedis
 
-    def __init__(self, core):
+    def __init__(self, core,config):
         self.__init_services(core)
         # Local configuration
         self.__redis_conf_alias = self.__config.getProperty("groups", "redis")
         self.__redis_conf = self.__config.getGroupOfProperties(
             self.__redis_conf_alias,confKey=self.__redis_conf_alias)
         # Server configuration
-        self.__conf_redis_client()
+        self.__conf_redis_client(config)
         redis.StrictRedis()
         self.__redis_client = redis.StrictRedis(
             host=self.__host, port=self.__port,
@@ -89,9 +89,11 @@ class RedisTools(object):
             health_check_interval=self.__health_check_interval,client_name=self.__client_name,
             username=self.__username
             )
+        del self.__password
 
     def setVal(self, key: str, value: str, volatile=False, timeToExpire=60) -> None:
-        self.__redis_client.set(key, value)
+        serialized = self.__marshall(value)
+        self.__redis_client.set(key, serialized)
         if volatile:
             self.__redis_client.expire(key, timeToExpire)
 
@@ -106,22 +108,11 @@ class RedisTools(object):
 
     def getVal(self, key: str) -> Any:
         """obtiene de cache el valor asociado a la clave usada como parámetro"""
-        return self.__redis_client.get(key)
-
-    def setDict(self, key: str, myDict: dict, volatile=False, timeToExpire=60) -> None:
-        """Añade a la cache un objeto dict propio de python dado como parámetro de entrada"""
-        marshallDict = json.dumps(myDict)
-        self.setVal(key, marshallDict, volatile=volatile,
-                    timeToExpire=timeToExpire)
-
-    @cached(cache=TTLCache(maxsize=4096, ttl=600))
-    def getDict(self, key: str) -> dict:
-        """Recupera de cache un objeto dict propio de python referenciando su Key por parámetro"""
-        aux = self.__redis_client.get(key)
-        myDict = {}
-        if isinstance(aux,str):
-            myDict = json.loads(aux)
-        return myDict
+        value = self.__redis_client.get(key)
+        if value is None:
+            return value
+        deserialized = self.__unmarshall(value)
+        return deserialized
 
     def existKey(self, key: str) -> bool:
         """Comprueba si existe la clave dada como parámetro"""
@@ -133,21 +124,27 @@ class RedisTools(object):
             "Borrando las siguientes claves de cache:%s", keyList)
         self.__redis_client.delete(keyList)
 
+    def __marshall(self,data_to_serialize):
+        return json.dumps(data_to_serialize)
+    
+    def __unmarshall(self,data_to_deserialize):
+        return json.loads(data_to_deserialize)
+
     def __init_services(self, core) -> None:
         # Servicio de logging
         self.__logger = core.logger_service().arqLogger()
         self.__config = core.config_service()
         self.__const = core.constants()
 
-    def __conf_redis_client(self):
-        self.__host = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "host", self.__host,confKey=self.__redis_conf_alias)
-        self.__port = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "port", self.__port, parseType=int,confKey=self.__redis_conf_alias)
+    def __conf_redis_client(self,config):
+        # Sensible information
+        self.__host = config['host']
+        self.__port = config['port']
+        self.__password = config['password']
+        # Regular configuration
         self.__db = self.__config.getPropertyDefault(
             self.__redis_conf_alias, "db", self.__db, parseType=int,confKey=self.__redis_conf_alias)
-        self.__password = self.__config.getPropertyDefault(
-            self.__redis_conf_alias, "password", self.__password,confKey=self.__redis_conf_alias)
+        
         self.__socket_timeout = self.__config.getPropertyDefault(
             self.__redis_conf_alias, "socket_timeout", self.__socket_timeout, parseType=int,confKey=self.__redis_conf_alias)
         self.__socket_connect_timeout = self.__config.getPropertyDefault(

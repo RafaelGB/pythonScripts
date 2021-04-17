@@ -13,7 +13,7 @@ from rx.core.typing import Disposable
 from rx import Observable, operators as ops
 
 # Own
-from arq_server.services.CoreService import Configuration
+from arq_server.services.CoreService import Configuration, ContextFilter
 
     
 class ConcurrentTools(object):

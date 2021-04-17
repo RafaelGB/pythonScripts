@@ -76,21 +76,25 @@ class SQLPrueba(ArqToolsTemplate):
 
     def proceso(self):
         try:
-            iter = 24
+            iter = 34
             self.centinel = 0
             self.test_isOK = False
             args = 3,6
 
             def __procesoPesado(arg):
-                time.sleep(1)
+                time.sleep(0.5)
                 arg = arg*2
                 return arg
+            
+            def cosaAlFinal():
+                self.centinel = self.centinel+1
 
             for i in range(iter):
                 
                 self.concurrentTools.createProcess(
                     __procesoPesado,
-                    *args
+                    *args,
+                    on_completed=cosaAlFinal
                 )
 
             self.logger.info("Lanzando los procesos en paralelo")
@@ -99,8 +103,9 @@ class SQLPrueba(ArqToolsTemplate):
             while not self.test_isOK and timeout<10:
                 time.sleep(1)
                 timeout= timeout+1
-        except:
-            assert False
+            self.logger.info("centinela: "+str(self.centinel))
+        except Exception as e:
+            raise e
         finally:
             del self.test_isOK
             del self.centinel
@@ -113,6 +118,15 @@ class Calculadora(ArqToolsTemplate,Base):
         
     def sum(self,a,b,**kwargs):
         return a+b
+    
+    def save_value_redis(self,key,value,**kwargs):
+        self.cacheTools.setVal(key,value)
+        return "value saved"
+    
+    def get_value_redis(self,key,**kwargs):
+        value = self.cacheTools.getVal(key)
+        return value
+        
         
 
 if __name__ == "__main__":

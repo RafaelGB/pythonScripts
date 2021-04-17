@@ -44,6 +44,9 @@ class TestingArq(object):
     
     def get_concurrent_tools(self) -> ConcurrentTools:
         return self.__container.utils_service().concurrent_tools()
+    
+    def get_redis_data_cli(self) -> RedisTools:
+        return self.__container.data_service().cache_tools()
         
     def get_sql_service(self) -> DbSQL:
         sqldb = None

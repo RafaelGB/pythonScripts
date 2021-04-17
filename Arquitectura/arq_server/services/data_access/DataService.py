@@ -18,7 +18,8 @@ class DataService(containers.DeclarativeContainer):
     # Services
     cache_tools = providers.Singleton(
         RedisTools,
-        core=core
+        core=core,
+        config=config.redis
     )
 
     relational_tools = providers.Singleton(

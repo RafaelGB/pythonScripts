@@ -8,12 +8,16 @@ import time
 from tdd.services.mocked_services import TestingArq
 from arq_server.services.data_access.relational.models.User import User
 from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
+
+# Cases list
+from .cases.core.PTConfig import pt_config_cases
+from .cases.data.PTRedis import pt_redis_cases_without_caching
+
 """ GLOBAL CONFIG """
 SCOPE="session"
 
 # Prevent pytest from trying to collect webtest's TestApp as tests:
 TestingArq.__test__ = False
-
 
 @pytest.fixture(scope=SCOPE)
 def monkeysession(request):
@@ -28,6 +32,18 @@ def monkeysession(request):
 def shared_arq_instance(monkeysession):
     instance = TestingArq()
     yield instance
+
+def obtain_test_cases_from(test_name):
+	"""
+	Dado el nombre del test, devuelve los casos de uso y su respuesta esperada
+	"""
+	
+	cases_dict = {
+		"service_config": pt_config_cases,
+		"data_redis_without_caching" : pt_redis_cases_without_caching
+	}
+
+	return cases_dict[test_name]
 
 def test_container_config(shared_arq_instance:TestingArq):
 	config = shared_arq_instance.config_container()
@@ -52,9 +68,10 @@ def test_service_logger(shared_arq_instance:TestingArq):
 	finally:
 		assert test_passed
 
-def test_service_config(shared_arq_instance:TestingArq):
+@pytest.mark.parametrize("group,key", obtain_test_cases_from("service_config"))
+def test_service_config(group,key,shared_arq_instance:TestingArq):
 	config_service = shared_arq_instance.get_config_service()
-	property = config_service.getProperty("logical","avaliableInputKeys")
+	property = config_service.getProperty(group,key)
 	assert property is not None
 
 def test_service_sql(shared_arq_instance:TestingArq):
@@ -62,36 +79,10 @@ def test_service_sql(shared_arq_instance:TestingArq):
 	user:User = sql_service.select_unique_item_filtering_by(User,username="RafaelGB")
 	assert user.username=="RafaelGB"
 
+@pytest.mark.parametrize("key,value", obtain_test_cases_from("data_redis_without_caching"))
+def test_data_redis(key,value,shared_arq_instance:TestingArq):
+	redis_cli = shared_arq_instance.get_redis_data_cli()
+	redis_cli.setVal(key,value,volatile=True,timeToExpire=10)
+	assert redis_cli.getVal(key)==value
 
-def test_service_concurrent(shared_arq_instance:TestingArq):
-	try:
-		concurrentTools = shared_arq_instance.get_concurrent_tools()
-		logger = shared_arq_instance.get_logger_service().testingLogger()
-		iter = 24
-		centinel = 0
-		test_isOK = False
-		args = 3,6
 
-		def __procesoPesado(arg):
-			time.sleep(1)
-			arg = arg*2
-			return arg
-		
-		for i in range(iter):
-			concurrentTools.createProcess(
-				__procesoPesado,
-				*args
-			)
-		
-		logger.info("Lanzando los procesos en paralelo")
-		# Check sobre funcionamiento correcto
-		timeout = 0
-		while not test_isOK and timeout<10:
-			time.sleep(1)
-			timeout= timeout+1
-		logger.info("centinela tras la espera:%s",str(centinel))
-	except Exception as e:
-		test_isOK = False
-		raise e
-	finally:
-		assert test_isOK
