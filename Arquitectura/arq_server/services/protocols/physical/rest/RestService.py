@@ -131,25 +131,5 @@ class APIRestTools:
                     "Error añadiendo la regla de url '%s' al servidor", url_rule)
 
     def __init_info_maps(self):
-
         self.__methodViewDict['applications_api'] = ApplicationsApi
         self.__methodViewDict['architecture_api'] = ArchitectureApi
-
-        app_info_path = path.join(
-            self.parent_path,
-            self.__config.getProperty("base", "path.resources"),
-            self.__config.getProperty("applications", "path.app.repository"),
-            self.__config.getProperty("applications", "filename.method_views")
-        )
-        self.__logger.debug(
-            "Initialization of REST API methods from path %s", str(app_info_path))
-        self.__init_methods_conf(app_info_path)
-
-    def __init_methods_conf(self, file_path):
-        methodViews_dict: Any = None
-        if path.exists(file_path):
-            with open(file_path, 'rt') as f:
-                methodViews_dict = json.load(f)
-        # Utiliza la cache del servidor para almacenar información relevante de configuración
-        arqCache.set("errors", methodViews_dict['errors'])
-        arqCache.set("methods", methodViews_dict['methods'])

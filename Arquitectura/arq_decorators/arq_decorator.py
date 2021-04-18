@@ -28,9 +28,6 @@ from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 from arq_server.containers.ArqContainer import BaseContainerDecorator, ArqContainer
 from arq_server.services.CoreService import Configuration, Base
-# Analytics
-from arq_server.services.analytics.StadisticTools import StatisticsTools
-from arq_server.services.analytics.DashTools import DashTools
 # Data
 from arq_server.services.data_access.CacheTools import RedisTools
 from arq_server.services.data_access.relational.DatabaseSQL import DbSQL
@@ -109,8 +106,6 @@ def arq_decorator(Cls):
         osTools: FileSystemTools
         cacheTools: RedisTools
         concurrentTools : ConcurrentTools
-        stadisticsTools : StatisticsTools
-        dashTools : DashTools
         restTools : APIRestTools
         sqlTools : DbSQL
 
