@@ -1,6 +1,5 @@
 # Threads
 from threading import current_thread
-
 # system
 import logging
 import traceback
@@ -14,20 +13,20 @@ from rx.core.typing import Disposable
 from rx import Observable, operators as ops
 
 # Own
-from arq_server.services.CoreService import Configuration
+from arq_server.services.CoreService import Configuration, ContextFilter
+
     
 class ConcurrentTools(object):
-    __logger: logging.Logger
-    __config: Configuration
-    __streamManager:dict = {}
+    _logger: logging.Logger
+    _config: Configuration
+
     def __init__(self, core, *args, **kwargs):
         self.__init_services(core)
-        self.__init_default_actions()
-        self.__optimal_thread_count = multiprocessing.cpu_count()
-        self.__pool_scheduler = ThreadPoolScheduler(self.__optimal_thread_count)
-        self.__logger.info(
+        optimal_thread_count = multiprocessing.cpu_count()
+        self.__pool_scheduler = ThreadPoolScheduler(optimal_thread_count)
+        self._logger.info(
             "Herramientas RX de concurrencia cargadas correctamente. pool de %d hilos",
-            self.__optimal_thread_count
+            optimal_thread_count
             )
 
     def createProcess(
@@ -41,6 +40,7 @@ class ConcurrentTools(object):
         por defecto para las acciones 'on_next', 'on_error' y 'on_complete', permitiendo
         ser modificada si se desea
         """
+        self._logger.info("Generando nuevo proceso")
         sequence: Observable = rx.of(*args)
 
         # TODO potencialmente se podrían añadir por parámetro más operaciones
@@ -54,20 +54,22 @@ class ConcurrentTools(object):
         )
          
         def on_next_default(nextArg):
-            self.__logger.debug("Resultado obtenido:'%s'",nextArg)
+            self._logger.debug("Resultado obtenido:'%s'",str(nextArg))
         
         def on_error_default(error):
             strTb = ''.join(traceback.format_tb(error))
-            self.__logger.exception("Traceback: %s",strTb)
+            self._logger.exception("Traceback: %s",strTb)
         
         def on_complete_default():
-            self.__logger.debug("¡Proceso completado!")
+            self._logger.debug("¡Proceso completado!")
 
         disposableStream: Disposable = stream.subscribe(
             on_next=(on_next, on_next_default)[on_next==None],
             on_error=(on_error, on_error_default)[on_error==None],
             on_completed=(on_completed, on_complete_default)[on_completed==None]
         )
+        
+        self._logger.info("Proceso %s creado",func.__name__)
 
     
     """
@@ -82,22 +84,6 @@ class ConcurrentTools(object):
     """
     def __init_services(self, core) -> None:
         # Servicio de logging
-        self.__core = core
-        self.__logger = core.logger_service().arqLogger()
+        self._logger = core.logger_service().arqLogger()
         self.__config = core.config_service()
     
-    def __init_default_actions(self):
-        self.__on_next_default = lambda nextArg: self.__logger.debug(
-            "Resultado obtenido:'%s'",
-            nextArg
-            )
-        
-        self.__on_error_default = lambda e: self.__logger.error(
-            "Error durante la ejecución  : %s",
-            e
-            )
-        
-        self.__on_completed_default = lambda: self.__logger.debug(
-            "¡Proceso en el hilo %s completado!",
-            current_thread().name
-            )

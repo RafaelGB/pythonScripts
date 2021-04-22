@@ -5,10 +5,12 @@ from typing import Any
 # Filesystem
 from os import path
 from pathlib import Path
+import threading
 from threading import Thread
 import sys
 import json
 import logging
+import signal
 # Own
 from arq_server.services.protocols.physical.Common import arqCache
 from arq_server.services.CoreService import Configuration,ContextFilter
@@ -44,12 +46,13 @@ class APIRestTools:
         self.__init_info_maps()
         self.__init_arq_url_rules()
         self.__logger.info("Herramientas de protocolo REST cargadas correctamente")
-        Thread(target=self.__start_server,kwargs={'loggerService':core.logger_service()}).start()
+        # daemon=True,
+        daemon = Thread(target=self.__start_server,kwargs={'loggerService':core.logger_service()})
         self.__logger.info("Protocolo REST lanzado en segundo plano")
-        
+        daemon.start()
 
     def stop_server(self):
-        func = request.environ.get(self.flask_conf["shutdown"])
+        func = request.environ.get('werkzeug.server.shutdown')
         if func is None:
             raise RuntimeError('Not running with the Werkzeug Server')
         func()
@@ -76,14 +79,15 @@ class APIRestTools:
     """
     MÉTODOS PRIVADOS
     """
-    def __start_server(self,loggerService=None):
+    def __start_server(self,*args,**kwargs):
         """
         Configuración y arranque del servidor Flask
         """
         self.server.normalizer=self.__normalizer
-        self.server.loggerService=loggerService
         self.server.logger=self.__logger
         self.server.config['JSON_AS_ASCII'] = False
+        self.server.__dict__.update(kwargs)
+        # Debug=True provoca error, ya que solo permite depurar bajo el hilo principal y no como daemon
         self.server.run(debug=False)
 
     def __selectMethod(self, alias):
@@ -131,25 +135,5 @@ class APIRestTools:
                     "Error añadiendo la regla de url '%s' al servidor", url_rule)
 
     def __init_info_maps(self):
-
         self.__methodViewDict['applications_api'] = ApplicationsApi
         self.__methodViewDict['architecture_api'] = ArchitectureApi
-
-        app_info_path = path.join(
-            self.parent_path,
-            self.__config.getProperty("base", "path.resources"),
-            self.__config.getProperty("applications", "path.app.repository"),
-            self.__config.getProperty("applications", "filename.method_views")
-        )
-        self.__logger.debug(
-            "Initialization of REST API methods from path %s", str(app_info_path))
-        self.__init_methods_conf(app_info_path)
-
-    def __init_methods_conf(self, file_path):
-        methodViews_dict: Any = None
-        if path.exists(file_path):
-            with open(file_path, 'rt') as f:
-                methodViews_dict = json.load(f)
-        # Utiliza la cache del servidor para almacenar información relevante de configuración
-        arqCache.set("errors", methodViews_dict['errors'])
-        arqCache.set("methods", methodViews_dict['methods'])

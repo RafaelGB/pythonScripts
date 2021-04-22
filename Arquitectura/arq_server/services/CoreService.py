@@ -5,9 +5,13 @@ import logging
 import traceback
 import threading
 import uuid
-from logging.config import fileConfig, dictConfig
+from logging.config import dictConfig
 from cachetools import cached, TTLCache
 from typing import Any, Dict
+
+# logging
+from logging.handlers import QueueListener, QueueHandler
+from multiprocessing import Queue
 
 # Filesystem
 from os import path, getenv,mkdir
@@ -92,7 +96,9 @@ class Logger:
         return appLogger
 
     def testingLogger(self):
-        return logging.getLogger("testing")
+        testingLogger = logging.getLogger("testing")
+        testingLogger.addFilter(ContextFilter())
+        return testingLogger
     
     def __handlerExceptions(self,Etype, value, tb):
         self.__logger.error("Excepción capturada:%s - %s",Etype,value)
@@ -124,8 +130,15 @@ class Logger:
 
         with open(self.file_path, 'rt') as f:
             config = json.load(f)
-            self.__fixup(config["logging_conf"],"filename",config["properties"])
+            logger_properties=config["properties"]
+            self.__fixup(config["logging_conf"],"filename",logger_properties)
             dictConfig(config["logging_conf"])
+        # Sección no configurable desde fichero
+        # Configuración de logging asíncrono
+        self.arq_queue=Queue(maxsize=10000)
+        self.__listener = QueueListener(self.arq_queue, *logging.getLogger("arquitecture").handlers)
+        self.__listener.start()
+        
         # Las excepciones son capturadas por el logger
         sys.excepthook = self.__handlerExceptions
 
@@ -191,10 +204,10 @@ class Configuration(Base):
                     self.__logger.error("La propiedad '%s' en el grupo '%s' no acepta el tipo impuesto '%s'. Devuelve 'None'",key, group, parseType)
                     return None
             else:
-                self.__logger.warn("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
+                self.__logger.warning("La propiedad '%s' no está definida en el grupo '%s' en configuración",key, group)
                 return None
         else:
-            self.__logger.warn("El grupo '%s' no está definido en configuración", group)
+            self.__logger.warning("El grupo '%s' no está definido en configuración", group)
             return None
 
     def getPropertyVerbose(self, group, key, parseType=str,confKey="arq", **kwargs) -> Any:
