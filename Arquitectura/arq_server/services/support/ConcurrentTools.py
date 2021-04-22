@@ -58,7 +58,6 @@ class ConcurrentTools(object):
         
         def on_error_default(error):
             strTb = ''.join(traceback.format_tb(error))
-            print(strTb)
             self._logger.exception("Traceback: %s",strTb)
         
         def on_complete_default():

@@ -120,16 +120,15 @@ class Calculadora(ArqToolsTemplate,Base):
         return a+b
     
     def save_value_redis(self,key,value,**kwargs):
-        self.cacheTools.setVal(key,value)
+        self.redis_cli().setVal(key,value)
         return "value saved"
     
     def get_value_redis(self,key,**kwargs):
-        value = self.cacheTools.getVal(key)
+        value = self.redis_cli().getVal(key)
         return value
         
         
 
 if __name__ == "__main__":
     prueba = SQLPrueba()
-    prueba.proceso()
     prueba2 = Calculadora()

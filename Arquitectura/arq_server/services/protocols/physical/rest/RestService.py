@@ -5,6 +5,7 @@ from typing import Any
 # Filesystem
 from os import path
 from pathlib import Path
+import threading
 from threading import Thread
 import sys
 import json
@@ -44,15 +45,10 @@ class APIRestTools:
         self.__init_info_maps()
         self.__init_arq_url_rules()
         self.__logger.info("Herramientas de protocolo REST cargadas correctamente")
-        Thread(target=self.__start_server,kwargs={'loggerService':core.logger_service()}).start()
+        # daemon=True,
+        daemon = Thread(target=self.__start_server,kwargs={'loggerService':core.logger_service()})
         self.__logger.info("Protocolo REST lanzado en segundo plano")
-        
-
-    def stop_server(self):
-        func = request.environ.get(self.flask_conf["shutdown"])
-        if func is None:
-            raise RuntimeError('Not running with the Werkzeug Server')
-        func()
+        daemon.start()
 
     def addUrlRule(self, URL: str, customMethodView=None, customFunc=lambda *args: None):
         """
@@ -76,14 +72,15 @@ class APIRestTools:
     """
     MÉTODOS PRIVADOS
     """
-    def __start_server(self,loggerService=None):
+    def __start_server(self,*args,**kwargs):
         """
         Configuración y arranque del servidor Flask
         """
         self.server.normalizer=self.__normalizer
-        self.server.loggerService=loggerService
         self.server.logger=self.__logger
         self.server.config['JSON_AS_ASCII'] = False
+        self.server.__dict__.update(kwargs)
+        # Debug=True provoca error, ya que solo permite depurar bajo el hilo principal y no como daemon
         self.server.run(debug=False)
 
     def __selectMethod(self, alias):

@@ -198,7 +198,24 @@ def arq_decorator(Cls):
     return NewApp
 
 @arq_decorator
-class ArqToolsTemplate:
+class TemplateDecorator:
+    def __init__(self, app_name, *args, **kwargs):
+        self.__init_kwargs_attrs(*args,**kwargs)
+        self._arq_container: ArqContainer=self.__arq_container
+        del self.__arq_container
+
+    def __init_kwargs_attrs(self, *args, **kwargs):
+        """
+        Los valores que recibo como argumentos del decorador los
+        transformo en objetos privados de la clase
+        """
+        for key, value in kwargs.items():
+            # Valores privados propios de la clase plantilla
+            self.__dict__["_{}__{}".format(
+                self.__class__.__name__, key)] = value
+        # Valores visibles para la aplicación
+
+class ArqToolsTemplate(TemplateDecorator):
     # TEMPLATE FLAGS
     __flags = {
         "skip_add_arq_test": False
@@ -209,12 +226,12 @@ class ArqToolsTemplate:
     # TYPE HINTS private tools
     __logger_test: logging.Logger
     __config: Configuration
-    __arq_container: ArqContainer
+    _arq_container: ArqContainer
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
-        self.__init_kwargs_attrs(*args, **kwargs)
-        self.__init_public_tools()
+        super().__init__(app_name, *args, **kwargs)
+        self.__init_silent_tools()
         self.__actions_on_init()
 
     """
@@ -250,7 +267,7 @@ class ArqToolsTemplate:
         Las funciones públicas de la clase pasada como parámetro
         quedan expuestas a llamadas por protocolos físicos
         """
-        tmp_logical:NormalizeSelector=self.__arq_container.protocols_service().logical_protocol_services().normalize_selector_service()
+        tmp_logical:NormalizeSelector=self._arq_container.protocols_service().logical_protocol_services().normalize_selector_service()
         tmp_logical.addAvaliableService(appToExpose)
 
     """
@@ -270,33 +287,24 @@ class ArqToolsTemplate:
     Internal Functions
     ------------------
     """
-
-    def __init_kwargs_attrs(self, *args, **kwargs):
-        """
-        Los valores que recibo como argumentos del decorador los
-        transformo en objetos privados de la clase
-        """
-        for key, value in kwargs.items():
-            # Valores privados propios de la clase plantilla
-            self.__dict__["_{}__{}".format(
-                self.__class__.__name__, key)] = value
-        # Valores visibles para la aplicación
-
-    def __init_public_tools(self):
+    def __init_silent_tools(self):
         # Core
-        self.logger = self.__arq_container.core_service().logger_service().appLogger()
-        # Analytics
-        #self.stadisticsTools = self.__arq_container.analytic_service.stadistics_tools()
-        #self.dashTools = self.__arq_container.analytic_factories.dash_tools()
-
-        # Data
-        self.cacheTools = self.__arq_container.data_service().cache_tools()
-        self.sqlTools = self.__arq_container.data_service().relational_tools().db_sql()
-
-        # Utils
-        self.dockerTools = self.__arq_container.utils_service().docker_tools()
-        self.osTools = self.__arq_container.utils_service().file_system_tools()
-        self.concurrentTools = self.__arq_container.utils_service().concurrent_tools()
+        self.logger = self._arq_container.core_service().logger_service().appLogger()
 
         # Physical Protocols
-        self.restTools = self.__arq_container.protocols_service().physical_protocol_services().rest_protocol_tools()
+        self._arq_container.protocols_service().physical_protocol_services().rest_protocol_tools()
+
+    def os_tools(self):
+        return self._arq_container.utils_service().file_system_tools()
+
+    def redis_cli(self):
+        return self._arq_container.data_service().cache_tools()
+    
+    def docker_cli(self):
+        self.dockerTools = self._arq_container.utils_service().docker_tools()
+    
+    def sql_tools(self):
+        return self._arq_container.data_service().relational_tools().db_sql()
+    
+    def concurrent_tools(self):
+        return self._arq_container.utils_service().concurrent_tools()
