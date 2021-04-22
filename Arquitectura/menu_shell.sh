@@ -13,7 +13,7 @@ local_install_arq(){
     break
 }
 run_general_test(){
-    pytest --rootdir /Users/rafaelgomezbermejo/Repositorios/pythonScripts/Arquitectura/tdd -v  tdd/tdd_main.py
+    pytest --rootdir /Users/rafaelgomezbermejo/Repositorios/pythonScripts/Arquitectura/tdd -v tdd/tdd_main.py
 }
 # ----------------------------------
 # General Menu

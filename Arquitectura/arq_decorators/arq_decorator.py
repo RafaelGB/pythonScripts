@@ -28,9 +28,6 @@ from arq_server.base.ArqErrors import ArqError
 from arq_server.base.Constants import Const
 from arq_server.containers.ArqContainer import BaseContainerDecorator, ArqContainer
 from arq_server.services.CoreService import Configuration, Base
-# Analytics
-from arq_server.services.analytics.StadisticTools import StatisticsTools
-from arq_server.services.analytics.DashTools import DashTools
 # Data
 from arq_server.services.data_access.CacheTools import RedisTools
 from arq_server.services.data_access.relational.DatabaseSQL import DbSQL
@@ -109,8 +106,6 @@ def arq_decorator(Cls):
         osTools: FileSystemTools
         cacheTools: RedisTools
         concurrentTools : ConcurrentTools
-        stadisticsTools : StatisticsTools
-        dashTools : DashTools
         restTools : APIRestTools
         sqlTools : DbSQL
 
@@ -203,7 +198,24 @@ def arq_decorator(Cls):
     return NewApp
 
 @arq_decorator
-class ArqToolsTemplate:
+class TemplateDecorator:
+    def __init__(self, app_name, *args, **kwargs):
+        self.__init_kwargs_attrs(*args,**kwargs)
+        self._arq_container: ArqContainer=self.__arq_container
+        del self.__arq_container
+
+    def __init_kwargs_attrs(self, *args, **kwargs):
+        """
+        Los valores que recibo como argumentos del decorador los
+        transformo en objetos privados de la clase
+        """
+        for key, value in kwargs.items():
+            # Valores privados propios de la clase plantilla
+            self.__dict__["_{}__{}".format(
+                self.__class__.__name__, key)] = value
+        # Valores visibles para la aplicación
+
+class ArqToolsTemplate(TemplateDecorator):
     # TEMPLATE FLAGS
     __flags = {
         "skip_add_arq_test": False
@@ -214,13 +226,12 @@ class ArqToolsTemplate:
     # TYPE HINTS private tools
     __logger_test: logging.Logger
     __config: Configuration
-    __arq_container: ArqContainer
+    _arq_container: ArqContainer
 
     def __init__(self, app_name, *args, **kwargs):
         self.app_name: str = app_name
-        self.__init_kwargs_attrs(*args, **kwargs)
-        self.__init_public_tools()
-        self.__init_arq_test()
+        super().__init__(app_name, *args, **kwargs)
+        self.__init_silent_tools()
         self.__actions_on_init()
 
     """
@@ -252,52 +263,12 @@ class ArqToolsTemplate:
     ------------------
     """
     def expose_app(self,appToExpose:object):
-        # Las funciones públicas de la clase hija quedan expuestas a llamadas por protocolos físicos
-        tmp_logical:NormalizeSelector=self.__arq_container.protocols_service().logical_protocol_services().normalize_selector_service()
+        """
+        Las funciones públicas de la clase pasada como parámetro
+        quedan expuestas a llamadas por protocolos físicos
+        """
+        tmp_logical:NormalizeSelector=self._arq_container.protocols_service().logical_protocol_services().normalize_selector_service()
         tmp_logical.addAvaliableService(appToExpose)
-    """
-    --------------
-    TESTING
-    --------------
-    """
-
-    def add_test(self, newTest: unittest.TestCase):
-        """ Añade un test para la aplicación invocadora """
-        self.__add_test(self.app_name, newTest)
-
-    def run_own_test(self):
-        """ Ejecuta todos los test de la aplicación invocadora """
-        if self.app_name in self.__saved_test:
-            ownTest = self.__saved_test.pop(self.app_name)
-            self.__logger_test.info("INI - test asignados a la aplicación %s. Número de tests a ejecutar: '%d",
-                                    self.app_name,
-                                    ownTest.countTestCases()
-                                    )
-            unittest.TextTestRunner().run(ownTest)
-            self.__logger_test.info(
-                "FIN - test asignados a la aplicación '%s'. Test limpiados de la memoria", self.app_name)
-        else:
-            self.__logger_test.warn(
-                "No existen actualmente test para la aplicación %s. Para añadir uno utilice la función 'add_test'", self.app_name)
-
-    def run_arq_test(self):
-        """ Ejecuta todos los test asociados a la arquitectura """
-        if '__arq__' in self.__saved_test:
-            arqTestSuite = self.__saved_test.pop('__arq__')
-            self.__logger_test.info("INI - test asignados a la arquitectura. Número de tests a ejecutar: '%d",
-                                    arqTestSuite.countTestCases()
-                                    )
-            verbosityLvl = self.__config.getPropertyDefault(
-                "testing", "verbosity", 1, parseType=int)
-            runner = unittest.TextTestRunner(verbosity=verbosityLvl)
-            runner.run(arqTestSuite)
-
-            self.__logger_test.info(
-                "FIN - test asignados a la arquitectura. Test limpiados de la memoria")
-            self.__flags["skip_run_arq_test"] = True
-        else:
-            self.__logger_test.warn(
-                "Los test de arquitectura ya se han ejecutado. Reinicie la ejecución en caso de querer ejecutarlos de nuevo")
 
     """
     ------------------
@@ -306,113 +277,37 @@ class ArqToolsTemplate:
     """
 
     def __actions_on_init(self):
-        # Test en el arranque configurable
-        # TODO deprecado por pytest, remover a futuro!
-        if self.__config.getProperty("flags", "init.test",parseType=eval):
-            self.run_arq_test()
-    """
-    ------------------
-    Test asociados a la arquitectura
-    respuesta esperada: "resultado obntenido","resultado esperado"
-    ------------------
-    """
-
-    def __add_test(self, context: str, newTest):
-        try:
-            if not context in self.__saved_test:
-                self.__saved_test[context] = unittest.TestSuite()
-            self.__saved_test[context].addTest(
-                unittest.FunctionTestCase(
-                    newTest,
-                    setUp=lambda: None,
-                    tearDown=lambda: None)
-            )
-        except Exception as err:
-            self.logger.error(
-                "Ha habido un problema añadiendo el test '%s' - %s",
-                newTest.__name__,
-                err
-            )
-
-    def __test_logging(self):
-        """TEST orientado a logging"""
-        try:
-            self.__logger_test.info("Log nivel info")
-            self.__logger_test.warn("Log nivel warn")
-            self.__logger_test.error("Log nivel err")
-            self.__logger_test.debug("Log nivel debug")
-        except:
-            assert False
-        assert True
-
-    def __test_config(self):
-        """TEST orientado a configuracion"""
-        jumps = 2000
-        before = datetime.now()
-        for i in range(jumps):
-            self.__config.getPropertyVerbose("base", "path.resources")
-        after = datetime.now()
-        usedTimeNoCache = (after-before).total_seconds() * 1000
-
-        before = datetime.now()
-        for i in range(jumps):
-            self.__config.getProperty("base", "path.resources")
-        after = datetime.now()
-        usedTimeCache = (after-before).total_seconds() * 1000
-        self.__logger_test.info(
-            "%d accesos a misma configuración. %d ms usando cache vs %d ms sin usar cache",
-            jumps,
-            usedTimeCache,
-            usedTimeNoCache
-        )
-
-        assert usedTimeCache < usedTimeNoCache
+        """
+        Acciones a realizar durante el arranque
+        """
+        pass
 
     """
     ------------------
     Internal Functions
     ------------------
     """
-
-    def __init_kwargs_attrs(self, *args, **kwargs):
-        """
-        Los valores que recibo como argumentos del decorador los
-        transformo en objetos privados de la clase
-        """
-        for key, value in kwargs.items():
-            # Valores privados propios de la clase plantilla
-            self.__dict__["_{}__{}".format(
-                self.__class__.__name__, key)] = value
-        # Valores visibles para la aplicación
-
-    def __init_public_tools(self):
+    def __init_silent_tools(self):
         # Core
-        self.logger = self.__arq_container.core_service().logger_service().appLogger()
-        # Analytics
-        #self.stadisticsTools = self.__arq_container.analytic_service.stadistics_tools()
-        #self.dashTools = self.__arq_container.analytic_factories.dash_tools()
-
-        # Data
-        self.cacheTools = self.__arq_container.data_service().cache_tools()
-        self.sqlTools = self.__arq_container.data_service().relational_tools().db_sql()
-
-        # Utils
-        self.dockerTools = self.__arq_container.utils_service().docker_tools()
-        self.osTools = self.__arq_container.utils_service().file_system_tools()
-        self.concurrentTools = self.__arq_container.utils_service().concurrent_tools()
+        self.logger = self._arq_container.core_service().logger_service().appLogger()
 
         # Physical Protocols
-        self.restTools = self.__arq_container.protocols_service().physical_protocol_services().rest_protocol_tools()
+        self._arq_container.protocols_service().physical_protocol_services().rest_protocol_tools()
 
-    # TESTING
-    def __init_arq_test(self):
-        if not self.__flags["skip_add_arq_test"]:
-            for attr in dir(self):
-                test = getattr(self, attr)
-                if attr.startswith("_{}__{}".format(
-                        self.__class__.__name__, "test")) and callable(test):
-                    self.__add_test(
-                        '__arq__',
-                        test
-                    )
-            self.__flags["skip_add_arq_test"] = True
+    def os_tools(self) -> FileSystemTools:
+        return self._arq_container.utils_service().file_system_tools()
+
+    def redis_cli(self) -> RedisTools:
+        return self._arq_container.data_service().cache_tools()
+    
+    def docker_cli(self) -> DockerTools:
+        return self._arq_container.utils_service().docker_tools()
+    
+    def sql_tools(self) -> DbSQL:
+        return self._arq_container.data_service().relational_tools().db_sql()
+    
+    def concurrent_tools(self) -> ConcurrentTools:
+        return self._arq_container.utils_service().concurrent_tools()
+    
+    def pf_rest(self) -> APIRestTools:
+        return self._arq_container.protocols_service().physical_protocol_services().rest_protocol_tools()

@@ -22,7 +22,6 @@
         "formatter": "debugging",
         "stream": "ext://sys.stdout"
       },
-
       "arq_file_handler": {
         "class": "logging.handlers.RotatingFileHandler",
         "level": "DEBUG",
@@ -32,7 +31,6 @@
         "backupCount": 20,
         "encoding": "utf8"
       },
-
       "app_file_handler": {
         "class": "logging.handlers.RotatingFileHandler",
         "level": "DEBUG",
@@ -67,24 +65,23 @@
     "loggers": {
       "arquitecture": {
         "level": "DEBUG",
-        "handlers": ["console", "arq_file_handler", "error_file_handler"],
+        "handlers": ["console", "arq_file_handler","error_file_handler"],
         "propagate": false
       },
       "app": {
         "level": "DEBUG",
-        "handlers": ["console", "app_file_handler", "error_file_handler"],
+        "handlers": ["console", "app_file_handler","error_file_handler"],
         "propagate": false
       },
       "testing": {
         "level": "DEBUG",
-        "handlers": ["console", "test_file_handler"],
+        "handlers": ["console", "test_file_handler","error_file_handler"],
         "propagate": false
       }
     },
-
     "root": {
       "level": "INFO",
-      "handlers": ["console", "arq_file_handler", "error_file_handler"]
+      "handlers": ["console"]
     }
   }
 }
