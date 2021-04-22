@@ -10,6 +10,7 @@ from threading import Thread
 import sys
 import json
 import logging
+import signal
 # Own
 from arq_server.services.protocols.physical.Common import arqCache
 from arq_server.services.CoreService import Configuration,ContextFilter
@@ -49,6 +50,12 @@ class APIRestTools:
         daemon = Thread(target=self.__start_server,kwargs={'loggerService':core.logger_service()})
         self.__logger.info("Protocolo REST lanzado en segundo plano")
         daemon.start()
+
+    def stop_server(self):
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running with the Werkzeug Server')
+        func()
 
     def addUrlRule(self, URL: str, customMethodView=None, customFunc=lambda *args: None):
         """

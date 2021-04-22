@@ -25,8 +25,6 @@ class DockerTools(object):
         self.__docker_conf_alias = self.__config.getProperty("groups", "docker")
         self.__dockerLogsPath = self.__config.getProperty("docker","path.docker.logs",confKey=self.__docker_conf_alias)
 
-    
-    @enableFunction(__isEnabled,className='DockerTools')
     def runContainer(
         self, image, name:str, auto_remove:bool=False, detach:bool=False, 
         command:str=None, ports:dict=None, volumes:dict=None
@@ -60,8 +58,7 @@ class DockerTools(object):
         c = self.__client.containers.get(name)
         streamLogsThread = Thread(target = self.__streamContainerLogs, args = (name,c, ))
         streamLogsThread.start()
-        
-    @enableFunction(__isEnabled,className='DockerTools')
+
     def stopContainer(self,name) -> bool:
         isStoped:bool=False
         try:
@@ -74,7 +71,6 @@ class DockerTools(object):
         finally:
             return isStoped
 
-    @enableFunction(__isEnabled,className='DockerTools')
     def removeContainer(self, name) -> bool:
         isRemoved:bool = False
         try:

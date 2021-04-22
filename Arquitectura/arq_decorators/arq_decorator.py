@@ -294,17 +294,20 @@ class ArqToolsTemplate(TemplateDecorator):
         # Physical Protocols
         self._arq_container.protocols_service().physical_protocol_services().rest_protocol_tools()
 
-    def os_tools(self):
+    def os_tools(self) -> FileSystemTools:
         return self._arq_container.utils_service().file_system_tools()
 
-    def redis_cli(self):
+    def redis_cli(self) -> RedisTools:
         return self._arq_container.data_service().cache_tools()
     
-    def docker_cli(self):
-        self.dockerTools = self._arq_container.utils_service().docker_tools()
+    def docker_cli(self) -> DockerTools:
+        return self._arq_container.utils_service().docker_tools()
     
-    def sql_tools(self):
+    def sql_tools(self) -> DbSQL:
         return self._arq_container.data_service().relational_tools().db_sql()
     
-    def concurrent_tools(self):
+    def concurrent_tools(self) -> ConcurrentTools:
         return self._arq_container.utils_service().concurrent_tools()
+    
+    def pf_rest(self) -> APIRestTools:
+        return self._arq_container.protocols_service().physical_protocol_services().rest_protocol_tools()

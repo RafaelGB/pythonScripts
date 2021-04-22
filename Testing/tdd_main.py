@@ -82,14 +82,3 @@ def test_data_redis(key,value,shared_arq_instance:TestingArq):
 	redis_cli = shared_arq_instance.redis_cli()
 	redis_cli.setVal(key,value,volatile=True,timeToExpire=10)
 	assert redis_cli.getVal(key)==value
-
-def test_docker_cli(shared_arq_instance:TestingArq):
-	docker_tools = shared_arq_instance.docker_cli()
-	docker_tools.runContainer("hello-world","prueba",auto_remove=True,detach=True)
-	time.sleep(5)
-	docker_tools.removeContainer("prueba")
-	
-def test_unconfigure(shared_arq_instance:TestingArq):
-    # I close all ssh connection here
-	shared_arq_instance.restTools.stop_server()
-	assert True

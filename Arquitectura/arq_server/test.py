@@ -132,3 +132,4 @@ class Calculadora(ArqToolsTemplate,Base):
 if __name__ == "__main__":
     prueba = SQLPrueba()
     prueba2 = Calculadora()
+    prueba2.pf_rest().stop_server()
