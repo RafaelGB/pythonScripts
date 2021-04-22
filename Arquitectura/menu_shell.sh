@@ -9,7 +9,7 @@ generate_new_dist(){
 
 local_install_arq(){
     pip uninstall -y architecture-tools-RafaelGB
-    pip install dist/architecture-tools-RafaelGB-0.0.10.tar.gz
+    pip install dist/architecture-tools-RafaelGB-0.0.11.tar.gz
     break
 }
 run_general_test(){

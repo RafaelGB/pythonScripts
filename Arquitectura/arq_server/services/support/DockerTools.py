@@ -75,9 +75,9 @@ class DockerTools(object):
         isRemoved:bool = False
         try:
             container = self.__client.containers.get(name)
+            # En caso de estar levantado debe pararse primero
             if container.status == "running":
                 self.stopContainer(name)
-                container = self.__client.containers.get(name)
             container.remove()
             isRemoved=True
             self.__logger.debug("el contenedor %s fué eliminado", name)
