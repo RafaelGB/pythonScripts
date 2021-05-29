@@ -27,7 +27,7 @@
             "type": "python",
             "request": "launch",
             "envFile": "${workspaceFolder}/.env",
-            "program": "${workspaceFolder}/arq_server/test.py",
+            "program": "${workspaceFolder}/pyarq/arq_server/test.py",
             "console": "integratedTerminal",
             "justMyCode": false
         }
