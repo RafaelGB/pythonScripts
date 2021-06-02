@@ -11,7 +11,7 @@ from sqlalchemy import Sequence
 from sqlalchemy.orm import sessionmaker, Session
 
 # Own
-from arq_server.services.CoreService import Configuration
+from pyarq_core.Config import Configuration
 
 Base = declarative_base()
 
@@ -102,10 +102,10 @@ class DbSQL:
     def __init_schema(self):
         self.__logger.info("Inicializando los esquemas de la arquitectura en bbdd")
         # Importamos las tablas propias de la arquitectura
-        from arq_server.services.data_access.relational.models.User import User
-        from arq_server.services.data_access.relational.models.Client import Client
-        from arq_server.services.data_access.relational.models.Grant import Grant
-        from arq_server.services.data_access.relational.models.Token import Token
+        from pyarq.arq_server.services.data_access.relational.models.User import User
+        from pyarq.arq_server.services.data_access.relational.models.Client import Client
+        from pyarq.arq_server.services.data_access.relational.models.Grant import Grant
+        from pyarq.arq_server.services.data_access.relational.models.Token import Token
         Base.metadata.create_all(bind=self.__engine)
         self.__current_session = None
         self.__logger.info("Esquemas inicializados")

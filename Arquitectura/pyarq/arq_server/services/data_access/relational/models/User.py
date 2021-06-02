@@ -15,8 +15,8 @@ from datetime import date
 from sqlalchemy.sql.sqltypes import Boolean, Text
 
 # Own
-from arq_server.services.data_access.relational.models.CustomTypes import DictType
-from arq_server.services.data_access.relational.DatabaseSQL import Base
+from pyarq.arq_server.services.data_access.relational.models.CustomTypes import DictType
+from pyarq.arq_server.services.data_access.relational.DatabaseSQL import Base
 
 class User(Base):
     __tablename__ = 'arq_users'

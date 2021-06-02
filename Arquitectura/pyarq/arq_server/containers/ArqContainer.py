@@ -6,13 +6,13 @@ import sys
 from dependency_injector import containers, providers
 from dependency_injector.wiring import inject, Provide
 # own
-from arq_server.services.CoreService import CoreService
+from pyarq_core.CoreService import CoreService
 # Support
-from arq_server.services.support.UtilsService import UtilsService
+from pyarq.arq_server.services.support.UtilsService import UtilsService
 # data access
-from arq_server.services.data_access.DataService import DataService
+from pyarq.arq_server.services.data_access.DataService import DataService
 # Protocols
-from arq_server.services.protocols.ProtocolsService import ProtocolsService
+from pyarq.arq_server.services.protocols.ProtocolsService import ProtocolsService
 
 ARQ_STARTED=False
 

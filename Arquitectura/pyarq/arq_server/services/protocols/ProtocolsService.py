@@ -1,8 +1,8 @@
 # IoC
 from dependency_injector import containers, providers
 # own
-from arq_server.services.protocols.physical.PhysicalService import PhysicalService
-from arq_server.services.protocols.logical.LogicalService import LogicalService
+from pyarq.arq_server.services.protocols.physical.PhysicalService import PhysicalService
+from pyarq.arq_server.services.protocols.logical.LogicalService import LogicalService
 
 class ProtocolsService(containers.DeclarativeContainer):
   core = providers.Dependency()

@@ -6,10 +6,10 @@ import logging
 # IoC
 from dependency_injector import containers, providers
 # Own
-from arq_server.services.support.OSTools import FileSystemTools
-from arq_server.services.support.DockerTools import DockerTools
-from arq_server.services.support.ConcurrentTools import ConcurrentTools
-from arq_server.services.support.SecurityTools import Security
+from pyarq.arq_server.services.support.OSTools import FileSystemTools
+from pyarq.arq_server.services.support.DockerTools import DockerTools
+from pyarq.arq_server.services.support.ConcurrentTools import ConcurrentTools
+from pyarq.arq_server.services.support.SecurityTools import Security
 class UtilsService(containers.DeclarativeContainer):
     """Application IoC container."""
     # Dependencies

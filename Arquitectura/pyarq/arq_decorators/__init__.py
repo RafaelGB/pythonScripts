@@ -1,1 +1,1 @@
-from arq_decorators.arq_decorator import ArqToolsTemplate
+from pyarq.arq_decorators.arq_decorator import ArqToolsTemplate

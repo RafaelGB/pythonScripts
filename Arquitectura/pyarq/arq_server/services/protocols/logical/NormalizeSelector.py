@@ -2,9 +2,9 @@
 import logging
 from typing import List
 # Own
-from arq_server.base.ArqErrors import ArqError
-from arq_server.services.CoreService import Configuration,Base
-from arq_server.services.support.SecurityTools import Security
+from pyarq_core.ArqErrors import ArqError
+from pyarq_core.Config import Configuration
+from pyarq.arq_server.services.support.SecurityTools import Security
 
 class NormalizeSelector:
     # Services TIPS

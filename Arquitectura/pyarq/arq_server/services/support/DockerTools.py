@@ -8,10 +8,10 @@ from datetime import datetime
 # MultiThreading
 from threading import Thread
 # Own
-from arq_decorators.service_decorator import enableFunction
-from arq_server.services.CoreService import Configuration
-from arq_server.base.ArqErrors import ArqError
-from arq_server.base.Metadata import Metadata
+from pyarq.arq_decorators.service_decorator import enableFunction
+from pyarq_core.Config import Configuration
+from pyarq_core.ArqErrors import ArqError
+from pyarq_core.Metadata import Metadata
 
 class DockerTools(object):
     __isEnabled:bool = True

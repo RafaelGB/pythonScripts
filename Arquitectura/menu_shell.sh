@@ -8,8 +8,8 @@ generate_new_dist(){
 }
 
 local_install_arq(){
-    pip uninstall -y architecture-tools-RafaelGB
-    pip install dist/architecture-tools-RafaelGB-0.0.11.tar.gz
+    pip uninstall -y pyarq
+    pip install dist/pyarq-0.0.1.tar.gz
     break
 }
 run_general_test(){

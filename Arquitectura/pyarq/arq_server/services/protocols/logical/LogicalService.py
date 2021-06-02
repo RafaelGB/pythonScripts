@@ -1,7 +1,7 @@
 # IoC
 from dependency_injector import containers, providers
 # own
-from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
+from pyarq.arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
 
 class LogicalService(containers.DeclarativeContainer):
   core = providers.Dependency()

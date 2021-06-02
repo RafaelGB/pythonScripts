@@ -12,10 +12,11 @@ import json
 import logging
 import signal
 # Own
-from arq_server.services.protocols.physical.Common import arqCache
-from arq_server.services.CoreService import Configuration,ContextFilter
-from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
-from arq_server.services.protocols.physical.rest.MethodViews import ApplicationsApi , ArchitectureApi
+from pyarq.arq_server.services.protocols.physical.Common import arqCache
+from pyarq_core.Config import Configuration
+from pyarq_core.Base import ContextFilter
+from pyarq.arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
+from pyarq.arq_server.services.protocols.physical.rest.MethodViews import ApplicationsApi , ArchitectureApi
 
 
 class APIRestTools:

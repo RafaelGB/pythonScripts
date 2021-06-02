@@ -6,11 +6,11 @@ import time
 
 from flask import make_response, jsonify
 # Own
-from arq_decorators.arq_decorator import ArqToolsTemplate
+from pyarq.arq_decorators.arq_decorator import ArqToolsTemplate
 
-from arq_server.services.CoreService import Base
-from arq_server.services.data_access.relational.models.Client import Client
-from arq_server.services.data_access.relational.models.User import User
+from pyarq_core.Base import Base
+from pyarq.arq_server.services.data_access.relational.models.Client import Client
+from pyarq.arq_server.services.data_access.relational.models.User import User
 
 class MiApp(ArqToolsTemplate):
     # declaro servicios propios del decorador para evitar que el lint indique error

@@ -6,7 +6,7 @@ from functools import wraps
 import logging
 
 # own
-from arq_server.base.ArqErrors import ArqError, ArqErrorMock
+from pyarq_core.ArqErrors import ArqError, ArqErrorMock
 
 deco_logger = logging.getLogger()
 def method_wrapper(function):

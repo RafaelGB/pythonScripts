@@ -24,22 +24,23 @@ import types
 from datetime import datetime
 
 # own
-from arq_server.base.ArqErrors import ArqError
-from arq_server.base.Constants import Const
-from arq_server.containers.ArqContainer import BaseContainerDecorator, ArqContainer
-from arq_server.services.CoreService import Configuration, Base
+from pyarq_core.ArqErrors import ArqError
+from pyarq_core.Constants import Const
+from pyarq_core.Config import Configuration
+from pyarq_core.Base import Base
+from pyarq.arq_server.containers.ArqContainer import BaseContainerDecorator, ArqContainer
 # Data
-from arq_server.services.data_access.CacheTools import RedisTools
-from arq_server.services.data_access.relational.DatabaseSQL import DbSQL
+from pyarq.arq_server.services.data_access.CacheTools import RedisTools
+from pyarq.arq_server.services.data_access.relational.DatabaseSQL import DbSQL
 # Support
-from arq_server.services.support.OSTools import FileSystemTools
-from arq_server.services.support.DockerTools import DockerTools
-from arq_server.services.support.ConcurrentTools import ConcurrentTools
-from arq_server.services.support.SecurityTools import Security
+from pyarq.arq_server.services.support.OSTools import FileSystemTools
+from pyarq.arq_server.services.support.DockerTools import DockerTools
+from pyarq.arq_server.services.support.ConcurrentTools import ConcurrentTools
+from pyarq.arq_server.services.support.SecurityTools import Security
 # Physical Protocols
-from arq_server.services.protocols.physical.rest.RestService import APIRestTools
+from pyarq.arq_server.services.protocols.physical.rest.RestService import APIRestTools
 # Logical Protocols
-from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
+from pyarq.arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
 
 # def transactional(function):
 #     """

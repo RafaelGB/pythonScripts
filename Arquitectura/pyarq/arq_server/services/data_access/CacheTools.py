@@ -11,8 +11,8 @@ import logging
 import json
 import types
 # Own
-from arq_server.services.CoreService import Configuration
-from arq_server.base.ArqErrors import ArqError
+from pyarq_core.Config import Configuration
+from pyarq_core.ArqErrors import ArqError
 
 
 def method_wrapper(function):

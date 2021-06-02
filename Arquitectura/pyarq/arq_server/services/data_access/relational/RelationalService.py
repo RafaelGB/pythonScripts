@@ -6,7 +6,7 @@ import logging
 # IoC
 from dependency_injector import containers, providers
 # Own
-from arq_server.services.data_access.relational.DatabaseSQL import DbSQL
+from pyarq.arq_server.services.data_access.relational.DatabaseSQL import DbSQL
 
 class RelationalService(containers.DeclarativeContainer):
     """Application IoC container."""

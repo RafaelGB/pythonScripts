@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy.sql.sqltypes import Boolean, Text
 
 # Own
-from arq_server.services.data_access.relational.DatabaseSQL import Base
+from pyarq.arq_server.services.data_access.relational.DatabaseSQL import Base
 
 """
 Ejemplos columnas

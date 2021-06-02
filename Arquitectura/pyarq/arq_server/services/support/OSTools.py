@@ -3,7 +3,7 @@ import sys, os
 import pathlib
 import logging
 # IoC
-from arq_server.services.CoreService import Configuration
+from pyarq_core.Config import Configuration
 
 class FileSystemTools(object):
     __logger: logging.Logger

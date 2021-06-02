@@ -6,11 +6,11 @@ import base64
 import datetime
 from typing import List
 # Own
-from arq_server.base.ArqErrors import ArqError
-from arq_server.services.data_access.relational.models.User import User
-from arq_server.services.CoreService import Base
-from arq_server.services.CoreService import Configuration
-from arq_server.services.data_access.relational.DatabaseSQL import DbSQL
+from pyarq_core.ArqErrors import ArqError
+from pyarq.arq_server.services.data_access.relational.models.User import User
+from pyarq_core.Base import Base
+from pyarq_core.Config import Configuration
+from pyarq.arq_server.services.data_access.relational.DatabaseSQL import DbSQL
 
 class Security(Base):
     __logger: logging.Logger

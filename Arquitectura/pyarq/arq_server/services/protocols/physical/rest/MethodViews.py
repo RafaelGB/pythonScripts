@@ -6,8 +6,8 @@ from flask import make_response, jsonify, current_app, request
 from flask.views import MethodView
 from flask.wrappers import Response
 # Own
-from arq_server.services.protocols.physical.Common import arqCache
-from arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
+from pyarq.arq_server.services.protocols.physical.Common import arqCache
+from pyarq.arq_server.services.protocols.logical.NormalizeSelector import NormalizeSelector
 
 class ApplicationsApi(MethodView):
     """
