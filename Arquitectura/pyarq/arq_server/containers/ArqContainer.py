@@ -8,7 +8,7 @@ from dependency_injector.wiring import inject, Provide
 # own
 from pyarq_core.CoreService import CoreService
 # Support
-from pyarq.arq_server.services.support.UtilsService import UtilsService
+from pyarq_utils.UtilsService import UtilsService
 # data access
 from pyarq.arq_server.services.data_access.DataService import DataService
 # Protocols

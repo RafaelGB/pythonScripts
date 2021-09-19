@@ -4,7 +4,7 @@ from typing import List
 # Own
 from pyarq_core.ArqErrors import ArqError
 from pyarq_core.Config import Configuration
-from pyarq.arq_server.services.support.SecurityTools import Security
+from pyarq_utils.SecurityTools import Security
 
 class NormalizeSelector:
     # Services TIPS

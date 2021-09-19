@@ -4,7 +4,6 @@ import jwt
 import logging
 import base64
 import datetime
-from typing import List
 # Own
 from pyarq_core.ArqErrors import ArqError
 from pyarq.arq_server.services.data_access.relational.models.User import User
@@ -16,7 +15,7 @@ class Security(Base):
     __logger: logging.Logger
     __config: Configuration
     __data: DbSQL
-
+    
     def obtain_token(self,**kwargs):
         """
         Obtención de un token de seguridad en función del usuario
