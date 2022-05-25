@@ -35,7 +35,7 @@ setup(
           'redis==3.4.1',
           'docker==4.2.0',
           'Rx==3.1.0',
-          'pyjwt==2.0.1',
+          'pyjwt==2.4.0',
           'SQLAlchemy==1.4.3',
           'psycopg2-binary==2.8.6',
           'PyYAML==5.4.1'
