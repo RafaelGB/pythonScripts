@@ -32,7 +32,7 @@ setup(
           'Flask-Caching==1.9.0',
           'pylint==2.6.0',
           'cachetools==4.0.0',
-          'redis==3.4.1',
+          'redis==4.5.3',
           'docker==4.2.0',
           'Rx==3.1.0',
           'pyjwt==2.0.1',
